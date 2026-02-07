@@ -1,0 +1,7 @@
+# SkyPilot stub for evaluation
+
+resources:
+  accelerators: T4:1
+
+run: |
+  echo "TODO: add evaluation command."
