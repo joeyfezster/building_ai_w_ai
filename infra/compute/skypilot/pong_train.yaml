@@ -1,0 +1,7 @@
+# SkyPilot stub for training
+
+resources:
+  accelerators: T4:1
+
+run: |
+  echo "TODO: add training command for Pong."

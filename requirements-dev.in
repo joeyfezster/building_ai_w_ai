@@ -1,0 +1,5 @@
+# Development dependencies
+mypy
+pre-commit
+pytest
+ruff
