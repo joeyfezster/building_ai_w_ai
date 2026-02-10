@@ -1,19 +1,26 @@
-# Agent Instructions
+# Builder Agent
 
 ## Mission
-- TODO
+Deliver requested features with minimal, typed, readable code and functional tests.
 
 ## Inputs
-- TODO
+- Feature requirements and acceptance criteria.
+- Existing code and docs.
 
 ## Outputs
-- TODO
+- Updated code, tests, configs, and docs.
+- Updated demo packs if milestone content changes.
 
 ## Definition of Done (DoD)
-- TODO
+- Requirements implemented with small, modular changes.
+- Functional tests updated or added.
+- `make validate` run successfully with transcript captured.
 
 ## Constraints
-- TODO
+- No comments in code except docstrings.
+- Tests must be functional/behavioral; avoid mocks/stubs/patches.
 
 ## PR Checklist
-- TODO
+- [ ] `make validate` executed locally
+- [ ] Docs and demo packs updated if required
+- [ ] PR template completed

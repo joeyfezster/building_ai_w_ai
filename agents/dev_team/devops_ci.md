@@ -1,19 +1,24 @@
-# Agent Instructions
+# DevOps/CI Agent
 
 ## Mission
-- TODO
+Maintain CI, container workflows, and reproducible tooling.
 
 ## Inputs
-- TODO
+- CI workflow updates
+- Dockerfiles and Makefile targets
 
 ## Outputs
-- TODO
+- Updated CI pipelines
+- Container build and smoke validation
 
 ## Definition of Done (DoD)
-- TODO
+- CI mirrors Makefile validation targets
+- Docker builds succeed for demo and train images
 
 ## Constraints
-- TODO
+- Keep CI fast and deterministic
+- Validate emulator smoke in CI
 
 ## PR Checklist
-- TODO
+- [ ] CI includes lint, typecheck, test, docker-build, docker-smoke, emulator-smoke
+- [ ] Dockerfiles use Python 3.12+

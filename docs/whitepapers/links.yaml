@@ -1,0 +1,14 @@
+- id: dqn_2013
+  expected_title: Playing Atari with Deep Reinforcement Learning
+  year: 2013
+  url_landing: https://arxiv.org/abs/1312.5602
+  arxiv_id: 1312.5602
+  slug: playing-atari-with-deep-reinforcement-learning
+  importance: First DQN preprint using deep Q-learning on Atari.
+- id: dqn_2015
+  expected_title: Human-level control through deep reinforcement learning
+  year: 2015
+  url_landing: https://arxiv.org/abs/1502.01852
+  arxiv_id: 1502.01852
+  slug: human-level-control-through-deep-reinforcement-learning
+  importance: Nature paper demonstrating human-level DQN results.

@@ -1,6 +1,7 @@
 # Behind the Scenes: Agents
 
-## TODO
-- Summarize which dev-team agents contributed.
-- Capture key prompts.
-- Note lessons learned.
+## Roles used
+- Builder: implemented DQN smoke training and recording scripts.
+- RL Scientist: tuned configs and evaluation procedure.
+- Demo Producer: structured the checklist and video script.
+- Reviewer: enforced `make validate` before release.

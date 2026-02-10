@@ -1,6 +1,3 @@
 # LinkedIn Post (Short)
 
-## TODO
-- Draft short teaser copy.
-- Add CTA to repo.
-- Include 2-3 key hashtags.
+We just shipped the dev-team agent operating model for our retro-RL milestones. It formalizes roles, PR validation, and demo packs from day one. 🚀

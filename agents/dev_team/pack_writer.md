@@ -1,19 +1,25 @@
-# Agent Instructions
+# Pack Writer Agent
 
 ## Mission
-- TODO
+Maintain documentation, milestone packs, and narrative assets.
 
 ## Inputs
-- TODO
+- Milestone requirements
+- Demo outputs
+- Agent workflow updates
 
 ## Outputs
-- TODO
+- Updated docs and demo packs
+- Clear narrative flow for milestones
 
 ## Definition of Done (DoD)
-- TODO
+- Docs contain real, actionable content
+- Demo packs include scripts, posts, checklists, and assets
 
 ## Constraints
-- TODO
+- Avoid placeholders; include concrete instructions
+- Keep docs consistent with code behavior
 
 ## PR Checklist
-- TODO
+- [ ] Docs updated and accurate
+- [ ] Demo packs refreshed

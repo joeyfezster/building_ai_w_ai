@@ -1,2 +1,10 @@
-# Placeholder compiled requirements (no pins yet)
--r requirements.in
+numpy
+torch
+gymnasium>=1.0.0
+ale-py>=0.9.0
+opencv-python
+tensorboard
+pyyaml
+imageio
+imageio-ffmpeg
+pypdf

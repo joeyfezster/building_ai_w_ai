@@ -1,6 +1,3 @@
 # Behind the Scenes: Agents
 
-## TODO
-- Summarize which dev-team agents contributed.
-- Capture key prompts.
-- Note lessons learned.
+This demo focuses on the dev-team agents themselves. The Builder and Reviewer roles establish the baseline validation workflow that every milestone must follow.

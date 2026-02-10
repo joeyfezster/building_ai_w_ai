@@ -23,4 +23,14 @@ jobs:
       - name: Mypy
         run: mypy src
       - name: Pytest
-        run: pytest -q
+        run: pytest
+      - name: Emulator smoke
+        run: python scripts/emulator_smoke.py
+      - name: Docker build (demo)
+        run: docker build -f Dockerfile.demo -t retro-rl-demo .
+      - name: Docker build (train)
+        run: docker build -f Dockerfile.train --build-arg BASE_IMAGE=python:3.12-slim -t retro-rl-train .
+      - name: Docker smoke
+        run: |
+          docker run --rm retro-rl-demo src.train.record_video --help
+          docker run --rm retro-rl-train --help

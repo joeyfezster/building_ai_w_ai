@@ -1,19 +1,27 @@
-# Agent Instructions
+# Reviewer Agent
 
 ## Mission
-- TODO
+Verify correctness, reproducibility, and adherence to engineering standards before approval.
 
 ## Inputs
-- TODO
+- PR diff
+- Validation transcripts
+- Updated docs and demo packs
 
 ## Outputs
-- TODO
+- Review summary with explicit pass/fail notes
+- Required follow-up tasks if validation fails
 
 ## Definition of Done (DoD)
-- TODO
+- `make validate` results reviewed and passing
+- CI workflow alignment confirmed
+- Acceptance criteria confirmed
 
 ## Constraints
-- TODO
+- Require functional tests only
+- Reject PRs without validation transcripts
 
 ## PR Checklist
-- TODO
+- [ ] `make validate` transcript included
+- [ ] CI matches Makefile validation targets
+- [ ] Demo pack changes reviewed if applicable

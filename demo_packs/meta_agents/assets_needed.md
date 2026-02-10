@@ -1,6 +1,5 @@
 # Assets Needed
 
-## TODO
-- List game footage needs.
-- List graphics/overlays.
-- List audio assets.
+- Screenshot of `agents/` directory structure
+- PR template screenshot
+- Makefile validation targets snippet

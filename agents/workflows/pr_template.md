@@ -1,6 +1,16 @@
-# PR Template
+# Pull Request Template
 
-## TODO
-- Add summary section.
-- Add testing checklist.
-- Add risk/rollout section.
+## Summary
+- 
+
+## Validation
+- [ ] `make validate` executed locally and passed
+
+## Command Transcript
+```text
+$ make validate
+
+```
+
+## Demo Pack Updates
+- [ ] Demo pack updated (if milestone content changed)

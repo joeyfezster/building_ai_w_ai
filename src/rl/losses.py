@@ -1,11 +1,12 @@
-"""Loss stubs."""
+"""Loss utilities."""
 
 from __future__ import annotations
 
-from typing import Any
+import torch
+from torch import nn
 
 
-def dqn_loss(predicted_q: Any, target_q: Any) -> float:
+def dqn_loss(predicted_q: torch.Tensor, target_q: torch.Tensor) -> torch.Tensor:
     """Compute the DQN loss."""
 
-    raise NotImplementedError("DQN loss not implemented yet.")
+    return nn.functional.smooth_l1_loss(predicted_q, target_q)

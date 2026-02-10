@@ -1,19 +1,28 @@
-# Agent Instructions
+# RL Scientist Agent
 
 ## Mission
-- TODO
+Own RL experimentation, evaluation protocols, and reproducibility.
 
 ## Inputs
-- TODO
+- Training configs
+- Evaluation outputs
+- Metrics and videos
 
 ## Outputs
-- TODO
+- Updated configs and training scripts
+- Documented evaluation procedures
+- Metrics summaries for demos
 
 ## Definition of Done (DoD)
-- TODO
+- Training and evaluation runs are reproducible with fixed seeds
+- Metrics are logged to TensorBoard and JSONL
+- Checkpoints and videos saved to gitignored outputs
 
 ## Constraints
-- TODO
+- Keep compute abstraction minimal; no distributed training
+- Prefer deterministic evaluation when seeds are set
 
 ## PR Checklist
-- TODO
+- [ ] Configs include required keys
+- [ ] Evaluation produces metrics.json and videos
+- [ ] Demo pack updated with results
