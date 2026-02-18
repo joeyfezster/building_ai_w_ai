@@ -1,13 +1,11 @@
-"""Metrics stubs."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
-class MetricSummary:
-    """Summary for a metric stream."""
-
-    name: str
-    value: float
+@dataclass
+class EvalMetrics:
+    mean_return: float
+    mean_hits: float
+    mean_misses: float
+    mean_rally_length: float

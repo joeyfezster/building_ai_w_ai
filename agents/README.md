@@ -1,6 +1,3 @@
-# Dev-Team Agents
+# Agent system
 
-## TODO
-- Describe dev-team agent roles.
-- Explain how to use workflows.
-- Add onboarding instructions.
+This folder defines developer-facing agents and collaboration workflows.

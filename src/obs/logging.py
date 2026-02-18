@@ -1,14 +1,15 @@
-"""Logging stubs."""
-
 from __future__ import annotations
 
-from typing import Any, Mapping
+import json
+from pathlib import Path
+from typing import Any
 
 
-class MetricsLogger:
-    """Placeholder metrics logger."""
+class JsonlLogger:
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self.path.parent.mkdir(parents=True, exist_ok=True)
 
-    def log_metrics(self, metrics: Mapping[str, Any]) -> None:
-        """Log a batch of metrics."""
-
-        raise NotImplementedError("Metrics logging not implemented yet.")
+    def log(self, payload: dict[str, Any]) -> None:
+        with self.path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(payload) + "\n")

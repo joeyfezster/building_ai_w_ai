@@ -1,2 +1,14 @@
-# Placeholder compiled requirements (no pins yet)
--r requirements.in
+numpy
+torch
+opencv-python
+gymnasium
+pyyaml
+tensorboard
+imageio
+imageio-ffmpeg
+streamlit
+metabase
+matplotlib
+pandas
+pypdf
+requests

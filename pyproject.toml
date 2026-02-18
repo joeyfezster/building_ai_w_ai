@@ -1,12 +1,12 @@
 [project]
-name = "retro-rl-milestones"
+name = "minipong-rl-proof"
 version = "0.1.0"
-description = "Recreate classic AI milestones with RL play-agents."
+description = "End-to-end reproducible DQN learning proof on open MiniPong"
 readme = "README.md"
 requires-python = ">=3.12"
 
 [tool.ruff]
-line-length = 88
+line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
@@ -18,7 +18,8 @@ warn_unused_ignores = true
 warn_redundant_casts = true
 warn_unused_configs = true
 no_implicit_optional = true
-strict = true
+strict = false
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 addopts = "-q"

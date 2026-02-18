@@ -1,0 +1,7 @@
+name: minipong-train
+resources:
+  accelerators: A10G:1
+  cpus: 8+
+run: |
+  pip install -r requirements.txt
+  python -m src.train.train_dqn --config configs/dqn_minipong.yaml

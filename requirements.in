@@ -1,2 +1,14 @@
-# Core runtime dependencies
-# TODO: add RL runtime dependencies.
+numpy
+torch
+opencv-python
+gymnasium
+pyyaml
+tensorboard
+imageio
+imageio-ffmpeg
+streamlit
+metabase
+matplotlib
+pandas
+pypdf
+requests

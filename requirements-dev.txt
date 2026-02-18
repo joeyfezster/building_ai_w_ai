@@ -1,2 +1,6 @@
-# Placeholder compiled requirements (no pins yet)
--r requirements-dev.in
+ruff
+mypy
+pytest
+pre-commit
+pip-tools
+types-PyYAML

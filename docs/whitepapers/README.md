@@ -1,6 +1,5 @@
-# Whitepapers
+# Whitepapers storage
 
-## TODO
-- Add overview of planned whitepapers.
-- Store PDFs in `pdfs/`.
-- Link published PDFs here.
+- `links.yaml`: curated sources.
+- `pdfs/`: raw downloaded PDFs.
+- `manifest.json`: byte-size and source audit.

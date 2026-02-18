@@ -1,5 +1,6 @@
-"""RL primitives and utilities."""
+from src.rl.dqn import select_action, td_loss
+from src.rl.networks import QNetwork
+from src.rl.replay import ReplayBuffer, Transition
+from src.rl.schedules import linear_schedule
 
-from .replay import ReplayBuffer, Transition
-
-__all__ = ["ReplayBuffer", "Transition"]
+__all__ = ["QNetwork", "ReplayBuffer", "Transition", "linear_schedule", "select_action", "td_loss"]

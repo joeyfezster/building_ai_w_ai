@@ -1,0 +1,19 @@
+run_id: demo_cpu
+seed: 42
+frame_stack: 4
+reward_shaping: false
+total_steps: 1200
+batch_size: 32
+gamma: 0.99
+lr: 0.0005
+replay_capacity: 5000
+warmup_steps: 100
+train_freq: 2
+target_update_period: 100
+eval_every: 300
+checkpoint_every: 300
+epsilon_start: 1.0
+epsilon_end: 0.05
+epsilon_decay_steps: 1000
+eval_episodes: 4
+eval_seeds: [0, 1]

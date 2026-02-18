@@ -1,13 +1,7 @@
 {
-  "name": "retro-rl-milestones",
+  "name": "minipong-rl",
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "customizations": {
-    "vscode": {
-      "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python"
-      }
-    }
-  }
+  "postCreateCommand": "pip install -r requirements.txt -r requirements-dev.txt"
 }

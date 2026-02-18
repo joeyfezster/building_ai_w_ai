@@ -1,7 +1,6 @@
-# SkyPilot stub for evaluation
-
+name: minipong-eval
 resources:
-  accelerators: T4:1
-
+  cpus: 4+
 run: |
-  echo "TODO: add evaluation command."
+  pip install -r requirements.txt
+  python -m src.train.evaluate --run-id demo_cpu --checkpoint artifacts/demo_cpu/checkpoints/step_1200.pt

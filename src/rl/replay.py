@@ -1,35 +1,48 @@
-"""Replay buffer stubs."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable, List
+
+import numpy as np
+import numpy.typing as npt
 
 
 @dataclass(frozen=True)
 class Transition:
-    """Single transition in the replay buffer."""
-
-    obs: Any
+    obs: npt.NDArray[np.uint8]
     action: int
     reward: float
-    next_obs: Any
+    next_obs: npt.NDArray[np.uint8]
     done: bool
 
 
 class ReplayBuffer:
-    """Placeholder replay buffer."""
-
-    def __init__(self, capacity: int) -> None:
+    def __init__(self, capacity: int, obs_shape: tuple[int, ...]) -> None:
         self.capacity = capacity
-        self._storage: List[Transition] = []
+        self.obs = np.zeros((capacity, *obs_shape), dtype=np.uint8)
+        self.next_obs = np.zeros((capacity, *obs_shape), dtype=np.uint8)
+        self.actions = np.zeros((capacity,), dtype=np.int64)
+        self.rewards = np.zeros((capacity,), dtype=np.float32)
+        self.dones = np.zeros((capacity,), dtype=np.float32)
+        self.size = 0
+        self.ptr = 0
 
     def add(self, transition: Transition) -> None:
-        """Add a transition to the buffer."""
+        idx = self.ptr
+        self.obs[idx] = transition.obs
+        self.actions[idx] = transition.action
+        self.rewards[idx] = transition.reward
+        self.next_obs[idx] = transition.next_obs
+        self.dones[idx] = 1.0 if transition.done else 0.0
 
-        raise NotImplementedError("Replay buffer add not implemented yet.")
+        self.ptr = (self.ptr + 1) % self.capacity
+        self.size = min(self.size + 1, self.capacity)
 
-    def sample(self, batch_size: int) -> Iterable[Transition]:
-        """Sample a batch of transitions."""
-
-        raise NotImplementedError("Replay buffer sampling not implemented yet.")
+    def sample(self, batch_size: int, rng: np.random.Generator) -> tuple[np.ndarray, ...]:
+        idxs = rng.integers(0, self.size, size=batch_size)
+        return (
+            self.obs[idxs],
+            self.actions[idxs],
+            self.rewards[idxs],
+            self.next_obs[idxs],
+            self.dones[idxs],
+        )
