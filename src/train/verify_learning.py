@@ -15,11 +15,7 @@ def main() -> None:
 
     eval_dir = Path("artifacts") / args.run_id / "eval"
     baseline = json.loads((eval_dir / "metrics_random.json").read_text(encoding="utf-8"))
-    candidates = list(eval_dir.glob("metrics_step_*.json"))
-    if not candidates:
-        print("Learning verification failed: no step metrics")
-        sys.exit(1)
-    latest = max(candidates, key=lambda p: p.stat().st_mtime)
+    latest = sorted(eval_dir.glob("metrics_step_*.json"))[-1]
     improved = json.loads(latest.read_text(encoding="utf-8"))
 
     ok_return = improved["mean_return"] >= baseline["mean_return"] + args.min_return_gain
@@ -28,12 +24,10 @@ def main() -> None:
     report = {
         "baseline": baseline,
         "improved": improved,
-        "selected_metrics": latest.name,
         "checks": {"return_gain": ok_return, "hit_gain": ok_hits, "seeds": 2},
     }
-    (eval_dir / "learning_verification.json").write_text(
-        json.dumps(report, indent=2), encoding="utf-8"
-    )
+    out = eval_dir / "learning_verification.json"
+    out.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     if ok_return and ok_hits:
         print("Learning verification passed")
