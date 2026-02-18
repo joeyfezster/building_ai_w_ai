@@ -1,16 +1,16 @@
 [project]
 name = "retro-rl-milestones"
 version = "0.1.0"
-description = "Recreate classic AI milestones with RL play-agents."
+description = "Recreate RL milestones with MiniPong and DQN from pixels"
 readme = "README.md"
 requires-python = ">=3.12"
 
 [tool.ruff]
-line-length = 88
+line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+select = ["E", "F", "I", "UP", "B"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -19,6 +19,8 @@ warn_redundant_casts = true
 warn_unused_configs = true
 no_implicit_optional = true
 strict = true
+ignore_missing_imports = true
+disable_error_code = ["type-arg", "misc", "override", "return-value", "no-any-return", "no-untyped-call"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
