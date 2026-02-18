@@ -1,3 +1,10 @@
 {
-  "papers": []
+  "papers": [
+    {
+      "title": "Human-level control through deep reinforcement learning",
+      "filename": "dqn_nature_2015.pdf",
+      "bytes": 2057,
+      "url": "https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf"
+    }
+  ]
 }

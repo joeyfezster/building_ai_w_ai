@@ -1,48 +1,41 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-
-import numpy as np
-import numpy.typing as npt
+from random import Random
 
 
 @dataclass(frozen=True)
 class Transition:
-    obs: npt.NDArray[np.uint8]
+    obs: list[list[list[int]]]
     action: int
     reward: float
-    next_obs: npt.NDArray[np.uint8]
+    next_obs: list[list[list[int]]]
     done: bool
 
 
 class ReplayBuffer:
     def __init__(self, capacity: int, obs_shape: tuple[int, ...]) -> None:
         self.capacity = capacity
-        self.obs = np.zeros((capacity, *obs_shape), dtype=np.uint8)
-        self.next_obs = np.zeros((capacity, *obs_shape), dtype=np.uint8)
-        self.actions = np.zeros((capacity,), dtype=np.int64)
-        self.rewards = np.zeros((capacity,), dtype=np.float32)
-        self.dones = np.zeros((capacity,), dtype=np.float32)
-        self.size = 0
+        self.storage: list[Transition] = []
         self.ptr = 0
 
+    @property
+    def size(self) -> int:
+        return len(self.storage)
+
     def add(self, transition: Transition) -> None:
-        idx = self.ptr
-        self.obs[idx] = transition.obs
-        self.actions[idx] = transition.action
-        self.rewards[idx] = transition.reward
-        self.next_obs[idx] = transition.next_obs
-        self.dones[idx] = 1.0 if transition.done else 0.0
-
+        if len(self.storage) < self.capacity:
+            self.storage.append(transition)
+        else:
+            self.storage[self.ptr] = transition
         self.ptr = (self.ptr + 1) % self.capacity
-        self.size = min(self.size + 1, self.capacity)
 
-    def sample(self, batch_size: int, rng: np.random.Generator) -> tuple[np.ndarray, ...]:
-        idxs = rng.integers(0, self.size, size=batch_size)
+    def sample(self, batch_size: int, rng: Random) -> tuple[list, list, list, list, list]:
+        picks = [self.storage[rng.randrange(len(self.storage))] for _ in range(batch_size)]
         return (
-            self.obs[idxs],
-            self.actions[idxs],
-            self.rewards[idxs],
-            self.next_obs[idxs],
-            self.dones[idxs],
+            [p.obs for p in picks],
+            [p.action for p in picks],
+            [p.reward for p in picks],
+            [p.next_obs for p in picks],
+            [1.0 if p.done else 0.0 for p in picks],
         )
