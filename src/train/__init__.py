@@ -1,1 +1,1 @@
-"""Training entrypoints."""
+"""Training package."""

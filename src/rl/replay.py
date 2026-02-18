@@ -1,35 +1,37 @@
-"""Replay buffer stubs."""
+"""Replay buffer."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable, List
+
+import numpy as np
 
 
 @dataclass(frozen=True)
 class Transition:
-    """Single transition in the replay buffer."""
-
-    obs: Any
+    obs: np.ndarray
     action: int
     reward: float
-    next_obs: Any
+    next_obs: np.ndarray
     done: bool
 
 
 class ReplayBuffer:
-    """Placeholder replay buffer."""
-
     def __init__(self, capacity: int) -> None:
         self.capacity = capacity
-        self._storage: List[Transition] = []
+        self._storage: list[Transition] = []
+        self._index = 0
+
+    def __len__(self) -> int:
+        return len(self._storage)
 
     def add(self, transition: Transition) -> None:
-        """Add a transition to the buffer."""
+        if len(self._storage) < self.capacity:
+            self._storage.append(transition)
+        else:
+            self._storage[self._index] = transition
+        self._index = (self._index + 1) % self.capacity
 
-        raise NotImplementedError("Replay buffer add not implemented yet.")
-
-    def sample(self, batch_size: int) -> Iterable[Transition]:
-        """Sample a batch of transitions."""
-
-        raise NotImplementedError("Replay buffer sampling not implemented yet.")
+    def sample(self, batch_size: int) -> list[Transition]:
+        idx = np.random.randint(0, len(self._storage), size=batch_size)
+        return [self._storage[i] for i in idx]

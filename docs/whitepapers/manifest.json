@@ -1,0 +1,10 @@
+{
+  "papers": [
+    {
+      "title": "Human-level control through deep reinforcement learning",
+      "filename": "dqn_nature_2015.pdf",
+      "url": "https://www.nature.com/articles/nature14236.pdf",
+      "source": "offline_placeholder"
+    }
+  ]
+}

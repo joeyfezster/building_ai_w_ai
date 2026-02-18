@@ -1,12 +1,12 @@
-"""Schedule utilities."""
+"""Schedule functions."""
 
 from __future__ import annotations
 
 
 def linear_schedule(step: int, start: float, end: float, duration: int) -> float:
-    """Linearly interpolate between start and end over duration steps."""
-
-    if duration <= 0:
-        raise ValueError("duration must be positive")
-    progress = min(max(step, 0), duration) / duration
-    return start + (end - start) * progress
+    if step <= 0:
+        return start
+    if step >= duration:
+        return end
+    frac = step / duration
+    return start + frac * (end - start)

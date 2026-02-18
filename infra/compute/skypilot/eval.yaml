@@ -1,7 +1,8 @@
-# SkyPilot stub for evaluation
-
+name: minipong-eval
 resources:
-  accelerators: T4:1
-
+  cpus: 4+
+workdir: .
+setup: |
+  pip install -r requirements.txt -r requirements-dev.txt
 run: |
-  echo "TODO: add evaluation command."
+  python -m src.train.evaluate --run-id sky_run --episodes 8 --seeds 11 22

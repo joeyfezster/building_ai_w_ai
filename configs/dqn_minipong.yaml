@@ -1,0 +1,17 @@
+run_id: demo_local
+seed: 7
+frame_stack: 4
+total_steps: 2000
+max_episode_steps: 800
+replay_capacity: 20000
+replay_warmup_steps: 200
+batch_size: 32
+gamma: 0.99
+lr: 0.001
+epsilon_start: 1.0
+epsilon_end: 0.05
+epsilon_decay_steps: 1500
+target_update_period: 100
+eval_every_steps: 500
+eval_episodes: 4
+eval_seeds: [11, 22]
