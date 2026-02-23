@@ -36,6 +36,10 @@ make factory-local         # run one factory iteration locally (validate → sce
 make factory-status        # show current iteration count and satisfaction score
 ```
 
+## Human Decision Log
+
+- `/ProjectLeadAsks.md` — Open questions and decisions requiring Joey's input. **Check this file at every session start.** Update it when questions are resolved or new ones arise. This file survives context compaction — it's the canonical list of what's pending.
+
 ## Stack
 
 - Python 3.12, pip-tools for dependency management
