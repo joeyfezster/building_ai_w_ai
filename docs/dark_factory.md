@@ -45,20 +45,29 @@ The pattern: **Seed → Agent → Validate → Feedback → Repeat until satisfi
 
 ## Validation Layers
 
-### Layer 1: Deterministic CI
+### Gate 1: Deterministic CI
 - `make lint` — ruff check
 - `make typecheck` — mypy
 - `make test` — pytest
 
-If any fail, Layer 2 is skipped. The agent gets the CI errors directly.
+If any fail, subsequent gates are skipped. The agent gets the CI errors directly.
 
-### Layer 2: Behavioral Scenarios
+### Gate 2: Structural Quality (planned)
+- `vulture` — dead code detection
+- `radon` — cyclomatic complexity thresholds
+- `pytest --cov` — test coverage
+- `bandit` — security vulnerability patterns
+
+Non-blocking but tracked in the feedback report. Gives visibility into NFRs (maintainability, security, complexity) without violating the validation constraint.
+
+### Gate 3: Behavioral Scenarios
 - `scripts/run_scenarios.py` executes holdout scenarios from `/scenarios/`
 - Each scenario runs an evaluation command and checks pass criteria
 - Results produce a satisfaction score: `passed / total`
 
-### Layer 3: LLM-as-Judge (optional, not implemented yet)
+### Gate 4: LLM-as-Judge (optional, not implemented yet)
 - For subjective scenarios (video quality, dashboard usability)
+- Enriches feedback with smarter root cause analysis
 - Pluggable via `--llm-judge` flag on run_scenarios.py
 - Not a hard dependency — factory works without it
 

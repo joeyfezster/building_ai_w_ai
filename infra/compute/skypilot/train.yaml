@@ -1,0 +1,10 @@
+name: minipong-train
+resources:
+  cloud: aws
+  accelerators: T4:1
+  cpus: 4+
+workdir: .
+setup: |
+  pip install -r requirements.txt -r requirements-dev.txt
+run: |
+  python -m src.train.train_dqn --config configs/dqn_minipong.yaml --run-id sky_run

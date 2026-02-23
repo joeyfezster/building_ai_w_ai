@@ -1,6 +1,4 @@
-# Dev-Team Agents
+# Agent System
 
-## TODO
-- Describe dev-team agent roles.
-- Explain how to use workflows.
-- Add onboarding instructions.
+Dev-team agent role specs live in `agents/dev_team/`.
+Workflows and templates live in `agents/workflows/`.

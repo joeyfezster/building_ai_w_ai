@@ -1,6 +1,6 @@
 # Project Lead Asks
 
-Items requiring Joey's input or decision.
+Items requiring the project lead's input or decision.
 
 ## Open
 

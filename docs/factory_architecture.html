@@ -62,6 +62,7 @@
   .sub-step { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 12px; font-size: 13px; }
   .sub-step .label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
   .sub-step.l1 .label { color: var(--factory); }
+  .sub-step.l15 .label { color: #d2a8ff; }
   .sub-step.l2 .label { color: var(--holdout); }
 
   /* Wiring Table */
@@ -113,7 +114,7 @@
 </div>
 
 <div class="legend">
-  <div class="legend-item"><div class="legend-dot" style="background:var(--human)"></div> Human (Joey)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--human)"></div> Human (Project Lead)</div>
   <div class="legend-item"><div class="legend-dot" style="background:var(--factory)"></div> Factory Orchestrator</div>
   <div class="legend-item"><div class="legend-dot" style="background:var(--codex)"></div> Codex (Attractor)</div>
   <div class="legend-item"><div class="legend-dot" style="background:var(--holdout)"></div> Holdout Scenarios</div>
@@ -132,7 +133,7 @@
   <div class="arch-flow">
 
     <div class="arch-node human">
-      <h3>HUMAN — Joey</h3>
+      <h3>HUMAN — Project Lead</h3>
       <p>Authors specs (/specs/*.md) and scenarios (/scenarios/*.md). Sets satisfaction threshold. Triggers factory. Escalates when loop stalls.</p>
       <div class="sub-steps">
         <div class="sub-step"><div class="label" style="color:var(--human)">Writes</div>/specs/ — what the system should do</div>
@@ -147,9 +148,10 @@
       <div class="arch-node factory" style="margin-bottom:0">
         <h3>FACTORY ORCHESTRATOR</h3>
         <p>.github/workflows/factory.yaml — runs the loop, controls iteration</p>
-        <div class="sub-steps">
-          <div class="sub-step l1"><div class="label">Layer 1: Deterministic CI</div>make lint + typecheck + test<br><em>If fail → skip Layer 2, go to feedback</em></div>
-          <div class="sub-step l2"><div class="label">Layer 2: Behavioral Scenarios</div>scripts/run_scenarios.py<br><em>12 holdout scenarios, satisfaction scoring</em></div>
+        <div class="sub-steps" style="grid-template-columns:1fr 1fr 1fr">
+          <div class="sub-step l1"><div class="label">Gate 1: Deterministic CI</div>make lint + typecheck + test<br><em>If fail → skip remaining, go to feedback</em></div>
+          <div class="sub-step l15"><div class="label">Gate 2: Structural Quality</div>vulture (dead code), radon (complexity), coverage, bandit (security)<br><em>Non-blocking but tracked</em></div>
+          <div class="sub-step l2"><div class="label">Gate 3: Behavioral Scenarios</div>scripts/run_scenarios.py<br><em>12 holdout scenarios, satisfaction scoring</em></div>
         </div>
       </div>
       <div class="arrow" style="margin: 0 auto"></div>
@@ -179,7 +181,7 @@
     <div class="arrow colored"></div>
     <div class="arch-node factory" style="border-style:dashed">
       <h3>EXIT CONDITIONS</h3>
-      <p>Satisfaction threshold met (default 80%) → post PR comment, done.<br>Max iterations reached → tag @joeyfezster for escalation.</p>
+      <p>Satisfaction threshold met (default 80%) → post PR comment, await project lead's accept/merge decision.<br>Max iterations reached → tag project lead for escalation.</p>
     </div>
 
     <div class="fs-shuffle">
@@ -278,7 +280,7 @@ Why: .codexignore doesn't exist. This is a filesystem-level gate, not an LLM ins
 <!-- ─── HUMAN INTERACTION VIEW ─── -->
 <div class="view" id="view-human">
   <h2 class="section-title">Human Interaction Points</h2>
-  <p style="color:var(--muted);margin-bottom:24px">The factory is designed to run autonomously. Joey's involvement is limited to five distinct touchpoints:</p>
+  <p style="color:var(--muted);margin-bottom:24px">The factory is designed to run autonomously. The project lead's involvement is limited to six distinct touchpoints:</p>
 
   <div class="interaction-card">
     <h3>1. Author Specs</h3>
@@ -328,8 +330,18 @@ Why: .codexignore doesn't exist. This is a filesystem-level gate, not an LLM ins
     </div>
   </div>
 
+  <div class="interaction-card">
+    <h3>6. Accept / Promote / Ship</h3>
+    <div class="when">After the factory converges and the satisfaction report looks right</div>
+    <div class="action">
+      Merge the factory branch into main. This is the irreversible human gate — the decision that the product is ready.
+      Review the satisfaction dashboard (scenario pass/fail matrix, convergence trajectory).
+      Do NOT review code. The satisfaction score is your signal.
+    </div>
+  </div>
+
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:24px">
-    <h3 style="color:var(--factory);margin-bottom:12px">What Joey Does NOT Do</h3>
+    <h3 style="color:var(--factory);margin-bottom:12px">What the Project Lead Does NOT Do</h3>
     <ul style="color:var(--muted);font-size:14px;padding-left:20px">
       <li>Read diffs or code changes</li>
       <li>Review PRs for code quality</li>
