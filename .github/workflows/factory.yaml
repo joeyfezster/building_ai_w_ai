@@ -27,6 +27,10 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: factory-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
@@ -73,6 +77,8 @@ jobs:
           THRESHOLD=${{ inputs.satisfaction_threshold || '0.80' }}
           CURRENT_ITER=$(cat artifacts/factory/iteration_count.txt)
           SATISFIED=false
+          SCORE=0.0
+          ITER=0
 
           echo "Starting factory loop: max=$MAX_ITER, threshold=$THRESHOLD, current_iter=$CURRENT_ITER"
 
@@ -83,43 +89,54 @@ jobs:
             echo "FACTORY ITERATION $ITER"
             echo "=========================================="
 
-            # ── Layer 1: Deterministic validation ──
-            echo "--- Layer 1: lint + typecheck + test ---"
-            LAYER1_PASS=true
-            make lint 2>&1 | tee -a artifacts/factory/ci_output.log || LAYER1_PASS=false
-            make typecheck 2>&1 | tee -a artifacts/factory/ci_output.log || LAYER1_PASS=false
-            make test 2>&1 | tee -a artifacts/factory/ci_output.log || LAYER1_PASS=false
+            # Clear stale results from previous iteration
+            rm -f artifacts/factory/scenario_results.json
 
-            if [ "$LAYER1_PASS" = false ]; then
-              echo "Layer 1 FAILED — skipping scenarios, compiling feedback"
-              echo '{"total":0,"passed":0,"failed":0,"skipped":0,"satisfaction_score":0.0,"results":[],"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","layer1_failed":true}' > artifacts/factory/scenario_results.json
+            # ── Gate 1: Deterministic validation ──
+            echo "--- Gate 1: lint + typecheck + test ---"
+            GATE1_PASS=true
+            make lint 2>&1 | tee -a artifacts/factory/ci_output.log || GATE1_PASS=false
+            make typecheck 2>&1 | tee -a artifacts/factory/ci_output.log || GATE1_PASS=false
+            make test 2>&1 | tee -a artifacts/factory/ci_output.log || GATE1_PASS=false
+
+            if [ "$GATE1_PASS" = false ]; then
+              echo "Gate 1 FAILED — skipping scenarios, compiling feedback"
+              echo '{"total":0,"passed":0,"failed":0,"skipped":0,"satisfaction_score":0.0,"results":[],"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","gate1_failed":true}' > artifacts/factory/scenario_results.json
             else
-              # ── Layer 2: Behavioral scenarios ──
-              echo "--- Layer 2: Behavioral scenarios ---"
+              # ── Gate 3: Behavioral scenarios ──
+              echo "--- Gate 3: Behavioral scenarios ---"
               # Restore scenarios from safe location for evaluation
               if [ -d /tmp/factory_scenarios ]; then
                 cp -r /tmp/factory_scenarios scenarios
+              else
+                echo "WARNING: /tmp/factory_scenarios not found — using in-place scenarios"
               fi
-              python scripts/run_scenarios.py --timeout 180 2>&1 | tee -a artifacts/factory/ci_output.log || true
-              # Move scenarios out again before Codex sees them
+              python scripts/run_scenarios.py --timeout 180 2>&1 | tee -a artifacts/factory/ci_output.log
+              # Move scenarios out before Codex step
+              # NOTE: /tmp/ is readable by Codex — this is a prompt-level control only.
+              # True holdout isolation requires a separate evaluation job (see ProjectLeadAsks).
               mv scenarios /tmp/factory_scenarios 2>/dev/null || true
             fi
 
-            # ── Check satisfaction ──
+            # ── Check satisfaction (injection-safe) ──
             if [ -f artifacts/factory/scenario_results.json ]; then
               SCORE=$(python -c "import json; r=json.load(open('artifacts/factory/scenario_results.json')); print(r.get('satisfaction_score', 0.0))")
               echo "Satisfaction score: $SCORE (threshold: $THRESHOLD)"
 
-              MEETS=$(python -c "print('true' if $SCORE >= $THRESHOLD else 'false')")
+              MEETS=$(python -c "import sys; sys.exit(0 if float(sys.argv[1]) >= float(sys.argv[2]) else 1)" "$SCORE" "$THRESHOLD" && echo "true" || echo "false")
               if [ "$MEETS" = "true" ]; then
                 echo "SATISFIED — satisfaction threshold met!"
                 SATISFIED=true
                 echo "$ITER" > artifacts/factory/iteration_count.txt
                 break
               fi
+            else
+              echo "WARNING: No scenario_results.json — skipping satisfaction check"
+              SCORE=0.0
             fi
 
             # ── Compile feedback ──
+            # compile_feedback.py does NOT own iteration_count.txt — we pass --iteration explicitly
             echo "--- Compiling feedback ---"
             python scripts/compile_feedback.py --iteration $ITER 2>&1
 
@@ -131,7 +148,9 @@ jobs:
             fi
 
             echo "--- Invoking Codex (iteration $ITER) ---"
-            # Filesystem shuffle: hide scenarios from Codex
+            # Filesystem shuffle: remove scenarios from workspace before Codex runs
+            # NOTE: This is a prompt-level control — Codex can read /tmp/.
+            # True isolation requires a separate evaluation job (planned post-first-crank).
             mv scenarios /tmp/factory_scenarios 2>/dev/null || true
 
             # Build the Codex prompt with feedback reference
@@ -144,7 +163,7 @@ jobs:
               --sandbox workspace-write \
               2>&1 | tee -a artifacts/factory/ci_output.log || true
 
-            # Restore scenarios
+            # Restore scenarios after Codex runs
             if [ -d /tmp/factory_scenarios ]; then
               cp -r /tmp/factory_scenarios scenarios
             fi
@@ -163,8 +182,8 @@ jobs:
 
           # ── Export results ──
           echo "satisfied=$SATISFIED" >> $GITHUB_OUTPUT
-          echo "final_score=$SCORE" >> $GITHUB_OUTPUT
-          echo "iterations=$ITER" >> $GITHUB_OUTPUT
+          echo "final_score=${SCORE:-0.0}" >> $GITHUB_OUTPUT
+          echo "iterations=${ITER:-0}" >> $GITHUB_OUTPUT
 
       # ── Post-loop actions ──────────────────────────────────
       - name: Commit factory state

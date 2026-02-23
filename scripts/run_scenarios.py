@@ -120,6 +120,20 @@ def run_scenario(scenario: Scenario, timeout: int, repo_root: Path) -> ScenarioR
     """Execute a single scenario's evaluation method."""
     start = time.time()
 
+    # Guard: empty evaluation commands must not pass silently
+    if not scenario.evaluation_method.strip():
+        return ScenarioResult(
+            name=scenario.name,
+            file_path=scenario.file_path,
+            category=scenario.category,
+            passed=False,
+            exit_code=-3,
+            stdout="",
+            stderr="EMPTY: evaluation_method is empty — cannot evaluate",
+            duration_seconds=0.0,
+            error_summary="Empty evaluation command",
+        )
+
     try:
         result = subprocess.run(
             ["bash", "-c", scenario.evaluation_method],

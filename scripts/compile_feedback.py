@@ -109,18 +109,19 @@ def infer_causes(
         combined = stderr + stdout
         name = str(r.get("name", "unknown"))
 
+        # Classify by primary error type (elif prevents double-counting)
         if "ModuleNotFoundError" in combined:
             import_errors.append(name)
         elif "ImportError" in combined:
             import_errors.append(name)
-        if "AssertionError" in combined:
-            assertion_errors.append(name)
-        if "TIMEOUT" in combined:
+        elif "TIMEOUT" in combined:
             timeout_errors.append(name)
-        if "FileNotFoundError" in combined:
+        elif "FileNotFoundError" in combined:
             file_not_found.append(name)
         elif "No such file" in combined:
             file_not_found.append(name)
+        elif "AssertionError" in combined:
+            assertion_errors.append(name)
 
     n = len(import_errors)
     if import_errors:
@@ -203,6 +204,7 @@ def compile_feedback(
         out.append("|-----------|---------|")
         for iter_num, summary in previous_feedback:
             first = summary.splitlines()[0] if summary else ""
+            first = first.replace("|", "\\|")
             out.append(f"| {iter_num} | {first} |")
         out.append("")
 
@@ -323,9 +325,8 @@ def main() -> int:
     output_path = factory_dir / f"feedback_iter_{iteration}.md"
     output_path.write_text(feedback)
 
-    # Update iteration count
-    count_path = factory_dir / "iteration_count.txt"
-    count_path.write_text(str(iteration) + "\n")
+    # NOTE: iteration_count.txt is owned by the workflow/Makefile,
+    # not by this script. Do not write it here to avoid double-increment.
 
     print(f"Feedback compiled: {output_path}")
     print(f"Iteration: {iteration}")

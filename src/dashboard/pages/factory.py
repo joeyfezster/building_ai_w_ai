@@ -59,13 +59,16 @@ def load_feedback_history() -> list[dict]:
         text = path.read_text(encoding="utf-8")
 
         # Extract satisfaction score from feedback
+        # Format is: "Satisfaction score: 80%" or "**Satisfaction score: 42%**"
         score_match = re.search(
-            r"Satisfaction[:\s]+(\d+\.?\d*)%", text
+            r"Satisfaction[^:]*:\s*(\d+\.?\d*)%", text
         )
         score = float(score_match.group(1)) / 100 if score_match else 0
 
-        # Extract pass/fail counts
-        pass_match = re.search(r"(\d+)\s*/\s*(\d+)\s*pass", text)
+        # Extract pass/fail counts — format: "(5/12 scenarios passed)"
+        pass_match = re.search(
+            r"(\d+)\s*/\s*(\d+)\s*scenario", text
+        )
         passed = int(pass_match.group(1)) if pass_match else 0
         total = int(pass_match.group(2)) if pass_match else 0
 
@@ -180,9 +183,9 @@ if results and results.get("results"):
             "Scenario": r.get("name", "unknown"),
             "Category": r.get("category", "unknown"),
             "Status": "✅ Pass" if r.get("passed") else "❌ Fail",
-            "Duration (s)": round(r.get("duration", 0), 1),
+            "Duration (s)": round(r.get("duration_seconds", 0), 1),
             "Error": (
-                r.get("error", "")[:100]
+                r.get("error_summary", "")[:100]
                 if not r.get("passed")
                 else ""
             ),

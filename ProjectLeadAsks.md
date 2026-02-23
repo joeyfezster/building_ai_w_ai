@@ -25,13 +25,58 @@ For the factory's GitHub Action (CI automation), usage is billed at standard API
 
 Is 80% the right starting point? Can be adjusted per workflow_dispatch run. Lower thresholds converge faster but accept more broken scenarios.
 
-### 3. Token Budget
+### 3. Scenario Isolation Architecture
+**Status:** Design decision needed
+**Priority:** Pre-first-crank (awareness), post-first-crank (fix)
+
+**Problem:** The current filesystem shuffle (`mv scenarios /tmp/`) does NOT provide real holdout isolation. Codex runs in the same job and can read `/tmp/factory_scenarios/`. The shuffle is a **prompt-level control only** — Codex is instructed not to look, but there's no enforcement.
+
+**Why this matters:** The factory's entire anti-gaming architecture assumes Codex cannot see its own evaluation criteria. If it can, it could overfit to specific scenarios without implementing general behavior. The holdout is not a holdout.
+
+**Options (in order of isolation strength):**
+1. **Separate evaluation job** — Run Codex in job A, then run scenario evaluation in job B on a clean checkout. Scenarios are never on the same filesystem as Codex. (Recommended)
+2. **Private scenario repo** — Store scenarios in a separate private repo. Evaluation job fetches them; Codex job never has access.
+3. **Container isolation** — Run Codex in a Docker container with a mount that excludes `/tmp/factory_scenarios/`.
+4. **Current approach** (prompt-only) — Rely on the instruction in factory_fix.md. Effective against non-adversarial models; no enforcement against determined optimization.
+
+**Current mitigation:** The prompt explicitly tells Codex `/scenarios/` should not exist in its workspace. The `--sandbox workspace-write` flag limits writes. But reads are unrestricted.
+
+**For the first crank:** Accept the prompt-level control. The attractor is unlikely to proactively search `/tmp/` unless it's been specifically fine-tuned to game evaluations. After the first crank, implement option 1.
+
+### 4. Token Budget
 **Status:** Non-blocking (current defaults are reasonable)
 **Priority:** Post-first-crank optimization
 
 Codex context window determines how much the agent can read per iteration. Long feedback files + all specs could get expensive. Consider:
 - Capping feedback to last 2 iterations
 - Summarizing older feedback more aggressively
+
+### 4. Model Control Plane
+**Status:** Design phase
+**Priority:** Post-first-crank
+
+The factory has multiple LLM-powered components (current and planned):
+
+| Component | Current Model | Role |
+|-----------|--------------|------|
+| Attractor (Codex) | codex-mini-latest | Code writing/fixing |
+| LLM-as-judge (planned) | TBD | Subjective scenario evaluation |
+| Feedback compiler (planned upgrade) | TBD | Root cause analysis enrichment |
+| Orchestrator | N/A (bash/yaml) | Loop control (non-LLM today) |
+
+**Desired capabilities:**
+- Dashboard showing all LLM-powered workers with current model assignments
+- Token consumption per worker, per iteration, per time window (day/week)
+- Ability for the human operator to swap models per worker (e.g., switch attractor from codex-mini to gpt-5)
+- Cost tracking and budget alerts
+- Latency metrics per worker per iteration
+
+**Implementation options:**
+1. **Streamlit page** — extend the existing dashboard with a "Control Plane" tab
+2. **Config file** — `configs/factory_models.yaml` mapping worker → model, read by all LLM components
+3. **Environment variables** — lighter touch, less visibility
+
+**Decision needed:** When to build, and how much observability is worth the infrastructure cost.
 
 ## Roadmap
 
@@ -50,6 +95,7 @@ Codex context window determines how much the agent can read per iteration. Long 
 3. Factory extraction to separate repo/package (see Phase 2 below)
 4. Token budget optimization (#3 above)
 5. Factory capability table — NFR testing, dead code detection, import graph analysis
+6. Model control plane — see #4 below
 
 ### Phase 2: Factory Extraction
 **Status:** Planned after first successful convergence run
