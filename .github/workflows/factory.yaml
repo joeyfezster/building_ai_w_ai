@@ -1,0 +1,246 @@
+name: Dark Factory
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_iterations:
+        description: "Maximum convergence iterations"
+        required: false
+        default: "5"
+        type: string
+      satisfaction_threshold:
+        description: "Satisfaction score to stop (0.0-1.0)"
+        required: false
+        default: "0.80"
+        type: string
+      target_branch:
+        description: "Branch to run factory on (default: triggering branch)"
+        required: false
+        default: ""
+        type: string
+  push:
+    branches:
+      - "factory/**"
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  factory-loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      # ── Setup ──────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_branch || github.ref }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Set up Node.js (for Codex CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Initialize factory state
+        run: |
+          mkdir -p artifacts/factory
+          if [ ! -f artifacts/factory/iteration_count.txt ]; then
+            echo "0" > artifacts/factory/iteration_count.txt
+          fi
+
+      # ── Convergence Loop ───────────────────────────────────
+      - name: Run convergence loop
+        id: factory
+        run: |
+          MAX_ITER=${{ inputs.max_iterations || '5' }}
+          THRESHOLD=${{ inputs.satisfaction_threshold || '0.80' }}
+          CURRENT_ITER=$(cat artifacts/factory/iteration_count.txt)
+          SATISFIED=false
+
+          echo "Starting factory loop: max=$MAX_ITER, threshold=$THRESHOLD, current_iter=$CURRENT_ITER"
+
+          for i in $(seq 1 $MAX_ITER); do
+            ITER=$((CURRENT_ITER + i))
+            echo ""
+            echo "=========================================="
+            echo "FACTORY ITERATION $ITER"
+            echo "=========================================="
+
+            # ── Layer 1: Deterministic validation ──
+            echo "--- Layer 1: lint + typecheck + test ---"
+            LAYER1_PASS=true
+            make lint 2>&1 | tee -a artifacts/factory/ci_output.log || LAYER1_PASS=false
+            make typecheck 2>&1 | tee -a artifacts/factory/ci_output.log || LAYER1_PASS=false
+            make test 2>&1 | tee -a artifacts/factory/ci_output.log || LAYER1_PASS=false
+
+            if [ "$LAYER1_PASS" = false ]; then
+              echo "Layer 1 FAILED — skipping scenarios, compiling feedback"
+              echo '{"total":0,"passed":0,"failed":0,"skipped":0,"satisfaction_score":0.0,"results":[],"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","layer1_failed":true}' > artifacts/factory/scenario_results.json
+            else
+              # ── Layer 2: Behavioral scenarios ──
+              echo "--- Layer 2: Behavioral scenarios ---"
+              # Restore scenarios from safe location for evaluation
+              if [ -d /tmp/factory_scenarios ]; then
+                cp -r /tmp/factory_scenarios scenarios
+              fi
+              python scripts/run_scenarios.py --timeout 180 2>&1 | tee -a artifacts/factory/ci_output.log || true
+              # Move scenarios out again before Codex sees them
+              mv scenarios /tmp/factory_scenarios 2>/dev/null || true
+            fi
+
+            # ── Check satisfaction ──
+            if [ -f artifacts/factory/scenario_results.json ]; then
+              SCORE=$(python -c "import json; r=json.load(open('artifacts/factory/scenario_results.json')); print(r.get('satisfaction_score', 0.0))")
+              echo "Satisfaction score: $SCORE (threshold: $THRESHOLD)"
+
+              MEETS=$(python -c "print('true' if $SCORE >= $THRESHOLD else 'false')")
+              if [ "$MEETS" = "true" ]; then
+                echo "SATISFIED — satisfaction threshold met!"
+                SATISFIED=true
+                echo "$ITER" > artifacts/factory/iteration_count.txt
+                break
+              fi
+            fi
+
+            # ── Compile feedback ──
+            echo "--- Compiling feedback ---"
+            python scripts/compile_feedback.py --iteration $ITER 2>&1
+
+            # ── Invoke Codex ──
+            if [ -z "$OPENAI_API_KEY" ]; then
+              echo "WARNING: No OPENAI_API_KEY — cannot invoke Codex. Stopping loop."
+              echo "$ITER" > artifacts/factory/iteration_count.txt
+              break
+            fi
+
+            echo "--- Invoking Codex (iteration $ITER) ---"
+            # Filesystem shuffle: hide scenarios from Codex
+            mv scenarios /tmp/factory_scenarios 2>/dev/null || true
+
+            # Build the Codex prompt with feedback reference
+            FEEDBACK_FILE="artifacts/factory/feedback_iter_${ITER}.md"
+            CODEX_PROMPT="Read .github/codex/prompts/factory_fix.md for your instructions. Read ${FEEDBACK_FILE} for the current failures to fix. Read the specs in /specs/ for requirements."
+
+            # Run Codex
+            npx @openai/codex exec \
+              --prompt "$CODEX_PROMPT" \
+              --sandbox workspace-write \
+              2>&1 | tee -a artifacts/factory/ci_output.log || true
+
+            # Restore scenarios
+            if [ -d /tmp/factory_scenarios ]; then
+              cp -r /tmp/factory_scenarios scenarios
+            fi
+
+            # Commit Codex changes
+            git config user.name "dark-factory[bot]"
+            git config user.email "dark-factory[bot]@users.noreply.github.com"
+            git add -A
+            git diff --staged --quiet || git commit -m "factory: iteration $ITER — codex fix
+
+            Satisfaction: $SCORE
+            Co-Authored-By: OpenAI Codex <noreply@openai.com>"
+
+            echo "$ITER" > artifacts/factory/iteration_count.txt
+          done
+
+          # ── Export results ──
+          echo "satisfied=$SATISFIED" >> $GITHUB_OUTPUT
+          echo "final_score=$SCORE" >> $GITHUB_OUTPUT
+          echo "iterations=$ITER" >> $GITHUB_OUTPUT
+
+      # ── Post-loop actions ──────────────────────────────────
+      - name: Commit factory state
+        run: |
+          git config user.name "dark-factory[bot]"
+          git config user.email "dark-factory[bot]@users.noreply.github.com"
+          git add artifacts/factory/feedback_iter_*.md artifacts/factory/iteration_count.txt
+          git diff --staged --quiet || git commit -m "factory: update factory state"
+          git push || true
+
+      - name: Post PR comment (success)
+        if: steps.factory.outputs.satisfied == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const score = '${{ steps.factory.outputs.final_score }}';
+            const iters = '${{ steps.factory.outputs.iterations }}';
+            const body = `## Dark Factory — Converged
+
+            **Satisfaction score: ${(parseFloat(score) * 100).toFixed(0)}%**
+            Iterations: ${iters}
+
+            The factory loop has met the satisfaction threshold. Ready for human review of the behavioral results.`;
+
+            // Find open PRs for this branch
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${context.ref.replace('refs/heads/', '')}`,
+              state: 'open'
+            });
+
+            for (const pr of prs) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: body
+              });
+            }
+
+      - name: Post PR comment (stalled)
+        if: steps.factory.outputs.satisfied == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const score = '${{ steps.factory.outputs.final_score }}';
+            const iters = '${{ steps.factory.outputs.iterations }}';
+            const body = `## Dark Factory — Stalled
+
+            **Satisfaction score: ${(parseFloat(score) * 100).toFixed(0)}%** (threshold not met)
+            Iterations used: ${iters}
+
+            The factory loop did not converge. @joeyfezster — escalation needed.
+
+            Check \`artifacts/factory/feedback_iter_${iters}.md\` for the latest failure analysis.`;
+
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${context.ref.replace('refs/heads/', '')}`,
+              state: 'open'
+            });
+
+            for (const pr of prs) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: body
+              });
+            }
+
+      - name: Upload factory artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: factory-artifacts
+          path: artifacts/factory/

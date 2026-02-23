@@ -1,0 +1,45 @@
+# MiniPong RL System — Dark Factory
+
+End-to-end proof that a reinforcement learning agent can learn Pong from pixels, built entirely by AI agents orchestrated through a convergence loop.
+
+## Operating Model
+
+This repo is built by a **dark factory loop**, not by humans writing code. Code is treated as opaque weights — correctness is inferred exclusively from externally observable behavior, never from source inspection.
+
+The loop: **Seed → Agent → Validate → Feedback → Repeat until satisfied.**
+
+## Source of Truth
+
+- `/specs/` — Component specifications. This is what the coding agent reads. The specs define what the system should do.
+- `/scenarios/` — Behavioral holdout evaluation criteria. These are what the system is evaluated against. **Scenarios must NEVER be modified by the coding agent (Codex).** They are the holdout set — the agent never sees its own evaluation criteria.
+- `/docs/dark_factory.md` — Full factory documentation: how the loop works, how to trigger it, how to write scenarios, when to escalate.
+
+## Factory-Protected Files
+
+The following files are **never touched by the Attractor (Codex)**. They are factory infrastructure, not product code:
+
+- `/scenarios/` — holdout evaluation criteria
+- `/scripts/run_scenarios.py` — scenario evaluation runner
+- `/scripts/compile_feedback.py` — feedback compiler
+- `/.github/workflows/factory.yaml` — factory orchestrator
+- `/.github/codex/prompts/factory_fix.md` — Codex prompt template
+- `/specs/` — component specifications (read-only for Codex)
+- `/CLAUDE.md` — this file
+
+## Quick Commands
+
+```bash
+make validate              # lint + typecheck + test + docker-build + docker-smoke + env-smoke
+make run-scenarios         # run holdout scenario evaluation
+make compile-feedback      # compile validation results into feedback markdown
+make factory-local         # run one factory iteration locally (validate → scenarios → feedback)
+make factory-status        # show current iteration count and satisfaction score
+```
+
+## Stack
+
+- Python 3.12, pip-tools for dependency management
+- PyTorch, Gymnasium, NumPy for RL
+- ruff + mypy + pytest for quality
+- GitHub Actions for CI and factory orchestration
+- OpenAI Codex (via `codex-action`) as the non-interactive coding agent

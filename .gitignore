@@ -11,3 +11,13 @@ __pycache__/
 .ruff_cache/
 .pytest_cache/
 .DS_Store
+
+# Training artifacts (large, ephemeral)
+artifacts/*/tensorboard/
+artifacts/*/checkpoints/
+artifacts/*/videos/
+artifacts/*/logs.jsonl
+
+# Factory ephemeral artifacts (feedback files ARE committed)
+artifacts/factory/scenario_results.json
+artifacts/factory/ci_output.log
