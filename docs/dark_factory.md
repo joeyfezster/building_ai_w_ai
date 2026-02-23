@@ -10,7 +10,7 @@ The pattern: **Seed → Agent → Validate → Feedback → Repeat until satisfi
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                  HUMAN (Joey)                    │
+│               HUMAN (Project Lead)                │
 │  Authors specs (/specs/) and scenarios           │
 │  Sets satisfaction threshold                     │
 │  Triggers factory via workflow_dispatch           │
@@ -144,12 +144,27 @@ Feedback files are at `artifacts/factory/feedback_iter_N.md`. Each contains:
 - **Full error details** — every failed scenario with complete stdout/stderr
 - **Instructions** — prioritized fix guidance for the coding agent
 
+## Accept/Merge Gate
+
+The factory **never auto-merges** to main. When the convergence loop meets the satisfaction threshold, it creates (or updates) a PR with the `factory-converged` and `accept-merge-gate` labels. This is the single human decision point in the entire loop.
+
+**What the project lead reviews:**
+- Satisfaction score — does it meet your quality bar?
+- Residual warnings in the latest feedback file
+- Unexpected files or dependencies introduced by the attractor
+- Optionally: run `make factory-local` locally for additional confidence
+
+**To accept:** Approve and merge the PR. The factory branch can be deleted.
+**To reject:** Close the PR and either adjust scenarios/specs or trigger another factory run.
+
+The accept/merge gate exists because code produced by the factory was never reviewed by humans during production. The satisfaction score provides probabilistic confidence, but the merge decision is always human.
+
 ## When to Escalate
 
 Escalate to interactive debugging (Claude Code) when:
 - The factory has stalled for 3+ iterations with no score improvement
 - The same scenario keeps failing with the same error pattern
-- Layer 1 failures persist (the code doesn't even pass lint/typecheck)
+- Gate 1 failures persist (the code doesn't even pass lint/typecheck)
 - A scenario requires architectural changes the agent can't figure out from error messages alone
 
 ## Factory State

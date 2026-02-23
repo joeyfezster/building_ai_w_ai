@@ -175,34 +175,88 @@ jobs:
           git diff --staged --quiet || git commit -m "factory: update factory state"
           git push || true
 
-      - name: Post PR comment (success)
+      # ── Accept/Merge Gate ──────────────────────────────────
+      # The factory NEVER auto-merges. On convergence, it creates
+      # (or updates) a PR for the project lead to review and merge.
+      # This is the human decision point — the only place where
+      # a human evaluates whether factory output ships.
+
+      - name: Create or update PR (convergence gate)
         if: steps.factory.outputs.satisfied == 'true'
         uses: actions/github-script@v7
         with:
           script: |
             const score = '${{ steps.factory.outputs.final_score }}';
             const iters = '${{ steps.factory.outputs.iterations }}';
-            const body = `## Dark Factory — Converged
+            const branch = context.ref.replace('refs/heads/', '');
+            const baseBranch = 'main';
+
+            const body = `## Dark Factory — Converged ✅
 
             **Satisfaction score: ${(parseFloat(score) * 100).toFixed(0)}%**
             Iterations: ${iters}
 
-            The factory loop has met the satisfaction threshold. Ready for human review of the behavioral results.`;
+            The factory loop has met the satisfaction threshold.
 
-            // Find open PRs for this branch
-            const { data: prs } = await github.rest.pulls.list({
+            ### Accept/Merge Gate
+            This PR was produced entirely by the dark factory convergence loop.
+            Code was never reviewed during production — correctness was inferred
+            from behavioral scenario evaluation.
+
+            **Before merging, verify:**
+            - [ ] Satisfaction score meets your quality bar
+            - [ ] Review \`artifacts/factory/feedback_iter_${iters}.md\` for residual warnings
+            - [ ] Run \`make factory-local\` locally if you want additional confidence
+            - [ ] No unexpected files or dependencies introduced
+
+            **To merge:** Approve and merge this PR. The factory branch can then be deleted.
+            **To reject:** Close this PR and either adjust scenarios/specs or trigger another factory run.`;
+
+            // Check for existing PR from this branch
+            const { data: existingPrs } = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              head: `${context.repo.owner}:${context.ref.replace('refs/heads/', '')}`,
+              head: `${context.repo.owner}:${branch}`,
+              base: baseBranch,
               state: 'open'
             });
 
-            for (const pr of prs) {
+            if (existingPrs.length > 0) {
+              // Update existing PR
+              const pr = existingPrs[0];
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                body: body
+              });
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: pr.number,
+                body: `Factory converged at ${(parseFloat(score) * 100).toFixed(0)}% after ${iters} iterations. Ready for accept/merge review.`
+              });
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['factory-converged', 'accept-merge-gate']
+              });
+            } else {
+              // Create new PR
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `[Factory] Converged at ${(parseFloat(score) * 100).toFixed(0)}% — ready for accept/merge`,
+                head: branch,
+                base: baseBranch,
                 body: body
+              });
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['factory-converged', 'accept-merge-gate']
               });
             }
 
@@ -218,7 +272,7 @@ jobs:
             **Satisfaction score: ${(parseFloat(score) * 100).toFixed(0)}%** (threshold not met)
             Iterations used: ${iters}
 
-            The factory loop did not converge. @joeyfezster — escalation needed.
+            The factory loop did not converge. Escalation needed — tag the project lead.
 
             Check \`artifacts/factory/feedback_iter_${iters}.md\` for the latest failure analysis.`;
 

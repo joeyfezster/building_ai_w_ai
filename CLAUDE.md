@@ -24,6 +24,7 @@ The following files are **never touched by the Attractor (Codex)**. They are fac
 - `/.github/workflows/factory.yaml` — factory orchestrator
 - `/.github/codex/prompts/factory_fix.md` — Codex prompt template
 - `/specs/` — component specifications (read-only for Codex)
+- `/agents/` — pre-factory agent definitions (reference only)
 - `/CLAUDE.md` — this file
 
 ## Quick Commands
@@ -38,7 +39,7 @@ make factory-status        # show current iteration count and satisfaction score
 
 ## Human Decision Log
 
-- `/ProjectLeadAsks.md` — Open questions and decisions requiring Joey's input. **Check this file at every session start.** Update it when questions are resolved or new ones arise. This file survives context compaction — it's the canonical list of what's pending.
+- `/ProjectLeadAsks.md` — Open questions and decisions requiring the project lead's input. **Check this file at every session start.** Update it when questions are resolved or new ones arise. This file survives context compaction — it's the canonical list of what's pending.
 
 ## Stack
 

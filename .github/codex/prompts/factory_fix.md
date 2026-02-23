@@ -25,6 +25,7 @@ Read the feedback file for this iteration to understand what's broken:
 - `/.github/codex/prompts/factory_fix.md` (this file)
 - `/CLAUDE.md`
 - `/specs/` (read-only — these are your requirements)
+- `/agents/` (pre-factory reference, not product code)
 
 **DO modify** source code in:
 - `src/` — all Python source
@@ -35,6 +36,29 @@ Read the feedback file for this iteration to understand what's broken:
 - `infra/docker/` — Dockerfiles
 - `pyproject.toml` — project configuration
 
+## Validation Guidelines
+
+Before considering any change complete, ensure:
+
+### Hard Constraints
+- No proprietary ROM dependencies — MiniPong is self-contained
+- Policy consumes pixels only (84×84 uint8 observations)
+- `make validate` must pass (lint + typecheck + test + docker + env-smoke)
+- `make verify-learning` must pass for any training-related change
+
+### Definition of Done
+- Functional requirements from `/specs/` are implemented
+- Architectural consistency maintained (no ad-hoc patterns)
+- Integration checks pass end-to-end
+- Required artifacts generated and linked (checkpoints, metrics, videos)
+
+### Quality Checklist
+- [ ] `make lint` passes (ruff check)
+- [ ] `make typecheck` passes (mypy src)
+- [ ] `make test` passes (pytest)
+- [ ] No new dead imports or unused code introduced
+- [ ] Changes are minimal and surgical — fix what's broken, don't refactor
+
 ## Your Approach
 
 1. Read the latest feedback file to understand all failures
@@ -43,9 +67,9 @@ Read the feedback file for this iteration to understand what's broken:
    - Import errors and missing modules first
    - File/artifact production issues next
    - Behavioral correctness last
-4. Keep changes minimal and surgical — fix what's broken, don't refactor
-5. Run `make lint` and `make typecheck` before finishing to ensure you haven't introduced new issues
-6. Do NOT add new test files that duplicate scenario evaluation logic
+4. Validate locally: run `make lint && make typecheck` before finishing
+5. Do NOT add new test files that duplicate scenario evaluation logic
+6. Do NOT refactor code that isn't related to the current failures
 
 ## Success Criteria
 
