@@ -1,4 +1,4 @@
-.PHONY: deps lint typecheck test docker-build docker-smoke whitepapers-acquire whitepapers-verify env-smoke train-smoke eval-smoke verify-learning dashboard validate run-scenarios compile-feedback factory-local factory-status
+.PHONY: deps lint typecheck test docker-build docker-smoke whitepapers-acquire whitepapers-verify env-smoke train-smoke eval-smoke verify-learning dashboard validate run-scenarios compile-feedback nfr-check factory-local factory-status
 
 deps:
 	pip-compile requirements.in
@@ -59,7 +59,13 @@ run-scenarios: ## Run holdout scenario evaluation
 compile-feedback: ## Compile validation results into feedback markdown
 	python scripts/compile_feedback.py
 
-factory-local: ## Run one factory iteration locally (validate → scenarios → feedback)
+nfr-check: ## Run Gate 2 NFR checks (non-blocking quality analysis)
+	@mkdir -p artifacts/factory
+	python scripts/nfr_checks.py --output artifacts/factory/nfr_results.json
+	python scripts/nfr_checks.py
+
+factory-local: ## Run one factory iteration locally (Gate 1 → Gate 2 → Gate 3 → feedback)
+	@mkdir -p artifacts/factory
 	@echo "=== Gate 1: lint + typecheck + test ==="
 	@make lint 2>&1 | tee -a artifacts/factory/ci_output.log; \
 	LINT_EXIT=$$?; \
@@ -68,9 +74,12 @@ factory-local: ## Run one factory iteration locally (validate → scenarios → 
 	make test 2>&1 | tee -a artifacts/factory/ci_output.log; \
 	TEST_EXIT=$$?; \
 	if [ $$LINT_EXIT -ne 0 ] || [ $$TYPE_EXIT -ne 0 ] || [ $$TEST_EXIT -ne 0 ]; then \
-		echo "Gate 1 FAILED — skipping scenarios"; \
+		echo "Gate 1 FAILED — skipping Gates 2-3"; \
 		echo '{"total":0,"passed":0,"failed":0,"skipped":0,"satisfaction_score":0.0,"results":[],"timestamp":"N/A","gate1_failed":true}' > artifacts/factory/scenario_results.json; \
 	else \
+		echo ""; \
+		echo "=== Gate 2: NFR checks (non-blocking) ==="; \
+		make nfr-check 2>&1 | tee -a artifacts/factory/ci_output.log || true; \
 		echo ""; \
 		echo "=== Gate 3: Behavioral scenarios ==="; \
 		python scripts/run_scenarios.py --timeout 180 || true; \

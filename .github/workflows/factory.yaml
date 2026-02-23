@@ -21,6 +21,7 @@ on:
   push:
     branches:
       - "factory/**"
+      - "df-crank-**"
 
 permissions:
   contents: write

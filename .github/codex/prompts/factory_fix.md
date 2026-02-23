@@ -26,6 +26,10 @@ Read the feedback file for this iteration to understand what's broken:
 - `/CLAUDE.md`
 - `/specs/` (read-only — these are your requirements)
 - `/agents/` (pre-factory reference, not product code)
+- `/scripts/strip_holdout.py` (holdout isolation gate)
+- `/scripts/restore_holdout.py` (holdout restoration)
+- `/scripts/nfr_checks.py` (Gate 2 NFR checker)
+- `/scripts/check_test_quality.py` (anti-stam scanner)
 
 **DO modify** source code in:
 - `src/` — all Python source
