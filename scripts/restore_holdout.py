@@ -95,10 +95,11 @@ def restore_makefile_targets(
     restored_targets: list[str] = []
 
     # Find and uncomment all marked blocks
+    escaped_marker = re.escape(STRIP_MARKER)
     pattern = (
-        rf"# \{re.escape(STRIP_MARKER)}\s*— stripped by strip_holdout\.py\n"
+        rf"# {escaped_marker}\s*— stripped by strip_holdout\.py\n"
         rf"((?:# .*\n)*)"
-        rf"# end \{re.escape(STRIP_MARKER)}"
+        rf"# end {escaped_marker}"
     )
 
     for match in re.finditer(pattern, content):

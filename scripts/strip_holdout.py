@@ -98,10 +98,16 @@ def verify_stripped(repo_root: Path) -> list[str]:
 
     scenarios_dir = repo_root / "scenarios"
     if scenarios_dir.exists():
-        remaining = list(scenarios_dir.rglob("*.md"))
+        remaining = [f for f in scenarios_dir.rglob("*") if f.is_file()]
         if remaining:
             failures.append(
-                f"scenarios/ still has {len(remaining)} .md files"
+                f"scenarios/ still has {len(remaining)} files: "
+                + ", ".join(f.name for f in remaining[:5])
+            )
+        elif scenarios_dir.is_dir():
+            # Directory exists but is empty — still a signal to Codex
+            failures.append(
+                "scenarios/ directory still exists (should be fully removed)"
             )
 
     return failures

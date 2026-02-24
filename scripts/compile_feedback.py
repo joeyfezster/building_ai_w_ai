@@ -24,7 +24,8 @@ def load_scenario_results(
     """Load scenario results JSON."""
     if not path.exists():
         return None
-    return json.loads(path.read_text())  # type: ignore[no-any-return]
+    data: dict[str, object] = json.loads(path.read_text())
+    return data
 
 
 def load_ci_log(path: Path) -> str:
