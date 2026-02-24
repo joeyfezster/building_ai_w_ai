@@ -218,7 +218,7 @@ jobs:
       # a human evaluates whether factory output ships.
 
       - name: Create or update PR (convergence gate)
-        if: steps.factory.outputs.satisfied == 'true'
+        if: steps.factory.outputs.satisfied == 'true' && steps.factory.outputs.iterations != '0'
         uses: actions/github-script@v7
         with:
           script: |
@@ -297,7 +297,7 @@ jobs:
             }
 
       - name: Post PR comment (stalled)
-        if: steps.factory.outputs.satisfied == 'false'
+        if: steps.factory.outputs.satisfied == 'false' && steps.factory.outputs.iterations != '0'
         uses: actions/github-script@v7
         with:
           script: |
