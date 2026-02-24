@@ -1,9 +1,13 @@
-.PHONY: deps lint typecheck test docker-build docker-smoke whitepapers-acquire whitepapers-verify env-smoke train-smoke eval-smoke verify-learning dashboard validate run-scenarios compile-feedback nfr-check factory-local factory-status
+.PHONY: deps install-hooks lint typecheck test docker-build docker-smoke whitepapers-acquire whitepapers-verify env-smoke train-smoke eval-smoke verify-learning dashboard validate run-scenarios compile-feedback nfr-check factory-local factory-status
 
 deps:
 	pip-compile requirements.in
 	pip-compile requirements-dev.in
 	pip install -r requirements.txt -r requirements-dev.txt
+
+install-hooks: ## Set up git hooks (ruff + mypy on every commit, no virtualenv needed)
+	git config core.hooksPath .githooks
+	@echo "✅ Git hooks installed from .githooks/"
 
 # ── Quality ──────────────────────────────────────────────
 lint:

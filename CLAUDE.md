@@ -43,6 +43,7 @@ These standards are enforced by Gate 0 (adversarial review), Gate 1 (lint/typech
 ## Quick Commands
 
 ```bash
+make install-hooks         # set up git hooks (ruff + mypy on every commit, no virtualenv needed)
 make validate              # lint + typecheck + test + docker-build + docker-smoke + env-smoke
 make run-scenarios         # run holdout scenario evaluation
 make compile-feedback      # compile validation results into feedback markdown
