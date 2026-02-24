@@ -52,8 +52,8 @@ How we validate the factory's own components and their integration.
 | Gap | Risk | Mitigation | When to Fix |
 |-----|------|-----------|-------------|
 | factory.yaml workflow logic | Can't unit test GH Actions | Manual trigger + review | Post-first-crank |
-| Codex invocation | Requires API key + billing | Test with mock prompt first | First crank |
-| Filesystem shuffle | Works on Linux (CI), untested race conditions | Sequential execution | Post-first-crank |
+| Codex invocation | Browser automation via ChatGPT Plus | Test browser path first; API key is fallback | First crank |
+| Branch stripping | strip/restore scripts tested; regex edge cases possible | Adversarial review + tests | Post-first-crank |
 | Dashboard data display | Needs Streamlit runtime | Manual `make dashboard` | Post-first-crank |
 | Adversarial review effectiveness | New, unproven | Track false negative rate | Ongoing |
 | Factory workflow concurrency | Multiple factory runs on same branch | Lock via GH concurrency groups | Post-first-crank |

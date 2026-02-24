@@ -8,7 +8,7 @@ The pattern: **Seed → Agent → Validate → Feedback → Repeat until satisfi
 
 ## Architecture
 
-The factory supports two orchestration modes: **Claude Code orchestrated** (primary) and **CI-only** (fallback).
+**Claude Code is the factory orchestrator.** It drives the convergence loop, invokes Codex via browser, runs adversarial review, and makes holistic judgment calls. CI provides background validation on every push — it validates, it doesn't orchestrate.
 
 ### Claude Code as Orchestrator (Primary)
 
@@ -55,9 +55,9 @@ Claude Code runs the convergence loop via the `/factory-orchestrate` skill, usin
 └─────────────────────────────────────────────────┘
 ```
 
-### CI-Only Mode (Fallback)
+### CI Validation on Push (Background)
 
-When an `OPENAI_API_KEY` secret is available, the GitHub Actions workflow can run the full loop autonomously. Without the key, CI runs validation-only on push (Gates 1-3 + feedback compilation).
+CI runs validation-only on every push to `factory/**` or `df-crank-**` branches: Gate 1 (lint/typecheck/test), Gate 2 (NFR checks), and Gate 3 (behavioral scenarios). Claude Code reads these CI results as input to its orchestration decisions. If an `OPENAI_API_KEY` secret is available, CI can also run a fallback convergence loop with Codex API — but browser orchestration is the primary path.
 
 ```
 ┌─────────────────────────────────────────────────┐
