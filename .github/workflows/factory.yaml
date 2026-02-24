@@ -83,103 +83,118 @@ jobs:
 
           echo "Starting factory loop: max=$MAX_ITER, threshold=$THRESHOLD, current_iter=$CURRENT_ITER"
 
-          for i in $(seq 1 $MAX_ITER); do
-            ITER=$((CURRENT_ITER + i))
+          # ── Validation-only mode (no Codex API key) ──────────────
+          # When no OPENAI_API_KEY, run a single validation pass (Gate 1 + Gate 3)
+          # and exit. No state commits, no convergence loop.
+          # This is the expected mode when Claude Code orchestrates via browser.
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "No OPENAI_API_KEY — running validation-only pass (no convergence loop)"
             echo ""
-            echo "=========================================="
-            echo "FACTORY ITERATION $ITER"
-            echo "=========================================="
-
-            # Clear stale results from previous iteration
-            rm -f artifacts/factory/scenario_results.json
-
-            # ── Gate 1: Deterministic validation ──
             echo "--- Gate 1: lint + typecheck + test ---"
             GATE1_PASS=true
             make lint 2>&1 | tee -a artifacts/factory/ci_output.log || GATE1_PASS=false
             make typecheck 2>&1 | tee -a artifacts/factory/ci_output.log || GATE1_PASS=false
             make test 2>&1 | tee -a artifacts/factory/ci_output.log || GATE1_PASS=false
 
-            if [ "$GATE1_PASS" = false ]; then
-              echo "Gate 1 FAILED — skipping scenarios, compiling feedback"
-              echo '{"total":0,"passed":0,"failed":0,"skipped":0,"satisfaction_score":0.0,"results":[],"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","gate1_failed":true}' > artifacts/factory/scenario_results.json
-            else
-              # ── Gate 3: Behavioral scenarios ──
+            if [ "$GATE1_PASS" = true ] && [ -d scenarios ]; then
               echo "--- Gate 3: Behavioral scenarios ---"
-              # Restore scenarios from safe location for evaluation
+              python scripts/run_scenarios.py --timeout 180 2>&1 | tee -a artifacts/factory/ci_output.log || true
+              if [ -f artifacts/factory/scenario_results.json ]; then
+                SCORE=$(python -c "import json; r=json.load(open('artifacts/factory/scenario_results.json')); print(r.get('satisfaction_score', 0.0))")
+                echo "Satisfaction score: $SCORE"
+              fi
+            fi
+
+            echo "Validation-only pass complete. Convergence requires OPENAI_API_KEY or Claude Code orchestration."
+            # ITER stays 0 — no state commit will be pushed
+          else
+            # ── Full convergence loop (Codex API available) ──────────
+            for i in $(seq 1 $MAX_ITER); do
+              ITER=$((CURRENT_ITER + i))
+              echo ""
+              echo "=========================================="
+              echo "FACTORY ITERATION $ITER"
+              echo "=========================================="
+
+              # Clear stale results from previous iteration
+              rm -f artifacts/factory/scenario_results.json
+
+              # ── Gate 1: Deterministic validation ──
+              echo "--- Gate 1: lint + typecheck + test ---"
+              GATE1_PASS=true
+              make lint 2>&1 | tee -a artifacts/factory/ci_output.log || GATE1_PASS=false
+              make typecheck 2>&1 | tee -a artifacts/factory/ci_output.log || GATE1_PASS=false
+              make test 2>&1 | tee -a artifacts/factory/ci_output.log || GATE1_PASS=false
+
+              if [ "$GATE1_PASS" = false ]; then
+                echo "Gate 1 FAILED — skipping scenarios, compiling feedback"
+                echo '{"total":0,"passed":0,"failed":0,"skipped":0,"satisfaction_score":0.0,"results":[],"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","gate1_failed":true}' > artifacts/factory/scenario_results.json
+              else
+                # ── Gate 3: Behavioral scenarios ──
+                echo "--- Gate 3: Behavioral scenarios ---"
+                # Restore scenarios from safe location for evaluation
+                if [ -d /tmp/factory_scenarios ]; then
+                  cp -r /tmp/factory_scenarios scenarios
+                else
+                  echo "WARNING: /tmp/factory_scenarios not found — using in-place scenarios"
+                fi
+                python scripts/run_scenarios.py --timeout 180 2>&1 | tee -a artifacts/factory/ci_output.log
+                # Move scenarios out before Codex step
+                # NOTE: /tmp/ is readable by Codex — this is a prompt-level control only.
+                # True holdout isolation requires a separate evaluation job (see ProjectLeadAsks).
+                mv scenarios /tmp/factory_scenarios 2>/dev/null || true
+              fi
+
+              # ── Check satisfaction (injection-safe) ──
+              if [ -f artifacts/factory/scenario_results.json ]; then
+                SCORE=$(python -c "import json; r=json.load(open('artifacts/factory/scenario_results.json')); print(r.get('satisfaction_score', 0.0))")
+                echo "Satisfaction score: $SCORE (threshold: $THRESHOLD)"
+
+                MEETS=$(python -c "import sys; sys.exit(0 if float(sys.argv[1]) >= float(sys.argv[2]) else 1)" "$SCORE" "$THRESHOLD" && echo "true" || echo "false")
+                if [ "$MEETS" = "true" ]; then
+                  echo "SATISFIED — satisfaction threshold met!"
+                  SATISFIED=true
+                  echo "$ITER" > artifacts/factory/iteration_count.txt
+                  break
+                fi
+              else
+                echo "WARNING: No scenario_results.json — skipping satisfaction check"
+                SCORE=0.0
+              fi
+
+              # ── Compile feedback ──
+              echo "--- Compiling feedback ---"
+              python scripts/compile_feedback.py --iteration $ITER 2>&1
+
+              # ── Invoke Codex ──
+              echo "--- Invoking Codex (iteration $ITER) ---"
+              mv scenarios /tmp/factory_scenarios 2>/dev/null || true
+
+              FEEDBACK_FILE="artifacts/factory/feedback_iter_${ITER}.md"
+              CODEX_PROMPT="Read .github/codex/prompts/factory_fix.md for your instructions. Read ${FEEDBACK_FILE} for the current failures to fix. Read the specs in /specs/ for requirements."
+
+              npx @openai/codex exec \
+                --prompt "$CODEX_PROMPT" \
+                --sandbox workspace-write \
+                2>&1 | tee -a artifacts/factory/ci_output.log || true
+
+              # Restore scenarios after Codex runs
               if [ -d /tmp/factory_scenarios ]; then
                 cp -r /tmp/factory_scenarios scenarios
-              else
-                echo "WARNING: /tmp/factory_scenarios not found — using in-place scenarios"
               fi
-              python scripts/run_scenarios.py --timeout 180 2>&1 | tee -a artifacts/factory/ci_output.log
-              # Move scenarios out before Codex step
-              # NOTE: /tmp/ is readable by Codex — this is a prompt-level control only.
-              # True holdout isolation requires a separate evaluation job (see ProjectLeadAsks).
-              mv scenarios /tmp/factory_scenarios 2>/dev/null || true
-            fi
 
-            # ── Check satisfaction (injection-safe) ──
-            if [ -f artifacts/factory/scenario_results.json ]; then
-              SCORE=$(python -c "import json; r=json.load(open('artifacts/factory/scenario_results.json')); print(r.get('satisfaction_score', 0.0))")
-              echo "Satisfaction score: $SCORE (threshold: $THRESHOLD)"
+              # Commit Codex changes
+              git config user.name "dark-factory[bot]"
+              git config user.email "dark-factory[bot]@users.noreply.github.com"
+              git add -A
+              git diff --staged --quiet || git commit -m "factory: iteration $ITER — codex fix
 
-              MEETS=$(python -c "import sys; sys.exit(0 if float(sys.argv[1]) >= float(sys.argv[2]) else 1)" "$SCORE" "$THRESHOLD" && echo "true" || echo "false")
-              if [ "$MEETS" = "true" ]; then
-                echo "SATISFIED — satisfaction threshold met!"
-                SATISFIED=true
-                echo "$ITER" > artifacts/factory/iteration_count.txt
-                break
-              fi
-            else
-              echo "WARNING: No scenario_results.json — skipping satisfaction check"
-              SCORE=0.0
-            fi
+              Satisfaction: $SCORE
+              Co-Authored-By: OpenAI Codex <noreply@openai.com>"
 
-            # ── Compile feedback ──
-            # compile_feedback.py does NOT own iteration_count.txt — we pass --iteration explicitly
-            echo "--- Compiling feedback ---"
-            python scripts/compile_feedback.py --iteration $ITER 2>&1
-
-            # ── Invoke Codex ──
-            if [ -z "$OPENAI_API_KEY" ]; then
-              echo "WARNING: No OPENAI_API_KEY — cannot invoke Codex. Stopping loop."
               echo "$ITER" > artifacts/factory/iteration_count.txt
-              break
-            fi
-
-            echo "--- Invoking Codex (iteration $ITER) ---"
-            # Filesystem shuffle: remove scenarios from workspace before Codex runs
-            # NOTE: This is a prompt-level control — Codex can read /tmp/.
-            # True isolation requires a separate evaluation job (planned post-first-crank).
-            mv scenarios /tmp/factory_scenarios 2>/dev/null || true
-
-            # Build the Codex prompt with feedback reference
-            FEEDBACK_FILE="artifacts/factory/feedback_iter_${ITER}.md"
-            CODEX_PROMPT="Read .github/codex/prompts/factory_fix.md for your instructions. Read ${FEEDBACK_FILE} for the current failures to fix. Read the specs in /specs/ for requirements."
-
-            # Run Codex
-            npx @openai/codex exec \
-              --prompt "$CODEX_PROMPT" \
-              --sandbox workspace-write \
-              2>&1 | tee -a artifacts/factory/ci_output.log || true
-
-            # Restore scenarios after Codex runs
-            if [ -d /tmp/factory_scenarios ]; then
-              cp -r /tmp/factory_scenarios scenarios
-            fi
-
-            # Commit Codex changes
-            git config user.name "dark-factory[bot]"
-            git config user.email "dark-factory[bot]@users.noreply.github.com"
-            git add -A
-            git diff --staged --quiet || git commit -m "factory: iteration $ITER — codex fix
-
-            Satisfaction: $SCORE
-            Co-Authored-By: OpenAI Codex <noreply@openai.com>"
-
-            echo "$ITER" > artifacts/factory/iteration_count.txt
-          done
+            done
+          fi
 
           # ── Export results ──
           echo "satisfied=$SATISFIED" >> $GITHUB_OUTPUT
