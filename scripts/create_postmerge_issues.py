@@ -18,7 +18,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 # Post-merge items — hardcoded for now, will be read from review pack data when available
 # Each item: {title, priority, zones, body}
 # This structure matches what the PR review pack generates
