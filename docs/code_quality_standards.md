@@ -2,18 +2,18 @@
 
 Universal standards for all code written in this repository — whether by Codex (attractor), Claude Code (orchestrator), or humans. These are not guidelines; they are gates.
 
-This file is the canonical source. Other files (`factory_fix.md`, `adversarial_review.md`, `factory_validation_strategy.md`) reference this document.
+This file is the canonical source for quality rules. Referenced by `factory_fix.md`, `adversarial_review.md`, and `factory-orchestrate/SKILL.md`. Enforcement mechanism (which gates run what): see `factory-orchestrate/SKILL.md`.
 
-## Anti-Stam Test Rules
+## Anti-Vacuous Test Rules
 
 Every test must exercise real behavior through real code paths. Tests that pass by construction prove nothing and waste factory iterations.
 
-1. **No mocking the system under test.** Mocks isolate external dependencies (network, filesystem, third-party APIs) — never the logic you're testing. If `@patch` targets the function the test claims to validate, the test is stam.
-2. **No stub assertions.** `assert True`, `assert 1`, `assert not False`, and assertions against hardcoded expected values without running real logic are all stam.
+1. **No mocking the system under test.** Mocks isolate external dependencies (network, filesystem, third-party APIs) — never the logic you're testing. If `@patch` targets the function the test claims to validate, the test is vacuous.
+2. **No stub assertions.** `assert True`, `assert 1`, `assert not False`, and assertions against hardcoded expected values without running real logic are all vacuous.
 3. **No tautological tests.** The expected value must not be computed by the same code being tested. `assert compute(x) == compute(x)` proves nothing.
 4. **No zero-assertion tests.** Every `test_` function must contain at least one meaningful assertion or `pytest.raises` check.
 5. **No excessive mocking.** If more than 50% of test setup is patches/mocks, you're testing the mocking framework. Redesign the test.
-6. **The deletion test.** Would the test still pass if you replaced the implementation with `pass`? If yes, the test is stam.
+6. **The deletion test.** Would the test still pass if you replaced the implementation with `pass`? If yes, the test is vacuous.
 
 ## Anti-Gaming Rules
 
@@ -64,13 +64,13 @@ The factory supports pluggable NFR checks. Each NFR has a testable mechanism tha
 | NFR | Mechanism | Status |
 |-----|-----------|--------|
 | Code quality | `ruff check` (extended rules) | Active |
-| Complexity | `radon cc src/ --min C` (cyclomatic complexity) | Planned |
-| Dead code | `vulture src/` (unused code detection) | Planned |
+| Complexity | `radon cc src/ --min C` (cyclomatic complexity) | Active |
+| Dead code | `vulture src/` (unused code detection) | Active |
 | Duplication | `jscpd src/` or `pylint --enable=duplicate-code` | Planned |
 | Import hygiene | Custom check: orphan files, circular imports | Planned |
 | Test coverage | `pytest --cov=src --cov-fail-under=60` | Planned |
 | Maintainability | Radon maintainability index + LLM-as-judge | Planned |
-| Security | `bandit -r src/` (vulnerability patterns) | Planned |
+| Security | `bandit -r src/` (vulnerability patterns) | Active |
 | Performance | Scenario-level: training smoke <60s | Via Gate 3 |
 | Reliability | Run scenario N times, check consistency | Planned |
 
@@ -81,7 +81,7 @@ NFR findings are non-blocking but tracked. They feed into the feedback loop and 
 These standards are enforced at multiple levels:
 
 1. **`scripts/check_test_quality.py`** — AST-based scanner detecting tautological asserts, zero-assertion tests, excessive mocking, stub implementations, hardcoded returns, lookup tables.
-2. **Gate 0: Adversarial Review** — Claude Code reviews every attractor commit for stam tests, gaming, architectural dishonesty, spec violations, and integration gaps before deterministic gates run.
+2. **Gate 0: Adversarial Review (Agent Team)** — Parallel agent team catches vacuous tests, gaming, architectural dishonesty, spec violations before merge. Any CRITICAL finding blocks. See `.claude/skills/factory-orchestrate/SKILL.md` Step 4 for agent team composition.
 3. **Gate 1: Deterministic CI** — `make lint && make typecheck && make test` must all pass.
 4. **Gate 2: NFR checks** — pluggable non-functional requirement validators.
 5. **LLM-as-Judge** — Claude Code reasons holistically through all gate outputs, factoring in NFR findings and trajectory.

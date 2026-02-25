@@ -20,6 +20,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+# NOTE: strip_holdout.py also removes review pack artifacts (docs/pr_review_pack.html,
+# docs/pr_diff_data.json). These are NOT restored — they are generated artifacts that
+# will be regenerated when a new PR review pack is produced.
+
 STRIP_MARKER = "[factory:holdout-stripped]"
 
 

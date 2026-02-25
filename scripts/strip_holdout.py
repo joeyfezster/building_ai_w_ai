@@ -30,6 +30,12 @@ SCENARIO_TARGETS = [
     "compile-feedback",
 ]
 
+# Review pack artifacts (stripped to prevent attractor from seeing review findings)
+REVIEW_PACK_FILES = [
+    "docs/pr_review_pack.html",
+    "docs/pr_diff_data.json",
+]
+
 
 def strip_scenarios(repo_root: Path, dry_run: bool = False) -> list[str]:
     """Remove /scenarios/ directory entirely.
@@ -48,6 +54,25 @@ def strip_scenarios(repo_root: Path, dry_run: bool = False) -> list[str]:
     else:
         print("WARNING: /scenarios/ directory not found — already stripped?")
 
+    return removed
+
+
+def strip_review_pack(repo_root: Path, dry_run: bool = False) -> list[str]:
+    """Remove review pack artifacts that contain adversarial review findings.
+
+    The attractor should not see review pack data — it contains
+    information about the review process, adversarial findings, and
+    detailed analysis that could influence gaming strategies.
+
+    Returns list of removed file paths.
+    """
+    removed: list[str] = []
+    for rel_path in REVIEW_PACK_FILES:
+        full_path = repo_root / rel_path
+        if full_path.exists():
+            removed.append(rel_path)
+            if not dry_run:
+                full_path.unlink()
     return removed
 
 
@@ -109,6 +134,11 @@ def verify_stripped(repo_root: Path) -> list[str]:
             failures.append(
                 "scenarios/ directory still exists (should be fully removed)"
             )
+
+    # Verify review pack artifacts are removed
+    for rel_path in REVIEW_PACK_FILES:
+        if (repo_root / rel_path).exists():
+            failures.append(f"Review pack artifact still exists: {rel_path}")
 
     return failures
 
@@ -180,6 +210,11 @@ def main() -> int:
             print(f"    - {f}")
     else:
         print("  No scenario files found")
+
+    # Step 1b: Remove review pack artifacts
+    review_removed = strip_review_pack(repo_root, dry_run=args.dry_run)
+    if review_removed:
+        print(f"  Removed review pack artifacts: {', '.join(review_removed)}")
 
     # Step 2: Comment out Makefile targets
     commented = strip_makefile_targets(repo_root, dry_run=args.dry_run)

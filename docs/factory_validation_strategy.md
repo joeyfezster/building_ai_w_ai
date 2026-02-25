@@ -39,7 +39,7 @@ How we validate the factory's own components and their integration.
 
 ### Layer 3: Adversarial Review (Manual, Per PR)
 - Review guidelines at `.github/codex/prompts/adversarial_review.md`
-- Checks for: stam tests, gaming, architectural dishonesty, spec violations
+- Checks for: vacuous tests, gaming, architectural dishonesty, spec violations
 - Applied to attractor output (product code), not to factory infrastructure
 
 ### Layer 4: Integration Testing (Manual, Pre-Factory-Crank)

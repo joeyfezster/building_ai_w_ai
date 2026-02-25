@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test quality checker — detects stam tests and gaming patterns.
+"""Test quality checker — detects vacuous tests and gaming patterns.
 
 Scans test files for anti-patterns that indicate tests pass by
 construction rather than exercising real behavior.

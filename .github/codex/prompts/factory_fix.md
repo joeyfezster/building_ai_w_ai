@@ -29,7 +29,7 @@ Read the feedback file for this iteration to understand what's broken:
 - `/scripts/strip_holdout.py` (holdout isolation gate)
 - `/scripts/restore_holdout.py` (holdout restoration)
 - `/scripts/nfr_checks.py` (Gate 2 NFR checker)
-- `/scripts/check_test_quality.py` (anti-stam scanner)
+- `/scripts/check_test_quality.py` (anti-vacuous scanner)
 
 **DO modify** source code in:
 - `src/` — all Python source
@@ -68,7 +68,7 @@ Before considering any change complete, ensure:
 You are evaluated by an external holdout system you cannot see. These rules exist because the factory has adversarial review — attempts to game the system will be caught and will waste iterations.
 
 ### Tests Must Be Real
-- **No stam tests.** Every test must exercise real behavior through real code paths. A test that passes by construction proves nothing.
+- **No vacuous tests.** Every test must exercise real behavior through real code paths. A test that passes by construction proves nothing.
 - **No mocking the system under test.** Mocks are for isolating external dependencies (network, filesystem, third-party APIs) — never for bypassing the logic you're supposed to be testing.
 - **No stub implementations.** Functions must contain real logic, not `return True`, `return 0`, `pass`, or hardcoded lookup tables that happen to match test cases.
 - **No patching away the thing being tested.** If a test patches the function it claims to test, it tests nothing.

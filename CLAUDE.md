@@ -2,6 +2,17 @@
 
 End-to-end proof that a reinforcement learning agent can learn Pong from pixels, built entirely by AI agents orchestrated through a convergence loop.
 
+## First-Time Setup
+
+After cloning, run these commands immediately:
+
+```bash
+make install-hooks    # REQUIRED: sets up git hooks (ruff + mypy on every commit)
+make deps             # install Python dependencies
+```
+
+`make install-hooks` is non-negotiable — it's the local quality gate that catches issues before they hit CI. Without it, lint/typecheck failures only surface in CI, wasting iteration time.
+
 ## Operating Model
 
 This repo is built by a **dark factory loop**, not by humans writing code. Code is treated as opaque weights — correctness is inferred exclusively from externally observable behavior, never from source inspection.
@@ -16,7 +27,7 @@ The loop: **Seed → Agent → Validate → Feedback → Repeat until satisfied.
 
 ## Factory-Protected Files
 
-The following files are **never touched by the Attractor (Codex)**. They are factory infrastructure, not product code:
+The following files are **never touched by the Attractor (Codex)**. They are factory infrastructure, not product code. The Codex-facing version of this list lives in `.github/codex/prompts/factory_fix.md` — keep both in sync when adding protected files.
 
 - `/scenarios/` — holdout evaluation criteria
 - `/scripts/run_scenarios.py` — scenario evaluation runner
@@ -28,12 +39,15 @@ The following files are **never touched by the Attractor (Codex)**. They are fac
 - `/scripts/strip_holdout.py` — holdout stripping script (isolation gate)
 - `/scripts/restore_holdout.py` — holdout restoration script
 - `/scripts/nfr_checks.py` — Gate 2 NFR checker
+- `/scripts/check_test_quality.py` — Gate 0 test quality scanner
+- `/.github/codex/prompts/adversarial_review.md` — Gate 0 adversarial review checklist
+- `/docs/code_quality_standards.md` — universal quality standards
 - `/CLAUDE.md` — this file
 
 ## Code Quality Standards
 
 All code written in this repository — by Codex, Claude Code, or humans — must follow the standards in `docs/code_quality_standards.md`. This includes:
-- Anti-stam test rules (no mocking the system under test, no stub assertions)
+- Anti-vacuous test rules (no mocking the system under test, no stub assertions)
 - Anti-gaming rules (no hardcoded lookup tables, no overfitting)
 - Implementation honesty (real imports, real configs, real dependencies)
 - Test hygiene and quality gates
@@ -64,3 +78,4 @@ make factory-status        # show current iteration count and satisfaction score
 - GitHub Actions for CI and validation
 - OpenAI Codex as the non-interactive coding agent (attractor)
 - Claude Code as factory orchestrator (skill: `/factory-orchestrate`)
+- PR review pack generator (skill: `/pr-review-pack`) — `.claude/skills/pr-review-pack/` contains the review pack generation skill with template, scripts, and reference docs

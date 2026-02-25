@@ -5,11 +5,18 @@ This repo provides a complete open-source proof that a reinforcement learning ag
 ## Quickstart
 
 ```bash
-make deps
-make train-smoke
-make eval-smoke
-make verify-learning
-make dashboard
+# Setup (run once after cloning)
+make install-hooks    # REQUIRED: git hooks for lint + typecheck on every commit
+make deps             # install Python dependencies
+
+# Verify everything works
+make validate         # lint + typecheck + test + docker-build + env-smoke
+
+# Train and evaluate
+make train-smoke      # quick training sanity check
+make eval-smoke       # quick evaluation sanity check
+make verify-learning  # full learning proof
+make dashboard        # launch Streamlit dashboard
 ```
 
 ## Artifacts

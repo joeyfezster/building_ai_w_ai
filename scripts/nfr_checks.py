@@ -184,7 +184,15 @@ def check_complexity(repo_root: Path) -> list[NFRFinding]:
                         )
                     )
         except json.JSONDecodeError:
-            pass
+            # Fall back to text output
+            for line in result.stdout.strip().splitlines():
+                findings.append(
+                    NFRFinding(
+                        nfr="complexity",
+                        severity="WARNING",
+                        message=line.strip(),
+                    )
+                )
 
     return findings
 
@@ -265,7 +273,15 @@ def check_security(repo_root: Path) -> list[NFRFinding]:
                     )
                 )
         except json.JSONDecodeError:
-            pass
+            # Fall back to text output
+            for line in result.stdout.strip().splitlines():
+                findings.append(
+                    NFRFinding(
+                        nfr="security",
+                        severity="WARNING",
+                        message=line.strip(),
+                    )
+                )
 
     return findings
 

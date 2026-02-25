@@ -1,0 +1,2235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PR #5 Review Pack — Dark Factory v1</title>
+<style>
+  :root {
+    --green: #22c55e; --green-bg: #f0fdf4; --green-border: #86efac;
+    --yellow: #eab308; --yellow-bg: #fefce8;
+    --orange: #f97316; --orange-bg: #fff7ed;
+    --red: #ef4444; --red-bg: #fef2f2;
+    --gray: #6b7280; --gray-bg: #f9fafb; --gray-border: #e5e7eb;
+    --blue: #3b82f6; --blue-bg: #eff6ff;
+    --purple: #8b5cf6; --purple-bg: #f5f3ff;
+    --text: #1f2937; --text-secondary: #6b7280; --text-muted: #9ca3af;
+    --border: #e5e7eb; --bg: #f3f4f6;
+    --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  /* ── Dark theme overrides ── */
+  [data-theme="dark"] {
+    --text: #e5e7eb; --text-secondary: #9ca3af; --text-muted: #6b7280;
+    --border: #374151; --bg: #111827;
+    --gray-bg: #1f2937; --gray-border: #374151; --gray: #9ca3af;
+    --green-bg: #064e3b; --green-border: #10b981;
+    --yellow-bg: #713f12; --red-bg: #7f1d1d; --orange-bg: #7c2d12;
+    --blue-bg: #1e3a5f; --purple-bg: #2e1065;
+  }
+  [data-theme="dark"] .header,
+  [data-theme="dark"] .section,
+  [data-theme="dark"] .gate,
+  [data-theme="dark"] .tab-panel,
+  [data-theme="dark"] .tab-bar { background: #1f2937; }
+  [data-theme="dark"] .tab-btn { color: #9ca3af; }
+  [data-theme="dark"] .tab-btn:hover { background: #374151; }
+  [data-theme="dark"] .tab-btn.active { color: #60a5fa; background: #1f2937; }
+  [data-theme="dark"] th { background: #1f2937; color: #9ca3af; }
+  [data-theme="dark"] tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  [data-theme="dark"] tr.expandable:hover,
+  [data-theme="dark"] .section-header:hover,
+  [data-theme="dark"] .decision-header:hover,
+  [data-theme="dark"] .pm-header:hover,
+  [data-theme="dark"] .scenario-card:hover { background: #374151; }
+  [data-theme="dark"] .history-event { background: #1f2937; border-color: #374151; }
+  [data-theme="dark"] tr.detail-row td,
+  [data-theme="dark"] .adv-detail-row td { background: #1a2332; }
+  [data-theme="dark"] .arch-legend { background: #1f2937; }
+  [data-theme="dark"] .conv-card { border-color: #374151; }
+  [data-theme="dark"] .decision-card { border-color: #374151; }
+  [data-theme="dark"] .pm-item { border-color: #374151; }
+  [data-theme="dark"] .scenario-card { border-color: #374151; }
+  [data-theme="dark"] .arch-floating { background: rgba(31,41,55,0.95); }
+  [data-theme="dark"] .code-block { background: #0f172a; }
+  [data-theme="dark"] .gate-popover { background: #1f2937; border-color: #374151; }
+  [data-theme="dark"] .badge.pass { background: #064e3b; color: #34d399; }
+  [data-theme="dark"] .badge.fail { background: #7f1d1d; color: #fca5a5; }
+  [data-theme="dark"] .health-tag.normal { background: #064e3b; color: #34d399; }
+  [data-theme="dark"] .health-tag.acceptable { background: #713f12; color: #fde047; }
+  [data-theme="dark"] .health-tag.watch { background: #7c2d12; color: #fdba74; }
+  [data-theme="dark"] .health-tag.refactor { background: #7f1d1d; color: #fca5a5; }
+  [data-theme="dark"] .grade.a { background: #064e3b; color: #34d399; }
+  [data-theme="dark"] .grade.b { background: #713f12; color: #fde047; }
+  [data-theme="dark"] .grade.c { background: #7c2d12; color: #fdba74; }
+  [data-theme="dark"] .grade.f { background: #7f1d1d; color: #fca5a5; }
+  [data-theme="dark"] .grade.na { background: #374151; color: #9ca3af; }
+  [data-theme="dark"] .priority.low { background: #1e3a5f; color: #93c5fd; }
+  [data-theme="dark"] .priority.medium { background: #713f12; color: #fde047; }
+  [data-theme="dark"] .priority.cosmetic { background: #374151; color: #9ca3af; }
+  [data-theme="dark"] .status-badge.pass { background: #064e3b; color: #34d399; }
+  [data-theme="dark"] .status-badge.info { background: #1e3a5f; color: #93c5fd; }
+  [data-theme="dark"] .status-badge.warn { background: #713f12; color: #fde047; }
+  [data-theme="dark"] .zone-tag { background: #1e3a5f; color: #93c5fd; }
+  [data-theme="dark"] .zone-tag.factory { background: #1e3a5f; color: #93c5fd; }
+  [data-theme="dark"] .zone-tag.product { background: #064e3b; color: #6ee7b7; }
+  [data-theme="dark"] .zone-tag.infra { background: #2e1065; color: #c4b5fd; }
+  [data-theme="dark"] .scenario-box.failure { background: #3b1111; border-left-color: #ef4444; }
+  [data-theme="dark"] .scenario-box.success { background: #052e16; border-left-color: #22c55e; }
+  [data-theme="dark"] .ci-check-item:hover { background: #374151; }
+  [data-theme="dark"] .conv-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  [data-theme="dark"] .history-event:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+  [data-theme="dark"] .file-path-link { border-bottom-color: #6b7280; }
+  [data-theme="dark"] .file-path-link:hover { border-bottom-color: #60a5fa; color: #60a5fa; }
+  [data-theme="dark"] .stat { background: #1f2937; }
+  [data-theme="dark"] .stat.green { background: #064e3b; color: #34d399; }
+  [data-theme="dark"] #arch-diagram { background: #1a2332; border-color: #374151; }
+  [data-theme="dark"] .history-timeline::before { background: #374151; }
+  [data-theme="dark"] .history-legend { background: #1f2937; }
+  [data-theme="dark"] .conv-card-detail { border-top-color: #374151; }
+
+  /* ── Light theme diff modal overrides ── */
+  :root:not([data-theme="dark"]) .file-modal { background: #ffffff; }
+  :root:not([data-theme="dark"]) .file-modal-header { background: #f5f5f5; border-bottom-color: #e0e0e0; }
+  :root:not([data-theme="dark"]) .file-modal-header h3 { color: #333333; }
+  :root:not([data-theme="dark"]) .file-modal-toolbar { background: #fafafa; border-bottom-color: #e0e0e0; }
+  :root:not([data-theme="dark"]) .file-modal-tab { color: #666666; }
+  :root:not([data-theme="dark"]) .file-modal-tab:hover { color: #333333; background: #f0f0f0; }
+  :root:not([data-theme="dark"]) .file-modal-tab.active { color: #1d4ed8; background: #ffffff; border-bottom-color: var(--blue); }
+  :root:not([data-theme="dark"]) .file-modal-body { background: #ffffff; }
+  :root:not([data-theme="dark"]) .file-modal-close { color: #999999; }
+  :root:not([data-theme="dark"]) .file-modal-close:hover { background: #e0e0e0; color: #333333; }
+  :root:not([data-theme="dark"]) .file-modal-github { background: #f0f0f0; border-color: #e0e0e0; color: #333333; }
+  :root:not([data-theme="dark"]) .file-modal-github:hover { background: #e0e0e0; color: #111111; }
+  :root:not([data-theme="dark"]) .fm-stats .fm-add { color: #166534; }
+  :root:not([data-theme="dark"]) .fm-stats .fm-del { color: #991b1b; }
+  :root:not([data-theme="dark"]) .diff-unified .diff-add { background: rgba(34,197,94,0.12); color: #166534; }
+  :root:not([data-theme="dark"]) .diff-unified .diff-del { background: rgba(239,68,68,0.12); color: #991b1b; }
+  :root:not([data-theme="dark"]) .diff-unified .diff-ctx { color: #333333; }
+  :root:not([data-theme="dark"]) .diff-unified .diff-hunk { background: rgba(59,130,246,0.08); color: #2563eb; }
+  :root:not([data-theme="dark"]) .diff-unified .diff-ln { color: #999999; border-right-color: #e0e0e0; }
+  :root:not([data-theme="dark"]) .diff-split .diff-add { background: rgba(34,197,94,0.12); color: #166534; }
+  :root:not([data-theme="dark"]) .diff-split .diff-del { background: rgba(239,68,68,0.12); color: #991b1b; }
+  :root:not([data-theme="dark"]) .diff-split .diff-ctx { color: #333333; }
+  :root:not([data-theme="dark"]) .diff-split .diff-empty { background: #f9f9f9; }
+  :root:not([data-theme="dark"]) .diff-split .diff-ln { color: #999999; }
+  :root:not([data-theme="dark"]) .diff-split .diff-sep { background: #e0e0e0; }
+  :root:not([data-theme="dark"]) .diff-split .diff-hunk td { background: rgba(59,130,246,0.06); color: #2563eb; }
+  :root:not([data-theme="dark"]) .diff-raw td { color: #333333; }
+  :root:not([data-theme="dark"]) .diff-raw .diff-ln { color: #999999; border-right-color: #e0e0e0; }
+  :root:not([data-theme="dark"]) .diff-new-file-banner { background: rgba(34,197,94,0.08); color: #166534; border-bottom-color: #e0e0e0; }
+  :root:not([data-theme="dark"]) .diff-deleted-file-banner { background: rgba(239,68,68,0.08); color: #991b1b; border-bottom-color: #e0e0e0; }
+  :root:not([data-theme="dark"]) .diff-loading { color: #999999; }
+  :root:not([data-theme="dark"]) .diff-error { color: #991b1b; }
+
+  /* ── Theme toggle ── */
+  .theme-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-left: 12px; vertical-align: middle; }
+  .theme-toggle button { border: none; background: transparent; padding: 4px 10px; font-size: 14px; cursor: pointer; color: var(--text-secondary); transition: background 0.15s, color 0.15s; line-height: 1; }
+  .theme-toggle button:hover { background: var(--gray-bg); }
+  .theme-toggle button.active { background: var(--blue); color: white; }
+  .theme-toggle button:not(:last-child) { border-right: 1px solid var(--border); }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--text); background: var(--bg); line-height: 1.5; font-size: 14px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 0; background: white; border-radius: 12px 12px 0 0; border: 1px solid var(--border); border-bottom: none; overflow: hidden; }
+  .tab-btn { padding: 12px 24px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: var(--text-secondary); border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab-btn:hover { background: var(--gray-bg); }
+  .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); background: white; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .tab-panel { background: white; border: 1px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; margin-bottom: 16px; }
+
+  /* ── Header ── */
+  .header { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; border: 1px solid var(--border); }
+  .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .header .meta { font-size: 13px; color: var(--text-secondary); font-family: var(--mono); }
+  .header .meta a { color: var(--blue); text-decoration: none; }
+  .stats { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .stat { background: var(--gray-bg); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 500; }
+  .stat .num { font-weight: 700; font-size: 15px; }
+  .stat.green { background: var(--green-bg); color: #166534; }
+
+  /* ── Gate ── */
+  .gate { background: white; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; border: 2px solid var(--green); }
+  .gate h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .gate .check-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .gate .check-row:last-child { border-bottom: none; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .badge.pass { background: var(--green-bg); color: #166534; }
+  .badge.fail { background: var(--red-bg); color: #991b1b; }
+
+  /* ── Sections ── */
+  .section { background: white; border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border); overflow: hidden; }
+  .section-header { padding: 14px 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: background 0.15s; }
+  .section-header:hover { background: var(--gray-bg); }
+  .section-header h2 { font-size: 14px; font-weight: 700; }
+  .section-header .chevron { font-size: 16px; color: var(--text-secondary); transition: transform 0.2s; }
+  .section.collapsed .section-body { display: none; }
+  .section.collapsed .chevron { transform: rotate(-90deg); }
+  .section-body { padding: 0 24px 20px; font-size: 13px; }
+
+  /* ── Architecture Diagram ── */
+  .arch-controls { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+  .arch-toggle { padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: white; color: var(--text-secondary); }
+  .arch-toggle.active { background: var(--blue); color: white; border-color: var(--blue); }
+  .arch-hint { font-size: 11px; color: var(--text-muted); margin-left: 8px; }
+  .zone-box { cursor: pointer; transition: opacity 0.3s, filter 0.3s; }
+  .zone-box:hover { filter: brightness(0.95); }
+  .zone-box.dimmed { opacity: 0.12; }
+  .zone-box.highlighted { stroke-width: 3; filter: brightness(0.92); }
+  .zone-label { font-size: 11px; font-weight: 600; pointer-events: none; }
+  .zone-sublabel { font-size: 9px; fill: #6b7280; pointer-events: none; }
+  .zone-file-count { font-size: 10px; font-weight: 700; fill: white; pointer-events: none; }
+  .zone-count-bg { pointer-events: none; }
+  .arch-row-label { font-size: 10px; font-weight: 700; fill: #9ca3af; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; background: var(--gray-bg); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-secondary); border-bottom: 2px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr.expandable { cursor: pointer; }
+  tr.expandable:hover { background: var(--gray-bg); }
+  tr.detail-row { display: none; }
+  tr.detail-row.open { display: table-row; }
+  tr.detail-row td { background: #fafbfc; padding: 12px 20px; }
+
+  /* ── Grade pills ── */
+  .grade { display: inline-block; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 6px; font-weight: 700; font-size: 12px; }
+  .grade.a { background: var(--green-bg); color: #166534; }
+  .grade.b { background: var(--yellow-bg); color: #854d0e; }
+  .grade.c { background: var(--orange-bg); color: #9a3412; }
+  .grade.f { background: var(--red-bg); color: #991b1b; }
+  .grade.na { background: var(--gray-bg); color: var(--gray); }
+
+  /* ── Timing ── */
+  .time-label { font-family: var(--mono); font-size: 15px; font-weight: 700; }
+  .time-label.normal { color: #166534; }
+  .time-label.acceptable { color: #854d0e; }
+  .time-label.watch { color: #f97316; }
+  .time-label.refactor { color: #ef4444; }
+  [data-theme="dark"] .time-label.normal { color: #34d399; }
+  [data-theme="dark"] .time-label.acceptable { color: #fde047; }
+  [data-theme="dark"] .time-label.watch { color: #fdba74; }
+  [data-theme="dark"] .time-label.refactor { color: #fca5a5; }
+  .time-health-sub { font-size: 10px; font-weight: 500; color: var(--text-muted); margin-top: 1px; }
+  .time-icon { margin-right: 3px; }
+  .health-tag { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; padding: 2px 8px; border-radius: 4px; }
+  .health-tag.normal { background: var(--green-bg); color: #166534; }
+  .health-tag.acceptable { background: var(--yellow-bg); color: #854d0e; }
+  .health-tag.watch { background: var(--orange-bg); color: #9a3412; }
+  .health-tag.refactor { background: var(--red-bg); color: #991b1b; }
+
+  /* ── Decision cards ── */
+  .decision-card { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .decision-header { padding: 12px 16px; cursor: pointer; display: flex; gap: 12px; align-items: flex-start; transition: background 0.15s; }
+  .decision-header:hover { background: var(--gray-bg); }
+  .decision-num { font-weight: 700; color: var(--blue); font-size: 14px; min-width: 24px; }
+  .decision-title { font-weight: 600; font-size: 13px; }
+  .decision-rationale { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .decision-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+  .decision-card.open .decision-body { display: block; }
+  .decision-zones { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+  .zone-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; background: var(--blue-bg); color: #1d4ed8; }
+  .decision-files { margin-top: 10px; }
+  .decision-files table { font-size: 12px; }
+  .decision-files td { padding: 4px 8px; }
+
+  /* ── Convergence ── */
+  .convergence-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .conv-card { border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .conv-card h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-secondary); margin-bottom: 8px; }
+  .conv-status { font-size: 20px; font-weight: 700; }
+  .conv-status.passing { color: #166534; }
+  .conv-status.warning { color: #854d0e; }
+  .conv-status.failing { color: #991b1b; }
+  .conv-detail { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* ── Post-merge ── */
+  .pm-item { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .pm-header { padding: 10px 16px; cursor: pointer; display: flex; gap: 10px; align-items: center; transition: background 0.15s; }
+  .pm-header:hover { background: var(--gray-bg); }
+  .pm-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+  .pm-item.open .pm-body { display: block; }
+  .priority { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+  .priority.low { background: var(--blue-bg); color: #1d4ed8; }
+  .priority.medium { background: var(--yellow-bg); color: #854d0e; }
+  .priority.cosmetic { background: var(--gray-bg); color: var(--gray); }
+  .code-block { background: #1e293b; color: #e2e8f0; padding: 12px 16px; border-radius: 6px; font-family: var(--mono); font-size: 12px; line-height: 1.6; overflow-x: auto; margin: 8px 0; white-space: pre; }
+  .scenario-box { padding: 10px 14px; border-radius: 6px; margin: 6px 0; font-size: 12px; }
+  .scenario-box.failure { background: var(--red-bg); border-left: 3px solid var(--red); }
+  .scenario-box.success { background: var(--green-bg); border-left: 3px solid var(--green); }
+  .scenario-label { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; }
+
+  /* ── Spec & Scenarios ── */
+  .spec-list { list-style: none; padding: 0; }
+  .spec-list li { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; display: flex; gap: 8px; align-items: center; }
+  .spec-list li:last-child { border-bottom: none; }
+  .spec-icon { font-size: 14px; }
+  .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .scenario-card { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 12px; cursor: pointer; transition: background 0.15s; }
+  .scenario-card:hover { background: var(--gray-bg); }
+  .scenario-card .name { font-weight: 600; }
+  .scenario-card .status { font-size: 11px; margin-top: 2px; }
+  .scenario-card-detail { display: none; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-secondary); }
+  .scenario-card.open .scenario-card-detail { display: block; }
+  .scenario-card-detail dt { font-weight: 600; color: var(--text); margin-top: 4px; }
+  .scenario-card-detail dd { margin-left: 0; margin-bottom: 2px; }
+
+  /* ── Scenario category pills ── */
+  .scenario-category { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-left: 6px; }
+  .scenario-category.cat-environment { background: #dcfce7; color: #166534; }
+  .scenario-category.cat-training { background: #dbeafe; color: #1d4ed8; }
+  .scenario-category.cat-pipeline { background: #f3e8ff; color: #6d28d9; }
+  .scenario-category.cat-integration { background: #fff7ed; color: #9a3412; }
+  [data-theme="dark"] .scenario-category.cat-environment { background: #064e3b; color: #6ee7b7; }
+  [data-theme="dark"] .scenario-category.cat-training { background: #1e3a5f; color: #93c5fd; }
+  [data-theme="dark"] .scenario-category.cat-pipeline { background: #2e1065; color: #c4b5fd; }
+  [data-theme="dark"] .scenario-category.cat-integration { background: #7c2d12; color: #fdba74; }
+  .scenario-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; font-size: 11px; color: var(--text-secondary); }
+  .scenario-legend-item { display: flex; align-items: center; gap: 4px; }
+  .scenario-card.zone-dimmed { opacity: 0.35; }
+  .scenario-card.zone-glow { box-shadow: 0 0 0 2px var(--blue); }
+
+  /* ── Factory History ── */
+  .history-timeline { position: relative; padding-left: 24px; }
+  .history-timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .history-event { position: relative; margin-bottom: 16px; padding: 12px 16px; background: white; border: 1px solid var(--border); border-radius: 8px; }
+  .history-event::before { content: ''; position: absolute; left: -20px; top: 16px; width: 10px; height: 10px; border-radius: 50%; background: var(--blue); border: 2px solid white; }
+  .history-event.intervention::before { background: var(--orange); }
+  .history-event .event-title { font-weight: 600; font-size: 13px; }
+  .history-event .event-detail { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .history-event .event-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-family: var(--mono); }
+
+  /* ── Footer ── */
+  .footer { text-align: center; padding: 16px; font-size: 11px; color: var(--text-muted); }
+
+  /* ── Zone tag color variants ── */
+  .zone-tag.factory { background: var(--blue-bg); color: #1d4ed8; }
+  .zone-tag.product { background: #dcfce7; color: #166534; }
+  .zone-tag.infra { background: var(--purple-bg); color: #6d28d9; }
+
+  /* ── Architecture legend ── */
+  .arch-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; padding: 10px 14px; background: var(--gray-bg); border-radius: 6px; font-size: 11px; color: var(--text-secondary); }
+  .arch-legend-item { display: flex; align-items: center; gap: 6px; }
+  .arch-legend-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.1); }
+  .arch-legend-circle { width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: white; }
+
+  /* ── What Changed zone detail blocks ── */
+  .wc-default {}
+  .wc-zone-detail { display: none; padding: 8px 0; }
+  .wc-zone-detail.active { display: block; }
+  .wc-zone-detail h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .wc-zone-detail p { font-size: 13px; color: var(--text); }
+
+  /* ── Adversarial review enhancements ── */
+  .adv-scroll { max-height: 500px; overflow-y: auto; }
+  .adv-row { transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease; max-height: 200px; overflow: hidden; }
+  .adv-row.collapsed-row { max-height: 24px; opacity: 0.5; }
+  .adv-row.collapsed-row td { padding: 2px 12px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .adv-row.collapsed-row .grade, .adv-row.collapsed-row .zone-tag { display: none; }
+  .adv-row.collapsed-row td:nth-child(n+2):nth-child(-n+3) { display: none; }
+  .adv-no-match { display: none; padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px; font-style: italic; }
+  .adv-no-match.visible { display: block; }
+  .adv-detail-row { display: none; }
+  .adv-detail-row.open { display: table-row; }
+  .adv-detail-row td { background: #fafbfc; padding: 12px 20px; font-size: 12px; border-bottom: 1px solid var(--border); }
+  .adv-row { cursor: pointer; }
+  .adv-row:hover { background: var(--gray-bg); }
+
+  /* ── CI sub-check drill-down ── */
+  .ci-check-item { padding: 6px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+  .ci-check-item:last-child { border-bottom: none; }
+  .ci-check-item:hover { background: #f0f4f8; }
+  .ci-check-summary { font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .ci-check-summary .chevron-sm { font-size: 10px; color: var(--text-muted); transition: transform 0.2s; display: inline-block; }
+  .ci-check-item.open .chevron-sm { transform: rotate(90deg); }
+  .ci-check-detail { display: none; padding: 6px 0 4px 20px; font-size: 11px; color: var(--text-secondary); }
+  .ci-check-item.open .ci-check-detail { display: block; }
+
+  /* ── Floating architecture diagram ── */
+  .arch-floating { position: fixed; top: 16px; right: 16px; width: 40%; max-width: 480px; z-index: 100; background: rgba(255,255,255,0.95); border-radius: 10px; border: 1px solid var(--border); box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 10px; transition: opacity 0.3s ease, transform 0.3s ease; opacity: 0; transform: translateX(40px); pointer-events: none; }
+  .arch-floating.visible { opacity: 1; transform: translateX(0); pointer-events: auto; }
+  .arch-floating svg { width: 100%; height: auto; }
+  .arch-floating-close { position: absolute; top: 6px; right: 10px; background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-muted); z-index: 101; padding: 2px 6px; border-radius: 4px; }
+  .arch-floating-close:hover { background: var(--gray-bg); color: var(--text); }
+
+  /* ── File path modal ── */
+  .file-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 200; justify-content: center; align-items: center; }
+  .file-modal-overlay.visible { display: flex; }
+  .file-modal { background: #1e1e1e; border-radius: 10px; width: 95vw; max-width: 1400px; height: 90vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); display: flex; flex-direction: column; }
+  .file-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #2d2d2d; border-bottom: 1px solid #404040; flex-shrink: 0; }
+  .file-modal-header h3 { font-size: 13px; font-family: var(--mono); font-weight: 500; color: #cccccc; }
+  .file-modal-header .fm-stats { font-size: 11px; font-family: var(--mono); margin-left: 12px; }
+  .file-modal-header .fm-stats .fm-add { color: #3fb950; }
+  .file-modal-header .fm-stats .fm-del { color: #f85149; }
+  .file-modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #808080; padding: 2px 8px; border-radius: 4px; }
+  .file-modal-close:hover { background: #404040; color: #cccccc; }
+  .file-modal-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 6px 16px; background: #252526; border-bottom: 1px solid #404040; flex-shrink: 0; }
+  .file-modal-tabs { display: flex; gap: 0; }
+  .file-modal-tab { padding: 6px 14px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; background: none; color: #808080; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; }
+  .file-modal-tab:hover { color: #cccccc; background: #2d2d2d; }
+  .file-modal-tab.active { color: #ffffff; border-bottom-color: var(--blue); background: #1e1e1e; }
+  .file-modal-github { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: #2d2d2d; border: 1px solid #404040; border-radius: 4px; color: #cccccc; text-decoration: none; font-size: 11px; font-weight: 500; }
+  .file-modal-github:hover { background: #404040; color: white; }
+  .file-modal-body { flex: 1; overflow: auto; background: #1e1e1e; }
+
+  /* ── Diff rendering ── */
+  .diff-view { font-family: var(--mono); font-size: 12px; line-height: 1.55; }
+
+  /* Unified / integrated diff */
+  .diff-unified { width: 100%; border-collapse: collapse; }
+  .diff-unified td { padding: 0 12px; white-space: pre-wrap; word-break: break-all; vertical-align: top; border: none; }
+  .diff-new-file-banner { padding: 8px 16px; background: rgba(63,185,80,0.1); color: #3fb950; font-size: 12px; font-weight: 500; border-bottom: 1px solid #333333; }
+  .diff-deleted-file-banner { padding: 8px 16px; background: rgba(248,81,73,0.1); color: #f85149; font-size: 12px; font-weight: 500; border-bottom: 1px solid #333333; }
+  .diff-unified .diff-ln { width: 50px; min-width: 50px; text-align: right; color: #636363; user-select: none; padding-right: 8px; font-size: 11px; border-right: 1px solid #333333; }
+  .diff-unified .diff-add { background: rgba(63,185,80,0.15); color: #3fb950; }
+  .diff-unified .diff-del { background: rgba(248,81,73,0.15); color: #f85149; }
+  .diff-unified .diff-ctx { color: #cccccc; }
+  .diff-unified .diff-hunk { background: rgba(56,139,253,0.12); color: #58a6ff; padding: 6px 12px; font-style: italic; }
+  .diff-unified .diff-add-word { background: rgba(63,185,80,0.35); border-radius: 2px; }
+  .diff-unified .diff-del-word { background: rgba(248,81,73,0.35); border-radius: 2px; }
+
+  /* Side-by-side diff */
+  .diff-split { width: 100%; border-collapse: collapse; }
+  .diff-split td { padding: 0 6px; white-space: pre; vertical-align: top; border: none; font-family: var(--mono); font-size: 12px; line-height: 1.55; }
+  .diff-split-wrapper { overflow-x: auto; }
+  .diff-split .diff-ln { width: 40px; min-width: 40px; text-align: right; color: #636363; user-select: none; padding-right: 6px; font-size: 11px; }
+  .diff-split .diff-sep { width: 2px; min-width: 2px; background: #2d2d2d; padding: 0; }
+  .diff-split .diff-code-left, .diff-split .diff-code-right { min-width: 0; max-width: 50vw; white-space: pre; overflow-x: auto; }
+  .diff-split .diff-add { background: rgba(63,185,80,0.15); color: #3fb950; }
+  .diff-split .diff-del { background: rgba(248,81,73,0.15); color: #f85149; }
+  .diff-split .diff-ctx { color: #cccccc; }
+  .diff-split .diff-empty { background: #161616; }
+  .diff-split .diff-hunk td { background: rgba(56,139,253,0.08); color: #58a6ff; font-style: italic; padding: 4px 8px; }
+
+  /* Raw file view */
+  .diff-raw { color: #cccccc; padding: 0; }
+  .diff-raw table { width: 100%; border-collapse: collapse; }
+  .diff-raw td { padding: 0 12px; white-space: pre-wrap; word-break: break-all; vertical-align: top; border: none; font-family: var(--mono); font-size: 12px; line-height: 1.55; }
+  .diff-raw .diff-ln { width: 50px; min-width: 50px; text-align: right; color: #636363; user-select: none; padding-right: 8px; font-size: 11px; border-right: 1px solid #333333; }
+
+  .diff-loading { color: #808080; text-align: center; padding: 60px 20px; font-size: 13px; }
+  .diff-error { color: #f85149; text-align: center; padding: 40px 20px; font-size: 13px; }
+  .file-path-link { color: inherit; text-decoration: none; border-bottom: 1px dashed var(--text-muted); cursor: pointer; transition: border-color 0.15s; }
+  .file-path-link:hover { border-bottom-color: var(--blue); color: var(--blue); }
+
+  /* ── Convergence expandable cards ── */
+  .conv-card { cursor: pointer; transition: box-shadow 0.2s; }
+  .conv-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .conv-card-detail { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); }
+  .conv-card.open .conv-card-detail { display: block; }
+  .conv-card-detail ul { margin: 4px 0 0 16px; list-style: disc; }
+  .conv-card-detail li { margin-bottom: 2px; }
+
+  /* ── Factory History enhancements ── */
+  .history-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; padding: 10px 14px; background: var(--gray-bg); border-radius: 6px; font-size: 11px; color: var(--text-secondary); }
+  .history-legend-item { display: flex; align-items: center; gap: 6px; }
+  .history-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .history-event { cursor: pointer; transition: box-shadow 0.2s; }
+  .history-event:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .history-event-detail { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); }
+  .history-event.open .history-event-detail { display: block; }
+  .event-agent { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; background: var(--blue-bg); color: #1d4ed8; margin-left: 4px; }
+  .event-agent.human { background: var(--orange-bg); color: #9a3412; }
+  .gate-clickable { cursor: pointer; border-bottom: 1px dashed var(--text-muted); }
+  .gate-clickable:hover { color: var(--blue); border-bottom-color: var(--blue); }
+
+  /* ── CI Chevron rotation ── */
+  .ci-chevron { display: inline-block; transition: transform 0.2s; }
+  tr.expandable.ci-open .ci-chevron { transform: rotate(180deg); }
+
+  /* ── Status badges (merged header) ── */
+  .status-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600; }
+  .status-badge.pass { background: var(--green-bg); color: #166534; }
+  .status-badge.info { background: var(--blue-bg); color: #1d4ed8; }
+  .status-badge.warn { background: var(--yellow-bg); color: #854d0e; }
+  .gate-popover { display: none; position: absolute; background: white; border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); font-size: 12px; z-index: 50; max-width: 300px; }
+  .gate-popover.visible { display: block; }
+
+  @media (max-width: 768px) {
+    .stats { flex-direction: column; gap: 8px; }
+    .convergence-grid { grid-template-columns: 1fr; }
+    .scenario-grid { grid-template-columns: 1fr; }
+    .container { padding: 12px 8px; }
+    .arch-floating { width: 60%; }
+    .file-modal { width: 98vw; height: 95vh; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══ HEADER ══ -->
+  <div class="header">
+    <h1>PR #5: Dark Factory v1</h1>
+    <div class="meta">
+      <a href="https://github.com/joeyfezster/building_ai_w_ai/pull/5" target="_blank">github.com/joeyfezster/building_ai_w_ai/pull/5</a><br>
+      factory/v1 &rarr; main &nbsp;|&nbsp; HEAD: <code>efbf3d4</code>
+    </div>
+    <div class="stats">
+      <div class="stat" style="color:#166534"><span class="num">+5,471</span> additions</div>
+      <div class="stat" style="color:#991b1b"><span class="num">-673</span> deletions</div>
+      <div class="stat"><span class="num">95</span> files</div>
+      <div class="stat"><span class="num">14</span> commits</div>
+    </div>
+    <div class="status-row">
+      <span class="status-badge pass">&#x2713; CI 5/5</span>
+      <span class="status-badge pass">&#x2713; Comments 3/3</span>
+      <span class="status-badge info">&#x1F504; Pre-crank &middot; 3+validation iterations &middot; 4 interventions</span>
+      <div class="theme-toggle" style="margin-left:auto">
+        <button onclick="setTheme('light')" title="Light theme" data-theme-btn="light">&#x2600;</button>
+        <button onclick="setTheme('dark')" title="Dark theme" data-theme-btn="dark">&#x1F319;</button>
+        <button onclick="setTheme('system')" title="System theme" data-theme-btn="system">&#x2699;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB BAR ══ -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('review')">Review</button>
+    <button class="tab-btn" onclick="switchTab('history')">Factory History</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 1: REVIEW -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="tab-review" class="tab-content active">
+    <div class="tab-panel" style="padding:20px 24px">
+
+    <!-- ── Section: Architecture ── -->
+    <div class="section" style="border:none;margin-bottom:0">
+      <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+        <h2>Architecture</h2>
+        <span class="chevron">&#x25BC;</span>
+      </div>
+      <div class="section-body">
+        <div class="arch-controls">
+          <button class="arch-toggle active" onclick="setArchView('update',this)">Update (this PR)</button>
+          <button class="arch-toggle" onclick="setArchView('baseline',this)">Baseline (before merge)</button>
+          <span class="arch-hint">Click a zone to filter findings &bull; Click background to reset</span>
+        </div>
+        <svg id="arch-diagram" viewBox="0 0 780 360" style="width:100%;max-width:780px;background:#fafbfc;border-radius:8px;border:1px solid var(--border)">
+          <!-- Row labels -->
+          <text x="16" y="28" class="arch-row-label">Factory Infrastructure</text>
+          <text x="16" y="158" class="arch-row-label">Product Code</text>
+          <text x="16" y="278" class="arch-row-label">Infrastructure &amp; Docs</text>
+
+          <!-- Factory Infrastructure Row -->
+          <rect class="zone-box" data-zone="factory-orchestration" x="16" y="36" width="170" height="80" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+          <text x="101" y="62" text-anchor="middle" class="zone-label" fill="#1d4ed8">Orchestration</text>
+          <text x="101" y="76" text-anchor="middle" class="zone-sublabel">factory.yaml, SKILL.md</text>
+          <circle class="zone-count-bg" cx="160" cy="48" r="10" fill="#3b82f6"/>
+          <text class="zone-file-count" x="160" y="52" text-anchor="middle">2</text>
+
+          <rect class="zone-box" data-zone="holdout-isolation" x="196" y="36" width="170" height="80" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+          <text x="281" y="62" text-anchor="middle" class="zone-label" fill="#1d4ed8">Holdout Isolation</text>
+          <text x="281" y="76" text-anchor="middle" class="zone-sublabel">strip/restore scripts</text>
+          <circle class="zone-count-bg" cx="340" cy="48" r="10" fill="#3b82f6"/>
+          <text class="zone-file-count" x="340" y="52" text-anchor="middle">2</text>
+
+          <rect class="zone-box" data-zone="gate-1" x="376" y="36" width="120" height="80" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+          <text x="436" y="62" text-anchor="middle" class="zone-label" fill="#1d4ed8">Gate 1</text>
+          <text x="436" y="76" text-anchor="middle" class="zone-sublabel">lint, typecheck, test</text>
+          <circle class="zone-count-bg" cx="472" cy="48" r="10" fill="#3b82f6"/>
+          <text class="zone-file-count" x="472" y="52" text-anchor="middle">4</text>
+
+          <rect class="zone-box" data-zone="gate-2-nfr" x="506" y="36" width="120" height="80" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+          <text x="566" y="62" text-anchor="middle" class="zone-label" fill="#1d4ed8">Gate 2 NFR</text>
+          <text x="566" y="76" text-anchor="middle" class="zone-sublabel">nfr_checks, test quality</text>
+          <circle class="zone-count-bg" cx="602" cy="48" r="10" fill="#3b82f6"/>
+          <text class="zone-file-count" x="602" y="52" text-anchor="middle">2</text>
+
+          <rect class="zone-box" data-zone="gate-3" x="636" y="36" width="130" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+          <text x="701" y="58" text-anchor="middle" class="zone-label" fill="#1d4ed8">Gate 3</text>
+          <circle class="zone-count-bg" cx="745" cy="48" r="9" fill="#3b82f6"/>
+          <text class="zone-file-count" x="745" y="51" text-anchor="middle" style="font-size:9px">1</text>
+
+          <rect class="zone-box" data-zone="factory-feedback" x="636" y="80" width="130" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+          <text x="701" y="102" text-anchor="middle" class="zone-label" fill="#1d4ed8">Feedback</text>
+          <circle class="zone-count-bg" cx="745" cy="92" r="9" fill="#3b82f6"/>
+          <text class="zone-file-count" x="745" y="95" text-anchor="middle" style="font-size:9px">4</text>
+
+          <!-- Product Code Row -->
+          <rect class="zone-box" data-zone="product-rl" x="16" y="166" width="300" height="80" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+          <text x="166" y="192" text-anchor="middle" class="zone-label" fill="#166534">RL System</text>
+          <text x="166" y="206" text-anchor="middle" class="zone-sublabel">envs, rl, agents, train, configs</text>
+          <circle class="zone-count-bg" cx="290" cy="178" r="12" fill="#22c55e"/>
+          <text class="zone-file-count" x="290" y="182" text-anchor="middle">19</text>
+
+          <rect class="zone-box" data-zone="product-dashboard" x="326" y="166" width="180" height="80" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+          <text x="416" y="192" text-anchor="middle" class="zone-label" fill="#166534">Dashboard &amp; Obs</text>
+          <text x="416" y="206" text-anchor="middle" class="zone-sublabel">dashboard, obs, launch.json</text>
+          <circle class="zone-count-bg" cx="482" cy="178" r="10" fill="#22c55e"/>
+          <text class="zone-file-count" x="482" y="182" text-anchor="middle">5</text>
+
+          <rect class="zone-box" data-zone="product-tests" x="516" y="166" width="250" height="80" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+          <text x="641" y="192" text-anchor="middle" class="zone-label" fill="#166534">Tests</text>
+          <text x="641" y="206" text-anchor="middle" class="zone-sublabel">unit, integration, factory tests</text>
+          <circle class="zone-count-bg" cx="742" cy="178" r="10" fill="#22c55e"/>
+          <text class="zone-file-count" x="742" y="182" text-anchor="middle">8</text>
+
+          <!-- Infrastructure & Docs Row -->
+          <rect class="zone-box" data-zone="infrastructure" x="16" y="286" width="220" height="60" rx="8" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="1.5"/>
+          <text x="126" y="310" text-anchor="middle" class="zone-label" fill="#6d28d9">Infrastructure</text>
+          <text x="126" y="322" text-anchor="middle" class="zone-sublabel">docker, deps, configs, devcontainer</text>
+          <circle class="zone-count-bg" cx="214" cy="296" r="10" fill="#8b5cf6"/>
+          <text class="zone-file-count" x="214" y="300" text-anchor="middle">14</text>
+
+          <rect class="zone-box" data-zone="documentation" x="246" y="286" width="300" height="60" rx="8" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="1.5"/>
+          <text x="396" y="310" text-anchor="middle" class="zone-label" fill="#6d28d9">Documentation &amp; Specs</text>
+          <text x="396" y="322" text-anchor="middle" class="zone-sublabel">docs, agents, specs, CLAUDE.md, README</text>
+          <circle class="zone-count-bg" cx="524" cy="296" r="12" fill="#8b5cf6"/>
+          <text class="zone-file-count" x="524" y="300" text-anchor="middle">32</text>
+
+          <rect class="zone-box" data-zone="codex-prompts" x="556" y="286" width="210" height="60" rx="8" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="1.5"/>
+          <text x="661" y="310" text-anchor="middle" class="zone-label" fill="#6d28d9">Codex Prompts</text>
+          <text x="661" y="322" text-anchor="middle" class="zone-sublabel">factory_fix, adversarial_review</text>
+          <circle class="zone-count-bg" cx="742" cy="296" r="10" fill="#8b5cf6"/>
+          <text class="zone-file-count" x="742" y="300" text-anchor="middle">2</text>
+
+          <!-- Flow arrows (factory pipeline) -->
+          <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#9ca3af"/></marker></defs>
+          <line x1="186" y1="76" x2="194" y2="76" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <line x1="366" y1="76" x2="374" y2="76" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <line x1="496" y1="76" x2="504" y2="76" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <line x1="626" y1="60" x2="634" y2="55" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <line x1="626" y1="90" x2="634" y2="95" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </svg>
+        <div id="zone-filter-info" style="margin-top:8px;font-size:12px;color:var(--blue);font-weight:600;display:none"></div>
+        <div class="arch-legend">
+          <div class="arch-legend-item"><div class="arch-legend-circle" style="background:#3b82f6">3</div> Blue circle with number = files changed in that zone</div>
+          <div class="arch-legend-item"><div class="arch-legend-swatch" style="background:#dbeafe;border-color:#3b82f6"></div> Factory infrastructure</div>
+          <div class="arch-legend-item"><div class="arch-legend-swatch" style="background:#dcfce7;border-color:#22c55e"></div> Product code</div>
+          <div class="arch-legend-item"><div class="arch-legend-swatch" style="background:#f3e8ff;border-color:#8b5cf6"></div> Infrastructure &amp; docs</div>
+          <div class="arch-legend-item" style="margin-left:auto;font-style:italic">Click zone to filter &bull; click background to reset</div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- end tab-panel -->
+
+    <!-- ── Section: Spec & Scenarios ── -->
+    <div class="section">
+      <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+        <h2>Spec &amp; Scenarios</h2>
+        <span class="chevron">&#x25BC;</span>
+      </div>
+      <div class="section-body">
+        <h3 style="font-size:13px;margin-bottom:8px">Specifications</h3>
+        <ul class="spec-list">
+          <li><span class="spec-icon">&#x1F4D6;</span> <code class="file-path-link" onclick="openFileModal('specs/system.md')">specs/system.md</code> &mdash; MiniPong DQN component specifications</li>
+          <li><span class="spec-icon">&#x1F3ED;</span> <code class="file-path-link" onclick="openFileModal('docs/dark_factory.md')">docs/dark_factory.md</code> &mdash; Factory operating model, convergence loop, gate definitions</li>
+          <li><span class="spec-icon">&#x2705;</span> <code class="file-path-link" onclick="openFileModal('docs/factory_validation_strategy.md')">docs/factory_validation_strategy.md</code> &mdash; Validation pipeline, gate sequence, holdout isolation</li>
+          <li><span class="spec-icon">&#x1F6E1;</span> <code class="file-path-link" onclick="openFileModal('docs/code_quality_standards.md')">docs/code_quality_standards.md</code> &mdash; Anti-vacuous, anti-gaming, test hygiene, implementation honesty</li>
+        </ul>
+        <h3 style="font-size:13px;margin:14px 0 8px">Scenarios (holdout evaluation criteria)</h3>
+        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">12 scenarios across 4 categories. These are the holdout set &mdash; the attractor never sees them.</p>
+        <div class="scenario-legend">
+          <div class="scenario-legend-item"><span class="scenario-category cat-environment">environment</span> RL System</div>
+          <div class="scenario-legend-item"><span class="scenario-category cat-training">training</span> RL System</div>
+          <div class="scenario-legend-item"><span class="scenario-category cat-pipeline">pipeline</span> Infrastructure</div>
+          <div class="scenario-legend-item"><span class="scenario-category cat-integration">integration</span> Cross-zone</div>
+        </div>
+        <div class="scenario-grid">
+          <div class="scenario-card" data-zone="product-rl" onclick="this.classList.toggle('open')"><div class="name">Environment Initialization <span class="scenario-category cat-environment">environment</span></div><div class="status" style="color:var(--green)">&#x2713; Passing</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that MiniPongEnv() creates properly with correct observation space (84x84x1 uint8), action space (3 discrete), and returns valid initial observation on reset.</dd><dt>How</dt><dd>Tested via run_scenarios.py executing env constructor and reset(seed=0) with assertions on shapes/dtypes.</dd><dt>Result</dt><dd style="color:var(--green)">Pass &mdash; env initializes correctly.</dd></dl></div></div>
+          <div class="scenario-card" data-zone="product-rl" onclick="this.classList.toggle('open')"><div class="name">Observation Shape <span class="scenario-category cat-environment">environment</span></div><div class="status" style="color:var(--green)">&#x2713; Passing</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that observations from step() and reset() are consistently shaped (84,84,1) uint8 arrays suitable for CNN input.</dd><dt>How</dt><dd>Asserts obs.shape == (84,84,1) and obs.dtype == np.uint8 across multiple steps.</dd><dt>Result</dt><dd style="color:var(--green)">Pass.</dd></dl></div></div>
+          <div class="scenario-card" data-zone="product-rl" onclick="this.classList.toggle('open')"><div class="name">Action Space <span class="scenario-category cat-environment">environment</span></div><div class="status" style="color:var(--green)">&#x2713; Passing</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that action space is Discrete(3) (NOOP, UP, DOWN) and that all actions are accepted without error.</dd><dt>How</dt><dd>Iterates all valid actions, verifies step returns 5-tuple, checks invalid actions raise errors.</dd><dt>Result</dt><dd style="color:var(--green)">Pass.</dd></dl></div></div>
+          <div class="scenario-card" data-zone="product-rl" onclick="this.classList.toggle('open')"><div class="name">Episode Termination <span class="scenario-category cat-environment">environment</span></div><div class="status" style="color:var(--green)">&#x2713; Passing</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that episodes terminate within a reasonable step count (max_steps config) and return terminated=True or truncated=True.</dd><dt>How</dt><dd>Runs episode with random actions, verifies termination within configured max_steps.</dd><dt>Result</dt><dd style="color:var(--green)">Pass.</dd></dl></div></div>
+          <div class="scenario-card" data-zone="product-rl" onclick="this.classList.toggle('open')"><div class="name">Deterministic Replay <span class="scenario-category cat-training">training</span></div><div class="status" style="color:var(--green)">&#x2713; Passing</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that given the same seed, two episode rollouts produce identical observation and reward sequences.</dd><dt>How</dt><dd>Runs two episodes with seed=42, compares obs/reward arrays element-wise.</dd><dt>Result</dt><dd style="color:var(--green)">Pass.</dd></dl></div></div>
+          <div class="scenario-card" data-zone="product-rl" onclick="this.classList.toggle('open')"><div class="name">Training Smoke <span class="scenario-category cat-training">training</span></div><div class="status" style="color:var(--green)">&#x2713; Passing</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that train_dqn.py can run for 10 steps without crashing, produces a valid checkpoint, and logs metrics.</dd><dt>How</dt><dd>Invokes training entrypoint with --steps 10 --run-id smoke, verifies checkpoint file and metrics log exist.</dd><dt>Result</dt><dd style="color:var(--green)">Pass.</dd></dl></div></div>
+          <div class="scenario-card" data-zone="product-rl" onclick="this.classList.toggle('open')"><div class="name">Reward Signal <span class="scenario-category cat-training">training</span></div><div class="status" style="color:var(--green)">&#x2713; Passing</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that the reward signal is non-trivial &mdash; not all zeros, has both positive and negative values over a multi-step episode.</dd><dt>How</dt><dd>Collects rewards over 500 random-action steps, asserts sum(abs(rewards)) &gt; 0 and reward range spans positive/negative.</dd><dt>Result</dt><dd style="color:var(--green)">Pass.</dd></dl></div></div>
+          <div class="scenario-card" data-zone="product-rl" onclick="this.classList.toggle('open')"><div class="name">Loss Decreasing <span class="scenario-category cat-training">training</span></div><div class="status" style="color:var(--yellow)">&#x26A0; Advisory</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that after a brief training period, the DQN loss trend is downward.</dd><dt>How</dt><dd>Runs 100 training steps, fits linear regression to loss values, checks slope &lt; 0.</dd><dt>Result</dt><dd style="color:var(--yellow)">Advisory &mdash; slope is near-zero for untrained seed (expected pre-first-crank; the raw Codex seed hasn't been optimized).</dd></dl></div></div>
+          <div class="scenario-card" data-zone="infrastructure" onclick="this.classList.toggle('open')"><div class="name">Config Loading <span class="scenario-category cat-pipeline">pipeline</span></div><div class="status" style="color:var(--green)">&#x2713; Passing</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that configs/dqn_minipong.yaml loads correctly and all required keys are present (learning_rate, batch_size, buffer_size, epsilon_*, etc.).</dd><dt>How</dt><dd>Loads YAML, validates against required key list.</dd><dt>Result</dt><dd style="color:var(--green)">Pass.</dd></dl></div></div>
+          <div class="scenario-card" data-zone="infrastructure" onclick="this.classList.toggle('open')"><div class="name">Docker Build <span class="scenario-category cat-pipeline">pipeline</span></div><div class="status" style="color:var(--green)">&#x2713; Passing</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that docker build -f Dockerfile.train succeeds and produces a runnable image.</dd><dt>How</dt><dd>Runs docker build, verifies exit code 0 and image exists in docker images.</dd><dt>Result</dt><dd style="color:var(--green)">Pass.</dd></dl></div></div>
+          <div class="scenario-card" data-zone="product-rl infrastructure" onclick="this.classList.toggle('open')"><div class="name">Artifact Packaging <span class="scenario-category cat-integration">integration</span></div><div class="status" style="color:var(--green)">&#x2713; Passing</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that training artifacts (checkpoints, configs, logs) can be serialized and deserialized correctly.</dd><dt>How</dt><dd>Creates mock artifacts, writes to disk, reads back, verifies content matches.</dd><dt>Result</dt><dd style="color:var(--green)">Pass.</dd></dl></div></div>
+          <div class="scenario-card" data-zone="product-dashboard" onclick="this.classList.toggle('open')"><div class="name">Dashboard Launch <span class="scenario-category cat-integration">integration</span></div><div class="status" style="color:var(--green)">&#x2713; Passing</div><div class="scenario-card-detail"><dl><dt>What</dt><dd>Tests that streamlit run src/dashboard/app.py starts without immediate crash.</dd><dt>How</dt><dd>Starts streamlit in background, waits 5s, checks process is alive and port 8501 is listening.</dd><dt>Result</dt><dd style="color:var(--green)">Pass.</dd></dl></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section: What Changed ── -->
+    <div class="section">
+      <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+        <h2>What Changed</h2>
+        <span class="chevron">&#x25BC;</span>
+      </div>
+      <div class="section-body" id="what-changed-body">
+        <p style="margin-bottom:4px;font-size:11px;color:var(--text-muted)">Generated from <code>git diff main...HEAD</code> by delegated diff-reading agent. Code diffs are ground truth.</p>
+        <div class="wc-default" id="wc-default">
+          <p style="margin-bottom:10px"><strong>Factory infrastructure (the meta-product):</strong> Complete dark factory convergence loop with Claude Code as orchestrator. 5-gate validation pipeline, holdout isolation via branch stripping, extensible NFR framework, 48+ factory tests, orchestration skill, git hooks, and code quality standards.</p>
+          <p><strong>Product code (Codex seed):</strong> Full MiniPong DQN system &mdash; custom Gymnasium env, DQN agent with replay/target-net, training pipeline, Streamlit dashboard, Docker support. This is the raw Codex output that the factory will refine.</p>
+        </div>
+        <div class="wc-zone-detail" data-zone="factory-orchestration"><h4>Factory Orchestration</h4><p><code>.github/workflows/factory.yaml</code> restructured for validation-only mode. <code>.claude/skills/factory-orchestrate/SKILL.md</code> created with full loop instructions.</p></div>
+        <div class="wc-zone-detail" data-zone="holdout-isolation"><h4>Holdout Isolation</h4><p><code>strip_holdout.py</code> and <code>restore_holdout.py</code> created. Branch-level scenario removal replaces filesystem shuffle.</p></div>
+        <div class="wc-zone-detail" data-zone="gate-1"><h4>Gate 1</h4><p><code>.githooks/pre-commit</code> replaces pre-commit tool. <code>Makefile</code> updated with <code>install-hooks</code> target. CI mirrors local hooks.</p></div>
+        <div class="wc-zone-detail" data-zone="gate-2-nfr"><h4>Gate 2 NFR</h4><p><code>nfr_checks.py</code> plugin framework (442 lines). <code>check_test_quality.py</code> anti-vacuous scanner (249 lines). Non-blocking, feeds LLM judge.</p></div>
+        <div class="wc-zone-detail" data-zone="gate-3"><h4>Gate 3</h4><p><code>run_scenarios.py</code> holdout evaluation runner. Produces satisfaction score JSON.</p></div>
+        <div class="wc-zone-detail" data-zone="factory-feedback"><h4>Factory Feedback</h4><p><code>compile_feedback.py</code> aggregates gate results into markdown. Templates for iteration feedback.</p></div>
+        <div class="wc-zone-detail" data-zone="product-rl"><h4>RL System</h4><p>Full DQN system: custom Gymnasium env, DQN agent with replay buffer + target network, training pipeline with checkpointing, config system.</p></div>
+        <div class="wc-zone-detail" data-zone="product-dashboard"><h4>Dashboard &amp; Observability</h4><p>Streamlit dashboard for training visualization. Observability hooks.</p></div>
+        <div class="wc-zone-detail" data-zone="product-tests"><h4>Tests</h4><p>8 test files covering unit + integration. Factory test suite (48+ tests) for infrastructure validation.</p></div>
+        <div class="wc-zone-detail" data-zone="infrastructure"><h4>Infrastructure</h4><p>Docker support (Dockerfile.train), dependency management (requirements.txt, requirements-dev.txt), devcontainer config, CI workflow (ci.yaml).</p></div>
+        <div class="wc-zone-detail" data-zone="documentation"><h4>Documentation</h4><p>CLAUDE.md, README, dark_factory.md, factory_validation_strategy.md, code_quality_standards.md, specs/system.md, ProjectLeadAsks.md, and 25+ other doc files.</p></div>
+        <div class="wc-zone-detail" data-zone="codex-prompts"><h4>Codex Prompts</h4><p>factory_fix.md (Codex prompt template), adversarial_review.md (Gate 0 review checklist).</p></div>
+      </div>
+    </div>
+
+    <!-- ── Section: Adversarial Review ── -->
+    <div class="section">
+      <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+        <h2>Adversarial Review &mdash; Grade: B+</h2>
+        <span class="chevron">&#x25BC;</span>
+      </div>
+      <div class="section-body">
+        <div class="adv-scroll">
+        <div id="adv-no-match" class="adv-no-match">No adversarial findings in this zone.</div>
+        <table id="adv-table">
+          <thead><tr><th>File</th><th>Grade</th><th>Zone</th><th>Notable</th></tr></thead>
+          <tbody>
+            <!-- Sorted by severity: — (not reviewed), B, B+, A -->
+            <tr class="adv-row" data-zones="product-rl product-dashboard" data-grade-sort="0" onclick="toggleAdvDetail(this)"><td><code>src/*</code> (product code)</td><td><span class="grade na">&mdash;</span></td><td><span class="zone-tag product">product</span></td><td>Codex seed &mdash; reviewed during first crank via Gate 0</td></tr>
+            <tr class="adv-detail-row" data-zones="product-rl product-dashboard"><td colspan="4">Not reviewed &mdash; raw Codex seed. Gate 0 review happens during first crank. Product code will be adversarially reviewed when the factory refines it.</td></tr>
+
+            <tr class="adv-row" data-zones="gate-2-nfr" data-grade-sort="1" onclick="toggleAdvDetail(this)"><td><code>check_test_quality.py</code></td><td><span class="grade b">B</span></td><td><span class="zone-tag factory">gate-2-nfr</span></td><td>Stub detection false positive risk</td></tr>
+            <tr class="adv-detail-row" data-zones="gate-2-nfr"><td colspan="4">Regex-based stub detection has false positive risk. <code>assert True</code> catch is correct but <code>assert result is True</code> could false-flag. Needs AST-level analysis or suppression comments.</td></tr>
+
+            <tr class="adv-row" data-zones="holdout-isolation" data-grade-sort="2" onclick="toggleAdvDetail(this)"><td><code>strip_holdout.py</code></td><td><span class="grade b">B+</span></td><td><span class="zone-tag factory">holdout-isolation</span></td><td>Makefile regex fragility (non-blocking)</td></tr>
+            <tr class="adv-detail-row" data-zones="holdout-isolation"><td colspan="4">Makefile target regex uses <code>(?:\n\t.*)*</code> pattern &mdash; fragile if recipes use spaces or if similarly-named targets exist. Non-blocking because targets are well-defined today.</td></tr>
+
+            <tr class="adv-row" data-zones="gate-2-nfr" data-grade-sort="2" onclick="toggleAdvDetail(this)"><td><code>nfr_checks.py</code></td><td><span class="grade b">B+</span></td><td><span class="zone-tag factory">gate-2-nfr</span></td><td>Silent JSON decode failures (non-blocking)</td></tr>
+            <tr class="adv-detail-row" data-zones="gate-2-nfr"><td colspan="4">JSON decode failures caught silently &mdash; <code>{"raw_output": stdout}</code> masks tool output format changes. Should log WARNING-level finding when decode fails.</td></tr>
+
+            <tr class="adv-row" data-zones="factory-feedback" data-grade-sort="2" onclick="toggleAdvDetail(this)"><td><code>compile_feedback.py</code></td><td><span class="grade b">B+</span></td><td><span class="zone-tag factory">factory-feedback</span></td><td>Glob/pathlib inconsistency (non-blocking)</td></tr>
+            <tr class="adv-detail-row" data-zones="factory-feedback"><td colspan="4">Mix of <code>glob.glob()</code> and <code>pathlib.Path</code> operations. Functional but inconsistent. Should standardize on pathlib.</td></tr>
+
+            <tr class="adv-row" data-zones="holdout-isolation" data-grade-sort="3" onclick="toggleAdvDetail(this)"><td><code>restore_holdout.py</code></td><td><span class="grade a">A</span></td><td><span class="zone-tag factory">holdout-isolation</span></td><td>Regex fixed (was silently broken &mdash; caught by review)</td></tr>
+            <tr class="adv-detail-row" data-zones="holdout-isolation"><td colspan="4">Originally had a broken regex that silently passed. Caught and fixed during adversarial review. Clean implementation with proper verification.</td></tr>
+
+            <tr class="adv-row" data-zones="gate-3" data-grade-sort="3" onclick="toggleAdvDetail(this)"><td><code>run_scenarios.py</code></td><td><span class="grade a">A</span></td><td><span class="zone-tag factory">gate-3</span></td><td>No issues</td></tr>
+            <tr class="adv-detail-row" data-zones="gate-3"><td colspan="4">Clean implementation. Proper timeout handling. Structured JSON output.</td></tr>
+
+            <tr class="adv-row" data-zones="factory-orchestration" data-grade-sort="3" onclick="toggleAdvDetail(this)"><td><code>factory.yaml</code></td><td><span class="grade a">A</span></td><td><span class="zone-tag factory">factory-orchestration</span></td><td>Bot noise fully guarded</td></tr>
+            <tr class="adv-detail-row" data-zones="factory-orchestration"><td colspan="4">All post-loop actions properly guarded with <code>iterations != '0'</code>. Bot noise fully eliminated.</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section: CI Performance ── -->
+    <div class="section">
+      <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+        <h2>CI Performance</h2>
+        <span class="chevron">&#x25BC;</span>
+      </div>
+      <div class="section-body">
+        <table>
+          <thead><tr><th>Check</th><th>Status</th><th>Time</th><th></th></tr></thead>
+          <tbody>
+            <tr class="expandable" onclick="toggleCIDetail(this)">
+              <td><code>factory-self-test</code> (push)</td>
+              <td><span class="badge pass">pass</span></td>
+              <td><span class="time-label normal"><span class="time-icon">&#x2713;</span>19s</span><div class="time-health-sub">normal</div></td>
+              <td style="color:var(--text-muted);font-size:11px"><span class="ci-chevron">&#x25BC;</span></td>
+            </tr>
+            <tr class="detail-row">
+              <td colspan="4">
+                <strong>Coverage:</strong> Factory infrastructure validation<br>
+                <strong>Gates:</strong> Gate 1 (factory scripts only)<br>
+                <strong>Checks:</strong>
+                <div style="margin:4px 0 8px 0">
+                  <div class="ci-check-item" onclick="this.classList.toggle('open');event.stopPropagation()">
+                    <div class="ci-check-summary"><span class="chevron-sm">&#x25B6;</span> Lint factory scripts (<code>ruff check</code>)</div>
+                    <div class="ci-check-detail"><strong>Command:</strong> <code>ruff check scripts/ tests/</code><br><strong>What it does:</strong> Enforces PEP8, import sorting, common errors across factory scripts.<br><strong>Zones:</strong> <span class="zone-tag factory">factory-orchestration</span> <span class="zone-tag factory">holdout-isolation</span> <span class="zone-tag factory">gate-2-nfr</span></div>
+                  </div>
+                  <div class="ci-check-item" onclick="this.classList.toggle('open');event.stopPropagation()">
+                    <div class="ci-check-summary"><span class="chevron-sm">&#x25B6;</span> Type-check factory scripts (<code>mypy</code>)</div>
+                    <div class="ci-check-detail"><strong>Command:</strong> <code>mypy scripts/</code><br><strong>What it does:</strong> Static type analysis on factory infrastructure code.<br><strong>Zones:</strong> <span class="zone-tag factory">factory-orchestration</span> <span class="zone-tag factory">holdout-isolation</span></div>
+                  </div>
+                  <div class="ci-check-item" onclick="this.classList.toggle('open');event.stopPropagation()">
+                    <div class="ci-check-summary"><span class="chevron-sm">&#x25B6;</span> Test scenario runner (<code>pytest</code>)</div>
+                    <div class="ci-check-detail"><strong>Command:</strong> <code>pytest tests/test_factory_run_scenarios.py</code><br><strong>What it does:</strong> Validates scenario execution, timeout handling, JSON output format.<br><strong>Source:</strong> <code>tests/test_factory_run_scenarios.py</code><br><strong>Zones:</strong> <span class="zone-tag factory">gate-3</span></div>
+                  </div>
+                  <div class="ci-check-item" onclick="this.classList.toggle('open');event.stopPropagation()">
+                    <div class="ci-check-summary"><span class="chevron-sm">&#x25B6;</span> Test feedback compiler (<code>pytest</code>)</div>
+                    <div class="ci-check-detail"><strong>Command:</strong> <code>pytest tests/test_factory_compile_feedback.py</code><br><strong>What it does:</strong> Validates feedback aggregation, template rendering, iteration tracking.<br><strong>Source:</strong> <code>tests/test_factory_compile_feedback.py</code><br><strong>Zones:</strong> <span class="zone-tag factory">factory-feedback</span></div>
+                  </div>
+                  <div class="ci-check-item" onclick="this.classList.toggle('open');event.stopPropagation()">
+                    <div class="ci-check-summary"><span class="chevron-sm">&#x25B6;</span> Validate scenario file format</div>
+                    <div class="ci-check-detail"><strong>What it does:</strong> Custom check ensuring all <code>.md</code> files in <code>scenarios/</code> have required sections (Description, Evaluation Criteria, etc.).<br><strong>Zones:</strong> <span class="zone-tag factory">gate-3</span> <span class="zone-tag factory">holdout-isolation</span></div>
+                  </div>
+                  <div class="ci-check-item" onclick="this.classList.toggle('open');event.stopPropagation()">
+                    <div class="ci-check-summary"><span class="chevron-sm">&#x25B6;</span> Verify factory-protected files</div>
+                    <div class="ci-check-detail"><strong>What it does:</strong> Checks that all files listed in CLAUDE.md's protected list actually exist on disk.<br><strong>Zones:</strong> <span class="zone-tag infra">documentation</span> <span class="zone-tag factory">factory-orchestration</span></div>
+                  </div>
+                  <div class="ci-check-item" onclick="this.classList.toggle('open');event.stopPropagation()">
+                    <div class="ci-check-summary"><span class="chevron-sm">&#x25B6;</span> Anti-gaming test quality check</div>
+                    <div class="ci-check-detail"><strong>Command:</strong> <code>scripts/check_test_quality.py</code><br><strong>What it does:</strong> AST/regex scan for vacuous patterns. <em>NOTE:</em> This is a heuristic scanner, not a proof system. It catches obvious gaming (bare <code>assert True</code>, mocked subjects) but cannot catch sophisticated gaming. It's a speed bump, not a wall. The real anti-gaming defense is Gate 0's adversarial review by an LLM.<br><strong>Zones:</strong> <span class="zone-tag factory">gate-2-nfr</span></div>
+                  </div>
+                </div>
+                <strong>Zones:</strong> <span class="zone-tag factory">factory-orchestration</span> <span class="zone-tag factory">holdout-isolation</span> <span class="zone-tag factory">gate-2-nfr</span> <span class="zone-tag factory">gate-3</span> <span class="zone-tag factory">factory-feedback</span><br>
+                <strong>Spec:</strong> <code>docs/factory_validation_strategy.md</code>, <code>docs/code_quality_standards.md</code>
+              </td>
+            </tr>
+
+            <tr class="expandable" onclick="toggleCIDetail(this)">
+              <td><code>factory-self-test</code> (PR)</td>
+              <td><span class="badge pass">pass</span></td>
+              <td><span class="time-label normal"><span class="time-icon">&#x2713;</span>21s</span><div class="time-health-sub">normal</div></td>
+              <td style="color:var(--text-muted);font-size:11px"><span class="ci-chevron">&#x25BC;</span></td>
+            </tr>
+            <tr class="detail-row">
+              <td colspan="4"><em>Same checks as push trigger &mdash; runs on pull_request event.</em></td>
+            </tr>
+
+            <tr class="expandable" onclick="toggleCIDetail(this)">
+              <td><code>factory-loop</code></td>
+              <td><span class="badge pass">pass</span></td>
+              <td><span class="time-label acceptable"><span class="time-icon">&#x25CB;</span>4m 35s</span><div class="time-health-sub">acceptable</div></td>
+              <td style="color:var(--text-muted);font-size:11px"><span class="ci-chevron">&#x25BC;</span></td>
+            </tr>
+            <tr class="detail-row">
+              <td colspan="4">
+                <strong>Coverage:</strong> Full factory convergence (validation-only without API key)<br>
+                <strong>Gates:</strong> Gate 1 (full suite) + Gate 3 (behavioral scenarios)<br>
+                <strong>Mode:</strong> Validation-only (no <code>OPENAI_API_KEY</code>). Runs single pass: lint &rarr; typecheck &rarr; test &rarr; scenarios. No Codex invocation, no state commits.<br>
+                <strong>Zones:</strong> <span class="zone-tag factory">all zones</span><br>
+                <strong>Spec:</strong> <code>docs/dark_factory.md</code>, <code>docs/factory_validation_strategy.md</code>
+              </td>
+            </tr>
+
+            <tr class="expandable" onclick="toggleCIDetail(this)">
+              <td><code>validate</code> (push)</td>
+              <td><span class="badge pass">pass</span></td>
+              <td><span class="time-label watch"><span class="time-icon">&#x26A0;</span>6m 18s</span><div class="time-health-sub">watch</div></td>
+              <td style="color:var(--text-muted);font-size:11px"><span class="ci-chevron">&#x25BC;</span></td>
+            </tr>
+            <tr class="detail-row">
+              <td colspan="4">
+                <strong>Coverage:</strong> Product code validation + Docker<br>
+                <strong>Gates:</strong> Gate 1 (full) + Docker build + Docker smoke test<br>
+                <strong>Checks:</strong>
+                <ul style="margin:4px 0 0 16px;font-size:12px">
+                  <li><code>make lint</code> (ruff check entire codebase)</li>
+                  <li><code>make typecheck</code> (mypy src/)</li>
+                  <li><code>make test</code> (full pytest suite)</li>
+                  <li>Docker build (<code>Dockerfile.train</code>)</li>
+                  <li>Docker smoke (<code>train_dqn.py --help</code>)</li>
+                </ul>
+                <strong>Zones:</strong> <span class="zone-tag product">product-rl</span> <span class="zone-tag product">product-dashboard</span> <span class="zone-tag product">product-tests</span> <span class="zone-tag factory">gate-1</span> <span class="zone-tag infra">infrastructure</span><br>
+                <strong>Spec:</strong> <code>specs/system.md</code><br>
+                <strong>&#x26A0; Note:</strong> 6m18s is in the "watch" zone. Bottleneck: PyTorch install + Docker build in same job. Split into parallel if it approaches 10m.
+              </td>
+            </tr>
+
+            <tr class="expandable" onclick="toggleCIDetail(this)">
+              <td><code>validate</code> (PR)</td>
+              <td><span class="badge pass">pass</span></td>
+              <td><span class="time-label watch"><span class="time-icon">&#x26A0;</span>5m 58s</span><div class="time-health-sub">watch</div></td>
+              <td style="color:var(--text-muted);font-size:11px"><span class="ci-chevron">&#x25BC;</span></td>
+            </tr>
+            <tr class="detail-row">
+              <td colspan="4"><em>Same checks as push trigger &mdash; runs on pull_request event.</em></td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin-top:10px;font-size:11px;color:var(--text-muted)">
+          <strong>Thresholds:</strong> &#x2713; under 1m = normal &nbsp;&bull;&nbsp; &#x25CB; 1-5m = acceptable &nbsp;&bull;&nbsp; &#x26A0; 5-10m = watch &nbsp;&bull;&nbsp; &#x2716; over 10m = needs refactoring
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Section: Key Decisions ── -->
+    <div class="section">
+      <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+        <h2>Key Decisions</h2>
+        <span class="chevron">&#x25BC;</span>
+      </div>
+      <div class="section-body" id="decisions-container">
+
+        <div class="decision-card" data-zones="factory-orchestration">
+          <div class="decision-header" onclick="toggleDecision(this.parentElement)">
+            <span class="decision-num">1</span>
+            <div>
+              <div class="decision-title">Claude Code orchestrates, CI validates</div>
+              <div class="decision-rationale">CI provides background validation on push. It doesn't drive convergence &mdash; Claude Code does, via browser automation.</div>
+            </div>
+          </div>
+          <div class="decision-body">
+            <p style="margin-bottom:8px">Claude Code is the factory orchestrator, invoked via the <code>/factory-orchestrate</code> skill. Codex is invoked through browser automation (ChatGPT Plus in Chrome), avoiding API key costs. CI runs on every push as a passive safety net.</p>
+            <div class="decision-zones">
+              <span class="zone-tag factory">factory-orchestration</span>
+            </div>
+            <div class="decision-files">
+              <table>
+                <thead><tr><th>File</th><th>Change</th></tr></thead>
+                <tbody>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('.github/workflows/factory.yaml');event.stopPropagation()">.github/workflows/factory.yaml</code></td><td>Validation-only mode + convergence PR + guards</td></tr>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('.claude/skills/factory-orchestrate/SKILL.md');event.stopPropagation()">.claude/skills/factory-orchestrate/SKILL.md</code></td><td>Full orchestration skill with gate sequence</td></tr>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('docs/dark_factory.md');event.stopPropagation()">docs/dark_factory.md</code></td><td>Reframed CI as background validation</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-card" data-zones="holdout-isolation">
+          <div class="decision-header" onclick="toggleDecision(this.parentElement)">
+            <span class="decision-num">2</span>
+            <div>
+              <div class="decision-title">Branch stripping for holdout isolation</div>
+              <div class="decision-rationale">Scenarios physically removed from the attractor's branch. Deterministic, not circumventable.</div>
+            </div>
+          </div>
+          <div class="decision-body">
+            <p style="margin-bottom:8px">Replaces the <code>/tmp/</code> filesystem shuffle (security theater &mdash; Codex can read <code>/tmp/</code>). Scenarios literally don't exist on the branch Codex works on. <code>strip_holdout.py</code> removes them with a commit marker; <code>restore_holdout.py</code> brings them back from <code>origin/main</code>.</p>
+            <div class="decision-zones">
+              <span class="zone-tag factory">holdout-isolation</span>
+            </div>
+            <div class="decision-files">
+              <table>
+                <thead><tr><th>File</th><th>Change</th></tr></thead>
+                <tbody>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('scripts/strip_holdout.py');event.stopPropagation()">scripts/strip_holdout.py</code></td><td>New: removes scenarios/ + Makefile targets, commits with marker</td></tr>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('scripts/restore_holdout.py');event.stopPropagation()">scripts/restore_holdout.py</code></td><td>New: restores scenarios from origin/main</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-card" data-zones="gate-1">
+          <div class="decision-header" onclick="toggleDecision(this.parentElement)">
+            <span class="decision-num">3</span>
+            <div>
+              <div class="decision-title">Git hooks over pre-commit tool</div>
+              <div class="decision-rationale">Same quality gate at commit time, no virtualenv dependency. Uses conda environment directly.</div>
+            </div>
+          </div>
+          <div class="decision-body">
+            <p style="margin-bottom:8px">Shell-based <code>.githooks/pre-commit</code> runs ruff check, ruff format, and mypy on staged Python files. Installed via <code>make install-hooks</code>. No virtualenv, no pip install pre-commit, no <code>.pre-commit-config.yaml</code> dependency.</p>
+            <div class="decision-zones">
+              <span class="zone-tag factory">gate-1</span>
+            </div>
+            <div class="decision-files">
+              <table>
+                <thead><tr><th>File</th><th>Change</th></tr></thead>
+                <tbody>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('.githooks/pre-commit');event.stopPropagation()">.githooks/pre-commit</code></td><td>New: shell-based pre-commit hook (ruff + mypy)</td></tr>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('Makefile');event.stopPropagation()">Makefile</code></td><td>Added <code>install-hooks</code> target</td></tr>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('.pre-commit-config.yaml');event.stopPropagation()">.pre-commit-config.yaml</code></td><td>Kept for reference (replaced by .githooks)</td></tr>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('.github/workflows/ci.yaml');event.stopPropagation()">.github/workflows/ci.yaml</code></td><td>Gate 1 checks in CI mirror local hooks</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-card" data-zones="gate-2-nfr">
+          <div class="decision-header" onclick="toggleDecision(this.parentElement)">
+            <span class="decision-num">4</span>
+            <div>
+              <div class="decision-title">Extensible NFR framework</div>
+              <div class="decision-rationale">Adding a check = write a function + register in a dict. Low barrier to expanding Gate 2.</div>
+            </div>
+          </div>
+          <div class="decision-body">
+            <p style="margin-bottom:8px">Gate 2 is a plugin framework: each NFR check is a function returning <code>list[NFRFinding]</code>. Registered in a dict. The factory loop calls all registered checks and aggregates findings. Non-blocking by default &mdash; findings feed into feedback and the LLM-as-judge.</p>
+            <div class="decision-zones">
+              <span class="zone-tag factory">gate-2-nfr</span>
+            </div>
+            <div class="decision-files">
+              <table>
+                <thead><tr><th>File</th><th>Change</th></tr></thead>
+                <tbody>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('scripts/nfr_checks.py');event.stopPropagation()">scripts/nfr_checks.py</code></td><td>New: extensible NFR checker with plugin architecture (442 lines)</td></tr>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('scripts/check_test_quality.py');event.stopPropagation()">scripts/check_test_quality.py</code></td><td>New: anti-vacuous/anti-gaming test scanner (249 lines)</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-card" data-zones="factory-orchestration">
+          <div class="decision-header" onclick="toggleDecision(this.parentElement)">
+            <span class="decision-num">5</span>
+            <div>
+              <div class="decision-title">Factory never auto-merges</div>
+              <div class="decision-rationale">PR is always the human decision point. Bot comments/commits fully guarded in validation-only mode.</div>
+            </div>
+          </div>
+          <div class="decision-body">
+            <p style="margin-bottom:8px">On convergence, the factory creates (or updates) a PR with an accept/merge checklist. It never auto-merges. In validation-only mode (no API key), all post-loop actions (state commits, convergence PRs, stalled comments) are guarded with <code>iterations != '0'</code>.</p>
+            <div class="decision-zones">
+              <span class="zone-tag factory">factory-orchestration</span>
+            </div>
+            <div class="decision-files">
+              <table>
+                <thead><tr><th>File</th><th>Change</th></tr></thead>
+                <tbody>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('.github/workflows/factory.yaml');event.stopPropagation()">.github/workflows/factory.yaml</code></td><td>Accept/merge gate + iteration guards on all post-loop steps</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-card" data-zones="documentation">
+          <div class="decision-header" onclick="toggleDecision(this.parentElement)">
+            <span class="decision-num">6</span>
+            <div>
+              <div class="decision-title">Documentation agent role codified</div>
+              <div class="decision-rationale">Non-negotiable team member alongside adversarial reviewer. Prevents stale docs across layers.</div>
+            </div>
+          </div>
+          <div class="decision-body">
+            <p style="margin-bottom:8px">Every code task now requires three roles minimum: coder, adversarial reviewer, and documentation agent. The doc agent checks 4 layers: product docs, factory/infra docs, agent-facing docs (CLAUDE.md, specs), and second brain. This prevents the "halfway state" problem where some docs reflect the new design and others don't.</p>
+            <div class="decision-zones">
+              <span class="zone-tag infra">documentation</span>
+            </div>
+            <div class="decision-files">
+              <table>
+                <thead><tr><th>File</th><th>Change</th></tr></thead>
+                <tbody>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('CLAUDE.md');event.stopPropagation()">CLAUDE.md</code></td><td>Code quality standards section, install-hooks reference</td></tr>
+                  <tr><td><code class="file-path-link" onclick="openFileModal('docs/code_quality_standards.md');event.stopPropagation()">docs/code_quality_standards.md</code></td><td>New: universal anti-vacuous, anti-gaming standards</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Section: Convergence Result ── -->
+    <div class="section">
+      <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+        <h2>Convergence Result</h2>
+        <span class="chevron">&#x25BC;</span>
+      </div>
+      <div class="section-body">
+        <div class="convergence-grid">
+          <div class="conv-card" onclick="this.classList.toggle('open')">
+            <h4>Gate 1 &mdash; Deterministic</h4>
+            <div class="conv-status passing">PASSING</div>
+            <div class="conv-detail">Lint (ruff), typecheck (mypy), full test suite (pytest). 48+ factory tests + product tests all green.</div>
+            <div class="conv-card-detail">
+              <strong>Checks run:</strong>
+              <ul>
+                <li><code>ruff check</code> &mdash; pass</li>
+                <li><code>mypy</code> &mdash; pass</li>
+                <li><code>pytest</code> &mdash; 48+ factory tests pass, product tests pass</li>
+              </ul>
+              <div style="margin-top:4px"><strong>Total tests:</strong> 48+ factory infrastructure + product unit/integration tests</div>
+            </div>
+          </div>
+          <div class="conv-card" onclick="this.classList.toggle('open')">
+            <h4>Gate 2 &mdash; NFR (Advisory)</h4>
+            <div class="conv-status warning">4 FINDINGS</div>
+            <div class="conv-detail">Non-blocking: Makefile regex fragility, silent JSON decode, glob/pathlib inconsistency, stub detection false positives. All feed into LLM-as-judge.</div>
+            <div class="conv-card-detail">
+              <strong>All 4 NFR findings:</strong>
+              <ul>
+                <li><strong style="color:var(--yellow)">MEDIUM</strong> &mdash; Makefile regex fragility in strip_holdout.py</li>
+                <li><strong style="color:var(--yellow)">MEDIUM</strong> &mdash; Silent JSON decode failures in nfr_checks.py</li>
+                <li><strong style="color:var(--yellow)">MEDIUM</strong> &mdash; Glob/pathlib inconsistency in compile_feedback.py</li>
+                <li><strong style="color:var(--yellow)">MEDIUM</strong> &mdash; Stub detection false positive risk in check_test_quality.py</li>
+              </ul>
+              <div style="margin-top:4px">Source: <code class="file-path-link" onclick="openFileModal('scripts/nfr_checks.py');event.stopPropagation()">scripts/nfr_checks.py</code></div>
+            </div>
+          </div>
+          <div class="conv-card" onclick="this.classList.toggle('open')">
+            <h4>Gate 3 &mdash; Behavioral</h4>
+            <div class="conv-status passing">11/12 PASSING</div>
+            <div class="conv-detail">1 advisory (loss decreasing &mdash; expected for untrained seed). Satisfaction score meets threshold for infrastructure PR.</div>
+            <div class="conv-card-detail">
+              <strong>All 12 scenarios:</strong>
+              <ul>
+                <li style="color:#166534">Environment Initialization &mdash; pass</li>
+                <li style="color:#166534">Observation Shape &mdash; pass</li>
+                <li style="color:#166534">Action Space &mdash; pass</li>
+                <li style="color:#166534">Episode Termination &mdash; pass</li>
+                <li style="color:#166534">Deterministic Replay &mdash; pass</li>
+                <li style="color:#166534">Training Smoke &mdash; pass</li>
+                <li style="color:#166534">Reward Signal &mdash; pass</li>
+                <li style="color:#854d0e">Loss Decreasing &mdash; advisory (expected for untrained seed)</li>
+                <li style="color:#166534">Config Loading &mdash; pass</li>
+                <li style="color:#166534">Docker Build &mdash; pass</li>
+                <li style="color:#166534">Artifact Packaging &mdash; pass</li>
+                <li style="color:#166534">Dashboard Launch &mdash; pass</li>
+              </ul>
+            </div>
+          </div>
+          <div class="conv-card" onclick="this.classList.toggle('open')">
+            <h4>Overall Status</h4>
+            <div class="conv-status passing">READY</div>
+            <div class="conv-detail">Pre-first-crank. All factory infrastructure validated. Product code is the raw Codex seed &mdash; Gate 0 review happens during first crank.</div>
+            <div class="conv-card-detail">
+              <strong>Gate summary:</strong>
+              <ul>
+                <li><strong>Gate 1:</strong> All deterministic checks passing (lint, typecheck, tests)</li>
+                <li><strong>Gate 2:</strong> 4 advisory findings, all non-blocking</li>
+                <li><strong>Gate 3:</strong> 11/12 scenarios pass, 1 advisory (expected)</li>
+              </ul>
+              <div style="margin-top:4px"><strong>Context:</strong> This is a pre-first-crank infrastructure PR. The factory must be in <code>main</code> before it can crank. Merging this enables the first factory loop to run with Codex integration. Product code review (Gate 0) happens during first crank.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section: Post-Merge Items ── -->
+    <div class="section">
+      <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+        <h2>Post-Merge Items</h2>
+        <span class="chevron">&#x25BC;</span>
+      </div>
+      <div class="section-body">
+
+        <div class="pm-item">
+          <div class="pm-header" onclick="this.parentElement.classList.toggle('open')">
+            <span class="priority medium">MEDIUM</span>
+            <span>Makefile regex fragility in <code>strip_holdout.py</code></span>
+          </div>
+          <div class="pm-body">
+            <p style="margin-bottom:8px">The strip script uses regex to comment out Makefile targets. Pattern matching against target names + indented recipe lines.</p>
+            <div class="code-block">## scripts/strip_holdout.py, lines 72-78
+pattern = rf"^({target}:.*(?:\n\t.*)*)"
+match = re.search(pattern, content, re.MULTILINE)
+if match:
+    commented = "\n".join(f"# [factory:stripped] {line}"
+                          for line in match.group(1).splitlines())
+    content = content[:match.start()] + commented + content[match.end():]</div>
+            <div class="scenario-box failure">
+              <div class="scenario-label">Failure scenario</div>
+              If the Makefile adds targets with similar naming patterns (e.g., <code>run-scenarios-debug</code>), the regex would match the prefix and strip unintended content. Also, Makefile recipes using non-tab indentation would break the <code>(?:\n\t.*)*</code> pattern.
+            </div>
+            <div class="scenario-box success">
+              <div class="scenario-label">Resolution</div>
+              Replace regex with explicit target list and exact-match patterns, or use a Makefile parser. Alternatively, maintain a separate <code>Makefile.factory</code> that gets excluded during stripping.
+            </div>
+          </div>
+        </div>
+
+        <div class="pm-item">
+          <div class="pm-header" onclick="this.parentElement.classList.toggle('open')">
+            <span class="priority medium">MEDIUM</span>
+            <span>Silent JSON decode failures in <code>nfr_checks.py</code></span>
+          </div>
+          <div class="pm-body">
+            <p style="margin-bottom:8px">When an NFR tool produces malformed JSON output, the decode failure is caught silently and the check appears to pass.</p>
+            <div class="code-block">## scripts/nfr_checks.py, _run_tool function
+try:
+    result = json.loads(stdout)
+except json.JSONDecodeError:
+    # Tool produced non-JSON output — treat as raw text
+    result = {"raw_output": stdout}</div>
+            <div class="scenario-box failure">
+              <div class="scenario-label">Failure scenario</div>
+              An NFR tool (e.g., radon, bandit) changes its output format in a version update. The check silently passes with <code>{"raw_output": ...}</code> instead of structured findings. Gate 2 reports "0 findings" when there are actually issues.
+            </div>
+            <div class="scenario-box success">
+              <div class="scenario-label">Resolution</div>
+              Log a WARNING-level finding when JSON decode fails. Mark the check result as <code>"status": "error"</code> instead of <code>"passed"</code>. Ensure the feedback compiler surfaces these errors.
+            </div>
+          </div>
+        </div>
+
+        <div class="pm-item">
+          <div class="pm-header" onclick="this.parentElement.classList.toggle('open')">
+            <span class="priority medium">MEDIUM</span>
+            <span>Glob/pathlib inconsistency in <code>compile_feedback.py</code></span>
+          </div>
+          <div class="pm-body">
+            <p style="margin-bottom:8px">Mix of <code>glob.glob()</code> patterns and <code>pathlib.Path</code> operations for finding and reading files.</p>
+            <div class="code-block">## scripts/compile_feedback.py
+# Some file operations use glob
+import glob
+files = glob.glob("artifacts/factory/feedback_iter_*.md")
+
+# Others use pathlib
+from pathlib import Path
+content = Path(path).read_text()</div>
+            <div class="scenario-box failure">
+              <div class="scenario-label">Failure scenario</div>
+              Platform-dependent path handling edge cases, especially on Windows if the project is ever used there. <code>glob.glob</code> returns strings while <code>pathlib</code> returns <code>Path</code> objects &mdash; type mismatches possible.
+            </div>
+            <div class="scenario-box success">
+              <div class="scenario-label">Resolution</div>
+              Standardize on <code>pathlib</code> throughout. Replace <code>glob.glob()</code> with <code>Path(...).glob()</code>. Minor refactor, no behavioral change.
+            </div>
+          </div>
+        </div>
+
+        <div class="pm-item">
+          <div class="pm-header" onclick="this.parentElement.classList.toggle('open')">
+            <span class="priority medium">MEDIUM</span>
+            <span>Stub detection false positive risk in <code>check_test_quality.py</code></span>
+          </div>
+          <div class="pm-body">
+            <p style="margin-bottom:8px">AST-based detection for vacuous test patterns like <code>assert True</code>. Risk of flagging legitimate assertions.</p>
+            <div class="code-block">## scripts/check_test_quality.py, lines 55-62
+if re.match(
+    r"assert\s+(True|1|not\s+False|not\s+0)\s*$",
+    stripped
+):
+    findings.append(Finding(
+        file=str(path), line=i,
+        severity="CRITICAL", pattern="assert_true",
+        detail="Bare `assert True` — stam test"
+    ))</div>
+            <div class="scenario-box failure">
+              <div class="scenario-label">Failure scenario</div>
+              A test like <code>assert result is True</code> (behavioral, checking explicit boolean type) gets flagged by the simple regex. Or <code>assert True  # placeholder for CI setup</code> in legitimate scaffolding code triggers false positives during early development.
+            </div>
+            <div class="scenario-box success">
+              <div class="scenario-label">Resolution</div>
+              Refine the regex to distinguish bare <code>assert True</code> (vacuous) from <code>assert X is True</code> (behavioral). Add a suppression comment pattern: <code># noqa: stam-ok</code>. Consider AST-level analysis instead of regex for more reliable detection.
+            </div>
+          </div>
+        </div>
+
+        <div class="pm-item">
+          <div class="pm-header" onclick="this.parentElement.classList.toggle('open')">
+            <span class="priority medium">MEDIUM</span>
+            <span><code>validate</code> CI job at ~6m &mdash; approaching "watch" threshold</span>
+          </div>
+          <div class="pm-body">
+            <p style="margin-bottom:8px">The <code>validate</code> job installs PyTorch, runs the full test suite, builds a Docker image, and runs a smoke test &mdash; all sequentially in one job.</p>
+            <div class="code-block">## .github/workflows/ci.yaml (validate job)
+- run: pip install -r requirements.txt -r requirements-dev.txt  # PyTorch ~2min
+- run: make lint
+- run: make typecheck
+- run: make test
+- run: docker build -f infra/docker/Dockerfile.train ...        # Docker ~1.5min
+- run: docker run --rm minipong-train python -m src.train.train_dqn --help</div>
+            <div class="scenario-box failure">
+              <div class="scenario-label">Failure scenario</div>
+              As the test suite grows and dependencies increase, this job creeps past 10 minutes. The feedback loop slows down &mdash; every push waits 10+ minutes for CI. Docker layer caching might help but isn't currently configured.
+            </div>
+            <div class="scenario-box success">
+              <div class="scenario-label">Resolution</div>
+              Split into parallel jobs: (1) lint + typecheck (fast, no PyTorch needed), (2) test (needs PyTorch), (3) Docker build + smoke (needs Docker). Add pip caching (<code>actions/cache</code>). Current 6m is acceptable but track the trend.
+            </div>
+          </div>
+        </div>
+
+        <div class="pm-item">
+          <div class="pm-header" onclick="this.parentElement.classList.toggle('open')">
+            <span class="priority low">LOW</span>
+            <span>Product code (<code>src/</code>) not yet adversarially reviewed</span>
+          </div>
+          <div class="pm-body">
+            <p style="margin-bottom:8px">All <code>src/</code> files are raw Codex output. The adversarial review graded them <span class="grade na">&mdash;</span> because Gate 0 runs during the first factory crank, not before it.</p>
+            <div class="scenario-box failure">
+              <div class="scenario-label">Risk</div>
+              Product code may contain anti-patterns (hardcoded values, gaming the reward signal, dead code) that Gate 0 should catch. Merging now means these patterns exist in <code>main</code> until the first crank addresses them.
+            </div>
+            <div class="scenario-box success">
+              <div class="scenario-label">Mitigation</div>
+              This is by design: the factory infrastructure must be in <code>main</code> before the first crank can run. The first crank's Gate 0 will review all product code. No production user faces this code.
+            </div>
+          </div>
+        </div>
+
+        <div class="pm-item">
+          <div class="pm-header" onclick="this.parentElement.classList.toggle('open')">
+            <span class="priority cosmetic">COSMETIC</span>
+            <span>5 spurious <code>github-actions[bot]</code> comments on PR</span>
+          </div>
+          <div class="pm-body">
+            <p style="margin-bottom:8px">Before the iteration guard fix, the factory workflow posted "stalled" comments on every validation-only run (because <code>SATISFIED=false</code> and <code>iterations</code> wasn't checked).</p>
+            <div class="scenario-box failure">
+              <div class="scenario-label">Impact</div>
+              Visual noise on the PR. No functional impact. The guard fix (<code>iterations != '0'</code>) prevents future occurrences.
+            </div>
+            <div class="scenario-box success">
+              <div class="scenario-label">Cleanup</div>
+              Delete via GitHub API: <code>gh api repos/joeyfezster/building_ai_w_ai/issues/5/comments</code> &mdash; filter for <code>github-actions[bot]</code> and delete the 5 spurious ones.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- end tab-review -->
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 2: FACTORY HISTORY -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="tab-history" class="tab-content">
+    <div class="tab-panel" style="padding:20px 24px">
+
+      <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">Factory Convergence History</h2>
+
+      <div class="history-legend">
+        <div class="history-legend-item"><div class="history-legend-dot" style="background:var(--blue)"></div> Automated event (CI, factory loop)</div>
+        <div class="history-legend-item"><div class="history-legend-dot" style="background:var(--orange)"></div> Human/agent intervention</div>
+        <div class="history-legend-item" style="margin-left:auto;font-style:italic">Click event to expand details</div>
+      </div>
+
+      <div class="convergence-grid" style="margin-bottom:20px">
+        <div class="conv-card" onclick="this.classList.toggle('open')">
+          <h4>Total Iterations</h4>
+          <div class="conv-status" style="color:var(--blue)">3 + validation</div>
+          <div class="conv-detail">3 factory-loop iterations (before validation-only fix) + final validation-only pass</div>
+        </div>
+        <div class="conv-card" onclick="this.classList.toggle('open')">
+          <h4>Satisfaction Trajectory</h4>
+          <div class="conv-status warning">Pre-crank</div>
+          <div class="conv-detail">Infrastructure PR &mdash; satisfaction score not applicable (no product iteration). Gate 1 + Gate 3 passing on final push.</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:13px;font-weight:700;margin-bottom:12px">Timeline</h3>
+      <div class="history-timeline">
+
+        <div class="history-event" onclick="this.classList.toggle('open')">
+          <div class="event-title">Initial Codex output merged to factory/v1 <span class="event-agent">CI (automated)</span></div>
+          <div class="event-detail">Full MiniPong DQN system: env, agent, training, dashboard, Docker. Raw Codex seed with known quality issues (expected &mdash; factory will refine).</div>
+          <div class="event-meta">Commit: 67e5600 &bull; Feb 22</div>
+          <div class="history-event-detail">
+            <strong>Source:</strong> Codex (ChatGPT Plus, browser automation)<br>
+            <strong>Files created:</strong> 19 product files (src/), 5 dashboard files, 8 test files, Docker + deps<br>
+            <strong>Quality:</strong> Raw seed &mdash; no adversarial review yet. Known to have hardcoded values and potential anti-patterns.
+          </div>
+        </div>
+
+        <div class="history-event" onclick="this.classList.toggle('open')">
+          <div class="event-title">Factory loop iteration 1-3 (CI-driven) <span class="event-agent">CI (factory-loop)</span></div>
+          <div class="event-detail">Factory.yaml ran convergence loop on push. Each iteration: Gate 1 &rarr; Gate 3 &rarr; feedback &rarr; no Codex (no API key) &rarr; state commit. Produced 3 state commits with iteration count updates and feedback artifacts.</div>
+          <div class="event-meta">Commits: d2ad3b2, 6dd4065, 7ae9e6f &bull; Feb 22-23</div>
+          <div class="history-event-detail">
+            <strong>CI job:</strong> factory-loop (factory.yaml)<br>
+            <strong>Output:</strong> 3 state commits with iteration.json updates and feedback markdown artifacts<br>
+            <strong>Problem discovered:</strong> State commits via GITHUB_TOKEN became PR HEAD, preventing CI re-trigger. PR showed "0 checks."
+          </div>
+        </div>
+
+        <div class="history-event intervention" onclick="this.classList.toggle('open')">
+          <div class="event-title">Intervention: Bot noise diagnosis <span class="event-agent human">Human (Joey)</span> <span class="event-agent">Claude Code (main)</span></div>
+          <div class="event-detail">Discovered factory.yaml was pushing bot state commits via GITHUB_TOKEN, which became PR HEAD without triggering CI. PR showed "0 checks." Root cause: validation-only mode didn't exist &mdash; factory always ran full loop even without API key.</div>
+          <div class="event-meta">Agent: Claude Code (main) &bull; Feb 23</div>
+          <div class="history-event-detail">
+            <strong>Diagnosis:</strong> GITHUB_TOKEN pushes do not trigger workflows (GitHub safety measure). The factory loop pushed state commits that became PR HEAD, making CI show "0 checks."<br>
+            <strong>Root cause:</strong> No validation-only mode &mdash; factory always ran full loop even without OPENAI_API_KEY.<br>
+            <strong>Decision:</strong> Restructure factory.yaml to have two paths based on API key availability.
+          </div>
+        </div>
+
+        <div class="history-event intervention" onclick="this.classList.toggle('open')">
+          <div class="event-title">Intervention: Fix pre-commit hook <span class="event-agent">Claude Code (main)</span></div>
+          <div class="event-detail">Fixed <code>.githooks/pre-commit</code>: <code>set -e</code> was incompatible with <code>if [ $? -ne 0 ]</code> pattern. Changed to <code>if ! command; then</code> form.</div>
+          <div class="event-meta">Commit: bec6272 &bull; Agent: Claude Code (main)</div>
+          <div class="history-event-detail">
+            <strong>Files modified:</strong> <code>.githooks/pre-commit</code><br>
+            <strong>Issue:</strong> <code>set -e</code> exits on first non-zero return, making <code>if [ $? -ne 0 ]</code> unreachable for failures.<br>
+            <strong>Fix:</strong> Changed to <code>if ! command; then</code> form which works correctly with <code>set -e</code>.
+          </div>
+        </div>
+
+        <div class="history-event intervention" onclick="this.classList.toggle('open')">
+          <div class="event-title">Intervention: Validation-only mode <span class="event-agent">Claude Code (main)</span></div>
+          <div class="event-detail">Split convergence loop into two paths: validation-only (no API key, ITER stays 0, no state commits) and full convergence (API key available). This is the expected mode when Claude Code orchestrates via browser.</div>
+          <div class="event-meta">Commit: e6945a3 &bull; Agent: Claude Code (main)</div>
+          <div class="history-event-detail">
+            <strong>Files modified:</strong> <code>.github/workflows/factory.yaml</code><br>
+            <strong>Change:</strong> Added conditional branching based on <code>OPENAI_API_KEY</code> secret availability. Validation-only path: ITER stays 0, runs single pass (lint, typecheck, test, scenarios), no Codex invocation, no state commits.<br>
+            <strong>Impact:</strong> CI now validates without side effects. Claude Code handles orchestration via browser.
+          </div>
+        </div>
+
+        <div class="history-event intervention" onclick="this.classList.toggle('open')">
+          <div class="event-title">Intervention: Guard post-loop actions <span class="event-agent">Claude Code (main)</span></div>
+          <div class="event-detail">Added <code>iterations != '0'</code> guard to convergence PR creation and stalled comment posting. Prevents bot noise in validation-only mode.</div>
+          <div class="event-meta">Commit: efbf3d4 &bull; Agent: Claude Code (main)</div>
+          <div class="history-event-detail">
+            <strong>Files modified:</strong> <code>.github/workflows/factory.yaml</code><br>
+            <strong>Change:</strong> Added <code>if: env.iterations != '0'</code> guard on convergence PR step and stalled comment step.<br>
+            <strong>Why:</strong> Without guards, validation-only runs (ITER=0, SATISFIED=false) triggered stalled comments. This produced 5 spurious bot comments before the fix.
+          </div>
+        </div>
+
+        <div class="history-event" onclick="this.classList.toggle('open')">
+          <div class="event-title">Final state: All 5 CI checks green on HEAD <span class="event-agent">CI (all jobs)</span></div>
+          <div class="event-detail">factory-self-test (push/PR): 19s/21s. factory-loop: 4m35s. validate (push/PR): 6m18s/5m58s. All 3 Codex review comments resolved.</div>
+          <div class="event-meta">HEAD: efbf3d4 &bull; Feb 23</div>
+          <div class="history-event-detail">
+            <strong>CI jobs:</strong> factory-self-test (push: 19s, PR: 21s), factory-loop (4m35s), validate (push: 6m18s, PR: 5m58s)<br>
+            <strong>Comments:</strong> 3 Codex review comments resolved (code quality improvements)<br>
+            <strong>Status:</strong> Ready for human review and merge decision.
+          </div>
+        </div>
+
+      </div>
+
+      <h3 style="font-size:13px;font-weight:700;margin:20px 0 12px">Gate Findings by Iteration</h3>
+      <table id="gate-findings-table">
+        <thead><tr><th>Phase</th><th>Gate 1</th><th>Gate 2</th><th>Gate 3</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="gate-clickable" onclick="showGatePopover(event,'Iterations 1-3: Triggered by push to factory/v1 branch. Factory loop ran automatically via CI.')">Iter 1-3 (factory-loop)</td>
+            <td><span class="badge pass gate-clickable" onclick="showGatePopover(event,'Gate 1 pass: ruff lint + mypy typecheck + pytest all passing across 3 iterations.')">pass</span></td>
+            <td><span style="font-size:12px;color:var(--text-muted)">not run</span></td>
+            <td><span class="badge pass gate-clickable" onclick="showGatePopover(event,'Gate 3 pass: All 12 behavioral scenarios evaluated. 11 pass, 1 advisory (Loss Decreasing).')">pass</span></td>
+            <td>State commits pushed (before fix)</td>
+          </tr>
+          <tr>
+            <td class="gate-clickable" onclick="showGatePopover(event,'Post-fix validation: Final CI run on HEAD efbf3d4 after all interventions applied.')">Post-fix validation</td>
+            <td><span class="badge pass gate-clickable" onclick="showGatePopover(event,'Gate 1 pass: ruff check (0 errors), mypy (0 errors), pytest (48+ factory tests + product tests all green).')">pass</span></td>
+            <td><span style="font-size:12px;color:var(--yellow)" class="gate-clickable" onclick="showGatePopover(event,'4 NFR findings:\n1. Makefile regex fragility (MEDIUM)\n2. Silent JSON decode failures (MEDIUM)\n3. Glob/pathlib inconsistency (MEDIUM)\n4. Stub detection false positives (MEDIUM)')">4 findings</span></td>
+            <td><span class="badge pass gate-clickable" onclick="showGatePopover(event,'11/12 scenarios pass. 1 advisory: Loss Decreasing (expected for untrained seed — no training has occurred yet).')">11/12</span></td>
+            <td>No state commit (validation-only)</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  <div class="footer">
+    Generated by dark factory review agent &nbsp;|&nbsp; 2026-02-24 &nbsp;|&nbsp; HEAD: efbf3d4<br>
+    <span style="font-size:10px">Deterministic rendering from structured data &bull; Code diffs are ground truth</span>
+  </div>
+
+</div>
+
+<!-- Floating architecture diagram (populated by JS) -->
+<div id="arch-floating" class="arch-floating">
+  <button class="arch-floating-close" onclick="dismissFloatingDiagram()" title="Dismiss floating diagram">&times;</button>
+  <div id="arch-floating-content"></div>
+</div>
+
+<!-- File diff modal -->
+<div id="file-modal-overlay" class="file-modal-overlay" onclick="if(event.target===this)closeFileModal()">
+  <div class="file-modal">
+    <div class="file-modal-header">
+      <div style="display:flex;align-items:center;gap:8px;overflow:hidden">
+        <h3 id="file-modal-path" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></h3>
+        <span id="file-modal-stats" class="fm-stats"></span>
+      </div>
+      <button class="file-modal-close" onclick="closeFileModal()">&times;</button>
+    </div>
+    <div class="file-modal-toolbar">
+      <div class="file-modal-tabs">
+        <button class="file-modal-tab active" data-view="side-by-side" onclick="setFileModalTab(this,'side-by-side')">Side-by-side</button>
+        <button class="file-modal-tab" data-view="integrated" onclick="setFileModalTab(this,'integrated')">Unified</button>
+        <button class="file-modal-tab" data-view="raw" onclick="setFileModalTab(this,'raw')">Raw file</button>
+      </div>
+      <a id="file-modal-github-link" class="file-modal-github" href="#" target="_blank">View on GitHub &rarr;</a>
+    </div>
+    <div class="file-modal-body" id="file-modal-body">
+      <div class="diff-loading">Loading diff data&hellip;</div>
+    </div>
+  </div>
+</div>
+
+<!-- Gate popover (positioned dynamically) -->
+<div id="gate-popover" class="gate-popover"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// Theme switching (Light / Dark / System)
+// ═══════════════════════════════════════════
+(function initTheme() {
+  const stored = localStorage.getItem('pr-pack-theme') || 'system';
+  applyTheme(stored);
+  updateThemeButtons(stored);
+})();
+
+function setTheme(theme) {
+  localStorage.setItem('pr-pack-theme', theme);
+  applyTheme(theme);
+  updateThemeButtons(theme);
+}
+
+function applyTheme(theme) {
+  if (theme === 'system') {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
+
+function updateThemeButtons(theme) {
+  document.querySelectorAll('.theme-toggle button').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-theme-btn') === theme);
+  });
+}
+
+// Listen for system theme changes when in system mode
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  const stored = localStorage.getItem('pr-pack-theme') || 'system';
+  if (stored === 'system') applyTheme('system');
+});
+
+// ═══════════════════════════════════════════
+// Tab switching
+// ═══════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+// CI job detail toggle
+// ═══════════════════════════════════════════
+function toggleCIDetail(row) {
+  const detail = row.nextElementSibling;
+  if (detail && detail.classList.contains('detail-row')) {
+    detail.classList.toggle('open');
+    row.classList.toggle('ci-open');
+  }
+}
+
+// ═══════════════════════════════════════════
+// Decision card toggle + zone highlighting
+// ═══════════════════════════════════════════
+function toggleDecision(card) {
+  const wasOpen = card.classList.contains('open');
+  document.querySelectorAll('.decision-card').forEach(c => c.classList.remove('open'));
+  if (!wasOpen) {
+    card.classList.add('open');
+    const zones = card.dataset.zones.split(' ');
+    highlightZones(zones);
+  } else {
+    resetZones();
+  }
+}
+
+// ═══════════════════════════════════════════
+// Adversarial review row toggle
+// ═══════════════════════════════════════════
+function toggleAdvDetail(row) {
+  const detail = row.nextElementSibling;
+  if (detail && detail.classList.contains('adv-detail-row')) {
+    detail.classList.toggle('open');
+  }
+}
+
+// ═══════════════════════════════════════════
+// Architecture zone highlighting (cross-section filtering)
+// ═══════════════════════════════════════════
+let currentActiveZones = null;
+
+function highlightZones(activeZones) {
+  currentActiveZones = activeZones;
+
+  // 1. Highlight zones in diagram
+  document.querySelectorAll('.zone-box').forEach(box => {
+    const zone = box.dataset.zone;
+    if (activeZones.includes(zone)) {
+      box.classList.remove('dimmed');
+      box.classList.add('highlighted');
+    } else {
+      box.classList.add('dimmed');
+      box.classList.remove('highlighted');
+    }
+  });
+
+  // Also highlight in floating diagram
+  document.querySelectorAll('#arch-floating .zone-box').forEach(box => {
+    const zone = box.dataset.zone;
+    if (activeZones.includes(zone)) {
+      box.classList.remove('dimmed');
+      box.classList.add('highlighted');
+    } else {
+      box.classList.add('dimmed');
+      box.classList.remove('highlighted');
+    }
+  });
+
+  const info = document.getElementById('zone-filter-info');
+  info.textContent = 'Showing zones: ' + activeZones.join(', ');
+  info.style.display = 'block';
+
+  // 2. Filter adversarial review rows (collapse non-matching)
+  let anyMatch = false;
+  document.querySelectorAll('.adv-row').forEach(row => {
+    const rowZones = row.dataset.zones.split(' ');
+    const match = rowZones.some(z => activeZones.includes(z));
+    if (match) {
+      row.classList.remove('collapsed-row');
+      anyMatch = true;
+    } else {
+      row.classList.add('collapsed-row');
+      // Also close any open detail
+      const detail = row.nextElementSibling;
+      if (detail && detail.classList.contains('adv-detail-row')) {
+        detail.classList.remove('open');
+      }
+    }
+    // Also handle the detail rows
+    const detailRow = row.nextElementSibling;
+    if (detailRow && detailRow.classList.contains('adv-detail-row')) {
+      if (!match) {
+        detailRow.style.display = 'none';
+      } else {
+        detailRow.style.display = '';
+      }
+    }
+  });
+  const noMatch = document.getElementById('adv-no-match');
+  if (noMatch) {
+    noMatch.classList.toggle('visible', !anyMatch);
+  }
+
+  // 3. Filter scenario cards by zone
+  document.querySelectorAll('.scenario-card[data-zone]').forEach(card => {
+    const cardZones = card.dataset.zone.split(' ');
+    const match = cardZones.some(z => activeZones.includes(z));
+    if (match) {
+      card.classList.remove('zone-dimmed');
+      card.classList.add('zone-glow');
+    } else {
+      card.classList.add('zone-dimmed');
+      card.classList.remove('zone-glow');
+    }
+  });
+
+  // 4. Filter What Changed section
+  const wcDefault = document.getElementById('wc-default');
+  if (wcDefault) wcDefault.style.display = 'none';
+  document.querySelectorAll('.wc-zone-detail').forEach(d => {
+    d.classList.remove('active');
+    if (activeZones.includes(d.dataset.zone)) {
+      d.classList.add('active');
+    }
+  });
+  // If no zone detail matched, show a generic message
+  const anyWcMatch = document.querySelector('.wc-zone-detail.active');
+  if (!anyWcMatch && wcDefault) {
+    wcDefault.style.display = '';
+  }
+}
+
+function resetZones() {
+  currentActiveZones = null;
+
+  document.querySelectorAll('.zone-box').forEach(box => {
+    box.classList.remove('dimmed', 'highlighted');
+  });
+  document.querySelectorAll('#arch-floating .zone-box').forEach(box => {
+    box.classList.remove('dimmed', 'highlighted');
+  });
+
+  document.getElementById('zone-filter-info').style.display = 'none';
+
+  // Reset adversarial review
+  document.querySelectorAll('.adv-row').forEach(row => {
+    row.classList.remove('collapsed-row');
+  });
+  document.querySelectorAll('.adv-detail-row').forEach(row => {
+    row.style.display = '';
+  });
+  const noMatch = document.getElementById('adv-no-match');
+  if (noMatch) noMatch.classList.remove('visible');
+
+  // Reset scenario cards
+  document.querySelectorAll('.scenario-card[data-zone]').forEach(card => {
+    card.classList.remove('zone-dimmed', 'zone-glow');
+  });
+
+  // Reset What Changed
+  const wcDefault = document.getElementById('wc-default');
+  if (wcDefault) wcDefault.style.display = '';
+  document.querySelectorAll('.wc-zone-detail').forEach(d => d.classList.remove('active'));
+}
+
+// ═══════════════════════════════════════════
+// Zone click handlers (on main diagram)
+// ═══════════════════════════════════════════
+function attachZoneClickHandlers(container) {
+  container.querySelectorAll('.zone-box').forEach(box => {
+    box.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const zone = box.dataset.zone;
+      if (currentActiveZones && currentActiveZones.length === 1 && currentActiveZones[0] === zone) {
+        resetZones();
+      } else {
+        highlightZones([zone]);
+      }
+    });
+  });
+}
+
+// Attach to main diagram
+attachZoneClickHandlers(document.getElementById('arch-diagram'));
+
+// Click on diagram background to reset
+document.getElementById('arch-diagram').addEventListener('click', (e) => {
+  if (e.target.tagName === 'svg' || (e.target.tagName === 'text' && e.target.classList.contains('arch-row-label'))) {
+    resetZones();
+    document.querySelectorAll('.decision-card').forEach(c => c.classList.remove('open'));
+  }
+});
+
+// ═══════════════════════════════════════════
+// Architecture view toggle
+// ═══════════════════════════════════════════
+function setArchView(view, btn) {
+  document.querySelectorAll('.arch-toggle').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (view === 'baseline') {
+    document.querySelectorAll('.zone-box').forEach(box => {
+      box.style.opacity = '0.25';
+    });
+    document.getElementById('zone-filter-info').textContent = 'Baseline view: main branch before merge (no existing code in these zones)';
+    document.getElementById('zone-filter-info').style.display = 'block';
+  } else {
+    document.querySelectorAll('.zone-box').forEach(box => {
+      box.style.opacity = '1';
+      box.classList.remove('dimmed', 'highlighted');
+    });
+    document.getElementById('zone-filter-info').style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════
+// Sticky floating architecture diagram
+// ═══════════════════════════════════════════
+let floatingDismissed = false;
+
+(function initFloatingDiagram() {
+  const archSection = document.querySelector('#arch-diagram');
+  const floatingContainer = document.getElementById('arch-floating');
+  const floatingContent = document.getElementById('arch-floating-content');
+
+  if (!archSection || !floatingContainer) return;
+
+  // Clone the SVG for the floating version
+  const svgClone = archSection.cloneNode(true);
+  svgClone.removeAttribute('id');
+  svgClone.style.width = '100%';
+  svgClone.style.maxWidth = 'none';
+  floatingContent.appendChild(svgClone);
+
+  // Attach zone click handlers to floating diagram
+  attachZoneClickHandlers(floatingContainer);
+
+  // Also handle background click on floating SVG
+  svgClone.addEventListener('click', (e) => {
+    if (e.target.tagName === 'svg' || (e.target.tagName === 'text' && e.target.classList.contains('arch-row-label'))) {
+      resetZones();
+    }
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (floatingDismissed) return;
+      if (!entry.isIntersecting) {
+        floatingContainer.classList.add('visible');
+      } else {
+        floatingContainer.classList.remove('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  observer.observe(archSection);
+})();
+
+function dismissFloatingDiagram() {
+  floatingDismissed = true;
+  document.getElementById('arch-floating').classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════
+// Diff data cache
+// ═══════════════════════════════════════════
+let diffDataCache = null;
+let diffDataLoading = false;
+let diffDataCallbacks = [];
+
+function loadDiffData(cb) {
+  if (diffDataCache) { cb(diffDataCache); return; }
+  diffDataCallbacks.push(cb);
+  if (diffDataLoading) return;
+  diffDataLoading = true;
+  fetch('pr_diff_data.json')
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(data => {
+      diffDataCache = data;
+      diffDataCallbacks.forEach(fn => fn(data));
+      diffDataCallbacks = [];
+    })
+    .catch(err => {
+      diffDataCallbacks.forEach(fn => fn(null, err));
+      diffDataCallbacks = [];
+    })
+    .finally(() => { diffDataLoading = false; });
+}
+
+// ═══════════════════════════════════════════
+// File diff modal
+// ═══════════════════════════════════════════
+let currentFilePath = null;
+let currentFileData = null;
+let currentView = 'side-by-side';
+
+function openFileModal(path) {
+  currentFilePath = path;
+  // Persist the user's last view selection (don't reset to side-by-side)
+
+  const overlay = document.getElementById('file-modal-overlay');
+  const pathEl = document.getElementById('file-modal-path');
+  const statsEl = document.getElementById('file-modal-stats');
+  const link = document.getElementById('file-modal-github-link');
+  const body = document.getElementById('file-modal-body');
+
+  pathEl.textContent = path;
+  link.href = 'https://github.com/joeyfezster/building_ai_w_ai/blob/factory/v1/' + path;
+
+  // Highlight the persisted view tab
+  document.querySelectorAll('.file-modal-tab').forEach(t => t.classList.remove('active'));
+  const activeTab = document.querySelector('.file-modal-tab[data-view="' + currentView + '"]');
+  if (activeTab) activeTab.classList.add('active');
+
+  statsEl.innerHTML = '';
+  body.innerHTML = '<div class="diff-loading">Loading diff data&hellip;</div>';
+  overlay.classList.add('visible');
+  document.body.style.overflow = 'hidden'; // Scroll trap — prevent scroll bleed to background
+
+  loadDiffData((data, err) => {
+    if (err || !data) {
+      body.innerHTML = '<div class="diff-error">Failed to load diff data. Run: <code>python3 docs/generate_diff_data.py</code></div>';
+      return;
+    }
+    currentFileData = data.files[path] || null;
+    if (!currentFileData) {
+      body.innerHTML = '<div class="diff-error">File not found in diff data: ' + escapeHtml(path) + '</div>';
+      return;
+    }
+    statsEl.innerHTML = '<span class="fm-add">+' + currentFileData.additions + '</span> <span class="fm-del">-' + currentFileData.deletions + '</span>';
+    renderDiffView(currentView);
+  });
+}
+
+function closeFileModal() {
+  document.getElementById('file-modal-overlay').classList.remove('visible');
+  document.body.style.overflow = ''; // Release scroll trap
+  currentFilePath = null;
+  currentFileData = null;
+}
+
+function setFileModalTab(btn, view) {
+  document.querySelectorAll('.file-modal-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentView = view;
+  if (currentFileData) renderDiffView(view);
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+function renderDiffView(view) {
+  const body = document.getElementById('file-modal-body');
+  if (!currentFileData) return;
+
+  if (view === 'raw') {
+    renderRawView(body);
+  } else if (view === 'integrated') {
+    renderUnifiedView(body);
+  } else {
+    renderSplitView(body);
+  }
+}
+
+// ═══════════════════════════════════════════
+// Syntax highlighting
+// ═══════════════════════════════════════════
+function detectLanguage(filePath) {
+  if (!filePath) return 'text';
+  const ext = filePath.split('.').pop().toLowerCase();
+  const map = {
+    'py': 'python', 'yaml': 'yaml', 'yml': 'yaml', 'md': 'markdown',
+    'sh': 'shell', 'bash': 'shell', 'js': 'javascript', 'ts': 'javascript',
+    'jsx': 'javascript', 'tsx': 'javascript',
+  };
+  return map[ext] || 'text';
+}
+
+function highlightCode(text, language) {
+  // text is already HTML-escaped
+  if (language === 'text') return text;
+
+  if (language === 'python') {
+    // Order matters: strings/comments first (greedy), then keywords, etc.
+    // Triple-quoted strings (must come before single-quoted)
+    text = text.replace(/(&#39;&#39;&#39;[\s\S]*?&#39;&#39;&#39;|&quot;&quot;&quot;[\s\S]*?&quot;&quot;&quot;)/g, '<span style="color:#ce9178">$1</span>');
+    // f-strings
+    text = text.replace(/\bf(&#39;[^]*?&#39;|&quot;[^]*?&quot;)/g, '<span style="color:#ce9178">f$1</span>');
+    // Regular strings (single and double quoted)
+    text = text.replace(/((?<!\\)&#39;(?:[^\\]|\\.)*?&#39;|(?<!\\)&quot;(?:[^\\]|\\.)*?&quot;)/g, function(m) {
+      if (m.indexOf('style=') !== -1) return m; // already highlighted
+      return '<span style="color:#ce9178">' + m + '</span>';
+    });
+    // Comments (# to end of line, but not inside strings)
+    text = text.replace(/(#[^\n]*)/g, function(m) {
+      if (m.indexOf('style=') !== -1) return m;
+      return '<span style="color:#6a9955">' + m + '</span>';
+    });
+    // Decorators
+    text = text.replace(/(@\w+)/g, '<span style="color:#dcdcaa">$1</span>');
+    // Constants
+    text = text.replace(/\b(True|False|None)\b/g, '<span style="color:#569cd6">$1</span>');
+    // Keywords
+    text = text.replace(/\b(def|class|import|from|if|else|elif|for|while|return|yield|with|as|try|except|finally|raise|not|and|or|in|is|pass|break|continue|lambda|global|nonlocal|async|await|self)\b/g, function(m) {
+      return '<span style="color:#c586c0">' + m + '</span>';
+    });
+    // Numbers
+    text = text.replace(/\b(\d+\.?\d*(?:e[+-]?\d+)?)\b/g, '<span style="color:#b5cea8">$1</span>');
+    return text;
+  }
+
+  if (language === 'yaml') {
+    // Comments
+    text = text.replace(/(#[^\n]*)/g, '<span style="color:#6a9955">$1</span>');
+    // Booleans
+    text = text.replace(/\b(true|false|yes|no|on|off)\b/gi, '<span style="color:#569cd6">$1</span>');
+    // Keys (word before colon at start of line or after indent)
+    text = text.replace(/^(\s*)([\w][\w.-]*?)(:)/gm, '$1<span style="color:#9cdcfe">$2</span>$3');
+    // Strings
+    text = text.replace(/(&#39;[^]*?&#39;|&quot;[^]*?&quot;)/g, function(m) {
+      if (m.indexOf('style=') !== -1) return m;
+      return '<span style="color:#ce9178">' + m + '</span>';
+    });
+    // Numbers
+    text = text.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#b5cea8">$1</span>');
+    return text;
+  }
+
+  if (language === 'markdown') {
+    // Headers
+    text = text.replace(/^(#{1,6}\s.*)$/gm, '<span style="color:#569cd6">$1</span>');
+    // Bold
+    text = text.replace(/(\*\*[^*]+\*\*)/g, '<span style="color:#dcdcaa;font-weight:bold">$1</span>');
+    // Italic
+    text = text.replace(/(\*[^*]+\*)/g, function(m) {
+      if (m.indexOf('style=') !== -1) return m;
+      return '<span style="color:#ce9178;font-style:italic">' + m + '</span>';
+    });
+    // Inline code
+    text = text.replace(/(`[^`]+`)/g, '<span style="color:#ce9178">$1</span>');
+    // Links
+    text = text.replace(/(\[[^\]]+\]\([^)]+\))/g, '<span style="color:#4ec9b0">$1</span>');
+    return text;
+  }
+
+  if (language === 'shell') {
+    // Comments
+    text = text.replace(/(#[^\n]*)/g, '<span style="color:#6a9955">$1</span>');
+    // Strings
+    text = text.replace(/(&#39;[^]*?&#39;|&quot;[^]*?&quot;)/g, function(m) {
+      if (m.indexOf('style=') !== -1) return m;
+      return '<span style="color:#ce9178">' + m + '</span>';
+    });
+    // Variables
+    text = text.replace(/(\$\{?\w+\}?)/g, '<span style="color:#9cdcfe">$1</span>');
+    // Keywords
+    text = text.replace(/\b(if|then|else|elif|fi|for|do|done|while|case|esac|echo|export|set|source|local|readonly|declare|unset|shift|eval|exec|trap|exit|return|function)\b/g, '<span style="color:#c586c0">$1</span>');
+    return text;
+  }
+
+  if (language === 'javascript') {
+    // Strings (template literals, single, double)
+    text = text.replace(/(&#39;[^]*?&#39;|&quot;[^]*?&quot;|`[^]*?`)/g, function(m) {
+      if (m.indexOf('style=') !== -1) return m;
+      return '<span style="color:#ce9178">' + m + '</span>';
+    });
+    // Single-line comments
+    text = text.replace(/(\/\/[^\n]*)/g, function(m) {
+      if (m.indexOf('style=') !== -1) return m;
+      return '<span style="color:#6a9955">' + m + '</span>';
+    });
+    // Block comments
+    text = text.replace(/(\/\*[\s\S]*?\*\/)/g, function(m) {
+      if (m.indexOf('style=') !== -1) return m;
+      return '<span style="color:#6a9955">' + m + '</span>';
+    });
+    // Constants
+    text = text.replace(/\b(true|false|null|undefined|NaN|Infinity)\b/g, '<span style="color:#569cd6">$1</span>');
+    // Keywords
+    text = text.replace(/\b(const|let|var|function|class|if|else|for|while|do|switch|case|break|continue|return|import|export|from|default|new|this|typeof|instanceof|in|of|try|catch|finally|throw|async|await|yield|extends|super|interface|type|enum|implements|static|readonly|abstract|declare|namespace|module|require)\b/g, '<span style="color:#c586c0">$1</span>');
+    // Numbers
+    text = text.replace(/\b(\d+\.?\d*(?:e[+-]?\d+)?)\b/g, '<span style="color:#b5cea8">$1</span>');
+    return text;
+  }
+
+  return text;
+}
+
+// ── Raw file view ──
+function renderRawView(container) {
+  const raw = currentFileData.raw || '';
+  if (!raw) {
+    container.innerHTML = '<div class="diff-error">File was deleted or is binary.</div>';
+    return;
+  }
+  const lang = detectLanguage(currentFilePath);
+  const lines = raw.split('\n');
+  let html = '<div class="diff-view diff-raw"><table>';
+  for (let i = 0; i < lines.length; i++) {
+    const escaped = escapeHtml(lines[i]);
+    const highlighted = highlightCode(escaped, lang);
+    html += '<tr><td class="diff-ln">' + (i + 1) + '</td><td>' + highlighted + '</td></tr>';
+  }
+  html += '</table></div>';
+  container.innerHTML = html;
+}
+
+// ── Unified (integrated) diff view ──
+function renderUnifiedView(container) {
+  const diff = currentFileData.diff || '';
+  if (!diff) {
+    container.innerHTML = '<div class="diff-error">No diff available.</div>';
+    return;
+  }
+  const lines = diff.split('\n');
+  let html = '<div class="diff-view"><table class="diff-unified">';
+  let oldLn = 0, newLn = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Skip file headers (diff --git, index, ---, +++) and metadata lines
+    if (line.startsWith('diff --git') || line.startsWith('index ') || line.startsWith('---') || line.startsWith('+++')) continue;
+    if (isDiffMetaLine(line)) continue;
+
+    // Hunk header
+    if (line.startsWith('@@')) {
+      const m = line.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)/);
+      if (m) {
+        oldLn = parseInt(m[1]);
+        newLn = parseInt(m[2]);
+        html += '<tr><td class="diff-ln" colspan="2"></td><td class="diff-hunk">' + escapeHtml(line) + '</td></tr>';
+      }
+      continue;
+    }
+
+    // Added line
+    if (line.startsWith('+')) {
+      html += '<tr class="diff-add"><td class="diff-ln"></td><td class="diff-ln">' + newLn + '</td><td>' + escapeHtml(line.slice(1)) + '</td></tr>';
+      newLn++;
+      continue;
+    }
+
+    // Deleted line
+    if (line.startsWith('-')) {
+      html += '<tr class="diff-del"><td class="diff-ln">' + oldLn + '</td><td class="diff-ln"></td><td>' + escapeHtml(line.slice(1)) + '</td></tr>';
+      oldLn++;
+      continue;
+    }
+
+    // Context line (starts with space)
+    if (line.startsWith(' ') || line === '') {
+      html += '<tr class="diff-ctx"><td class="diff-ln">' + oldLn + '</td><td class="diff-ln">' + newLn + '</td><td>' + escapeHtml(line.slice(1)) + '</td></tr>';
+      oldLn++; newLn++;
+    }
+  }
+  html += '</table></div>';
+  container.innerHTML = html;
+}
+
+// Lines to skip in diff output (metadata headers)
+const DIFF_SKIP_PATTERNS = [
+  /^new file mode/,
+  /^deleted file mode/,
+  /^old mode/,
+  /^new mode/,
+  /^similarity index/,
+  /^rename from/,
+  /^rename to/,
+  /^Binary files/,
+];
+
+function isDiffMetaLine(line) {
+  return DIFF_SKIP_PATTERNS.some(p => p.test(line));
+}
+
+// ── Side-by-side diff view ──
+function renderSplitView(container) {
+  const diff = currentFileData.diff || '';
+  if (!diff) {
+    container.innerHTML = '<div class="diff-error">No diff available.</div>';
+    return;
+  }
+
+  // Detect new file (all additions, no deletions) or deleted file
+  const isNewFile = currentFileData.status === 'added' || (currentFileData.deletions === 0 && currentFileData.additions > 0);
+  const isDeletedFile = currentFileData.status === 'deleted' || (currentFileData.additions === 0 && currentFileData.deletions > 0);
+
+  // For new or deleted files, render a single-pane view
+  if (isNewFile || isDeletedFile) {
+    const bannerClass = isNewFile ? 'diff-new-file-banner' : 'diff-deleted-file-banner';
+    const bannerText = isNewFile ? 'New file &mdash; showing additions' : 'Deleted file &mdash; showing deletions';
+    const lines = diff.split('\n');
+    let html = '<div class="' + bannerClass + '">' + bannerText + '</div>';
+    html += '<div class="diff-view diff-split-wrapper"><table class="diff-unified">';
+    let ln = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.startsWith('diff --git') || line.startsWith('index ') || line.startsWith('---') || line.startsWith('+++')) continue;
+      if (isDiffMetaLine(line)) continue;
+
+      if (line.startsWith('@@')) {
+        const m = line.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)/);
+        if (m) {
+          ln = isNewFile ? parseInt(m[2]) : parseInt(m[1]);
+          html += '<tr><td class="diff-ln"></td><td class="diff-hunk">' + escapeHtml(line) + '</td></tr>';
+        }
+        continue;
+      }
+
+      if (isNewFile && line.startsWith('+')) {
+        html += '<tr class="diff-add"><td class="diff-ln">' + ln + '</td><td>' + escapeHtml(line.slice(1)) + '</td></tr>';
+        ln++;
+      } else if (isDeletedFile && line.startsWith('-')) {
+        html += '<tr class="diff-del"><td class="diff-ln">' + ln + '</td><td>' + escapeHtml(line.slice(1)) + '</td></tr>';
+        ln++;
+      } else if (line.startsWith(' ') || line === '') {
+        html += '<tr class="diff-ctx"><td class="diff-ln">' + ln + '</td><td>' + escapeHtml(line.slice(1)) + '</td></tr>';
+        ln++;
+      }
+    }
+    html += '</table></div>';
+    container.innerHTML = html;
+    return;
+  }
+
+  // Parse unified diff into hunks
+  const lines = diff.split('\n');
+  const pairs = []; // Array of {type, oldLn, newLn, oldText, newText}
+  let oldLn = 0, newLn = 0;
+  const addBuffer = [];
+  const delBuffer = [];
+
+  function flushBuffers() {
+    const max = Math.max(addBuffer.length, delBuffer.length);
+    for (let j = 0; j < max; j++) {
+      const hasOld = j < delBuffer.length;
+      const hasNew = j < addBuffer.length;
+      pairs.push({
+        type: hasOld && hasNew ? 'change' : hasNew ? 'add' : 'del',
+        oldLn: hasOld ? delBuffer[j].ln : null,
+        newLn: hasNew ? addBuffer[j].ln : null,
+        oldText: hasOld ? delBuffer[j].text : '',
+        newText: hasNew ? addBuffer[j].text : '',
+      });
+    }
+    addBuffer.length = 0;
+    delBuffer.length = 0;
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith('diff --git') || line.startsWith('index ') || line.startsWith('---') || line.startsWith('+++')) continue;
+    if (isDiffMetaLine(line)) continue;
+
+    if (line.startsWith('@@')) {
+      flushBuffers();
+      const m = line.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)/);
+      if (m) {
+        oldLn = parseInt(m[1]); newLn = parseInt(m[2]);
+        pairs.push({ type: 'hunk', hunkText: line });
+      }
+      continue;
+    }
+
+    if (line.startsWith('+')) {
+      addBuffer.push({ ln: newLn, text: line.slice(1) }); newLn++;
+    } else if (line.startsWith('-')) {
+      delBuffer.push({ ln: oldLn, text: line.slice(1) }); oldLn++;
+    } else {
+      flushBuffers();
+      pairs.push({ type: 'ctx', oldLn: oldLn, newLn: newLn, oldText: line.slice(1), newText: line.slice(1) });
+      oldLn++; newLn++;
+    }
+  }
+  flushBuffers();
+
+  // Render
+  let html = '<div class="diff-view diff-split-wrapper"><table class="diff-split">';
+  for (const p of pairs) {
+    if (p.type === 'hunk') {
+      html += '<tr class="diff-hunk"><td colspan="5" style="padding:4px 8px;background:rgba(56,139,253,0.08);color:#58a6ff;font-style:italic;font-size:11px">' + escapeHtml(p.hunkText) + '</td></tr>';
+      continue;
+    }
+
+    const leftCls = p.type === 'del' || p.type === 'change' ? ' diff-del' : p.type === 'add' ? ' diff-empty' : ' diff-ctx';
+    const rightCls = p.type === 'add' || p.type === 'change' ? ' diff-add' : p.type === 'del' ? ' diff-empty' : ' diff-ctx';
+
+    const leftLn = p.oldLn != null ? p.oldLn : '';
+    const rightLn = p.newLn != null ? p.newLn : '';
+    const leftText = p.type === 'add' ? '' : escapeHtml(p.oldText);
+    const rightText = p.type === 'del' ? '' : escapeHtml(p.newText);
+
+    html += '<tr>'
+      + '<td class="diff-ln' + leftCls + '">' + leftLn + '</td>'
+      + '<td class="diff-code-left' + leftCls + '">' + leftText + '</td>'
+      + '<td class="diff-sep"></td>'
+      + '<td class="diff-ln' + rightCls + '">' + rightLn + '</td>'
+      + '<td class="diff-code-right' + rightCls + '">' + rightText + '</td>'
+      + '</tr>';
+  }
+  html += '</table></div>';
+  container.innerHTML = html;
+}
+
+// Close modal on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeFileModal();
+    hideGatePopover();
+  }
+});
+
+// ═══════════════════════════════════════════
+// Gate findings popover
+// ═══════════════════════════════════════════
+function showGatePopover(event, text) {
+  event.stopPropagation();
+  const popover = document.getElementById('gate-popover');
+  popover.textContent = '';
+
+  // Handle newlines in text
+  const lines = text.split('\\n');
+  lines.forEach((line, i) => {
+    popover.appendChild(document.createTextNode(line));
+    if (i < lines.length - 1) popover.appendChild(document.createElement('br'));
+  });
+
+  const rect = event.target.getBoundingClientRect();
+  popover.style.left = rect.left + 'px';
+  popover.style.top = (rect.bottom + 6) + 'px';
+  popover.classList.add('visible');
+
+  // Auto-dismiss
+  setTimeout(() => { hideGatePopover(); }, 5000);
+}
+
+function hideGatePopover() {
+  document.getElementById('gate-popover').classList.remove('visible');
+}
+
+// Close popover on click outside
+document.addEventListener('click', (e) => {
+  if (!e.target.classList.contains('gate-clickable')) {
+    hideGatePopover();
+  }
+});
+</script>
+</body>
+</html>

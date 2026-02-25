@@ -6,6 +6,20 @@ The dark factory is a convergence loop that turns a one-shot AI code generation 
 
 The pattern: **Seed → Agent → Validate → Feedback → Repeat until satisfied.**
 
+## Cross-References (DRY)
+
+This file is the **operating manual** — the "what" and "why" of the factory. Operational detail lives in the skills:
+
+| Concept | Source of Truth | This File |
+|---------|----------------|-----------|
+| Convergence loop steps | `.claude/skills/factory-orchestrate/SKILL.md` | Summary in ASCII diagram |
+| Gate 0 agent team composition | `factory-orchestrate/SKILL.md` Step 4 | Behavioral contract only |
+| PR review pack pipeline | `.claude/skills/pr-review-pack/SKILL.md` | What the human reviews |
+| Code quality standards | `docs/code_quality_standards.md` | References, doesn't repeat |
+| Adversarial review checklist | `.github/codex/prompts/adversarial_review.md` | References, doesn't repeat |
+
+When updating gate behavior or agent composition, update the **skill first**, then check this file's summary still holds.
+
 ## Architecture
 
 **Claude Code is the factory orchestrator.** It drives the convergence loop, invokes Codex via browser, runs adversarial review, and makes holistic judgment calls. CI provides background validation on every push — it validates, it doesn't orchestrate.
@@ -33,7 +47,7 @@ Claude Code runs the convergence loop via the `/factory-orchestrate` skill, usin
 │    3. Push stripped branch to origin               │
 │    4. Invoke Codex via browser (Codex UI)          │
 │       → Codex creates its own codex-... branch     │
-│    5. Gate 0: Adversarial code review              │
+│    5. Gate 0: Adversarial review (agent team)       │
 │    6. Merge Codex changes onto factory branch      │
 │    7. restore_holdout.py → restore /scenarios/     │
 │    8. Gate 1: make lint && typecheck && test        │
@@ -75,12 +89,11 @@ CI runs validation-only on every push to `factory/**` or `df-crank-**` branches:
 
 ## Validation Gates
 
-### Gate 0: Adversarial Code Review (Claude Code orchestrated)
-- Claude Code reviews Codex's changes before merging to the factory branch
-- Checks for: stam tests, gaming, architectural dishonesty, stub implementations
-- Standards defined in `docs/code_quality_standards.md`
-- CRITICAL findings → send back to Codex with feedback (no point running gates)
-- Clean or WARNING-only → proceed to Gate 1
+### Gate 0: Adversarial Code Review (Agent Team)
+- Runs as a **parallel agent team** before merge — deterministic tool agents + LLM semantic reviewer, simultaneously
+- **Fail-fast rule:** Any CRITICAL finding from any agent → stop. Do NOT merge. Compile findings as feedback and loop back to Codex. No point sending to CI or later gates.
+- Clean or WARNING-only across all agents → proceed to merge + Gate 1
+- Full agent team composition and execution: see `factory-orchestrate/SKILL.md` Step 4
 
 ### Gate 1: Deterministic CI
 - `make lint` — ruff check
@@ -199,16 +212,21 @@ Feedback files are at `artifacts/factory/feedback_iter_N.md`. Each contains:
 
 The factory **never auto-merges** to main. When the convergence loop meets the satisfaction threshold, it creates (or updates) a PR with the `factory-converged` and `accept-merge-gate` labels. This is the single human decision point in the entire loop.
 
-**What the project lead reviews:**
-- Satisfaction score — does it meet your quality bar?
-- Residual warnings in the latest feedback file
-- Unexpected files or dependencies introduced by the attractor
-- Optionally: run `make factory-local` locally for additional confidence
+After creating the PR, the orchestrator generates a **PR review pack** via the `/pr-review-pack` skill — a self-contained interactive HTML file. The project lead reviews the report, not the code. Build specification and three-pass pipeline: see `pr-review-pack/SKILL.md`.
+
+**What the project lead reviews (via the review pack):**
+- Architecture diagram showing which zones were touched
+- Adversarial findings from the Gate 0 agent team, graded by file
+- CI performance with health classification
+- Key decisions with zone-level traceability
+- Convergence result — gate-by-gate status and satisfaction score
+- Post-merge items with code snippets and failure/success scenarios
+- Factory history — iteration timeline, intervention log, gate findings per iteration
 
 **To accept:** Approve and merge the PR. The factory branch can be deleted.
 **To reject:** Close the PR and either adjust scenarios/specs or trigger another factory run.
 
-The accept/merge gate exists because code produced by the factory was never reviewed by humans during production. The satisfaction score provides probabilistic confidence, but the merge decision is always human.
+The accept/merge gate exists because code produced by the factory was never reviewed by humans during production. The review pack provides structured visibility into what the factory did and why. The merge decision is always human.
 
 ## When to Escalate
 
@@ -228,6 +246,18 @@ artifacts/factory/
 └── feedback_iter_*.md       # All feedback files (committed — Codex reads these)
 ```
 
+## Known Evolution Paths
+
+Architecture decisions that are correct for the current proof-of-concept but should be revisited as the factory matures:
+
+| Decision | Current State | Evolution Trigger | Target |
+|----------|--------------|-------------------|--------|
+| Separate factory-loop + validate CI workflows | Overlap provides redundancy | Factory running regularly with stable gates | Consolidate into single workflow with clear separation |
+| `.devcontainer` setup | Not yet configured | Multiple developers or CI environments diverging | Add devcontainer with pinned Python, deps, hooks |
+| Gate 2 checks are tool-only | Deterministic, reliable | Need for architectural or design-level quality checks | Add LLM-based advisory checks (clearly labeled non-deterministic) |
+| Post-merge items tracked in review pack only | PR review pack captures items | Items getting lost after merge | `scripts/create_postmerge_issues.py` creates GH issues automatically |
+| Manual `make install-hooks` required | Prominent in docs, not enforced | New contributors missing it | `.devcontainer` or CI check that validates hooks are installed |
+
 ## Key Files
 
 | File | Owner | Purpose |
@@ -238,10 +268,14 @@ artifacts/factory/
 | `/scripts/compile_feedback.py` | Factory | Feedback generation |
 | `/scripts/strip_holdout.py` | Factory | Holdout stripping (isolation gate) |
 | `/scripts/restore_holdout.py` | Factory | Holdout restoration |
-| `/scripts/nfr_checks.py` | Factory | Gate 2 NFR checker |
+| `/scripts/nfr_checks.py` | Factory | Gate 0 tool agents + Gate 2 NFR checker |
+| `/scripts/check_test_quality.py` | Factory | Gate 0 tool agent — vacuous test detection |
 | `/.github/workflows/factory.yaml` | Factory | CI validation on push |
 | `/.github/codex/prompts/factory_fix.md` | Factory | Codex instruction template |
+| `/.github/codex/prompts/adversarial_review.md` | Factory | Gate 0 semantic reviewer checklist |
 | `/.claude/skills/factory-orchestrate/` | Factory | Claude Code orchestration skill |
+| `/.claude/skills/pr-review-pack/` | Factory | PR review pack generation (accept/merge gate) |
 | `/docs/code_quality_standards.md` | Factory | Universal code quality standards |
+| `/docs/factory_architecture.html` | Factory | Interactive architecture diagram |
 | `/CLAUDE.md` | Factory | Repo-level context for Claude Code |
 | `/artifacts/factory/feedback_iter_*.md` | Factory | Iteration feedback (Codex reads) |

@@ -3,600 +3,567 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dark Factory Architecture — MiniPong</title>
+<title>Dark Factory — Architecture</title>
 <style>
   :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --border: #30363d;
-    --text: #e6edf3;
-    --muted: #8b949e;
-    --human: #f0883e;
-    --factory: #58a6ff;
-    --codex: #3fb950;
-    --holdout: #f85149;
-    --feedback: #bc8cff;
-    --pass: #3fb950;
-    --fail: #f85149;
-    --claude: #d2a8ff;
+    --green: #22c55e; --green-bg: #f0fdf4; --green-border: #86efac;
+    --yellow: #eab308; --yellow-bg: #fefce8;
+    --orange: #f97316; --orange-bg: #fff7ed; --orange-border: #fdba74;
+    --red: #ef4444; --red-bg: #fef2f2;
+    --gray: #6b7280; --gray-bg: #f9fafb; --gray-border: #e5e7eb;
+    --blue: #3b82f6; --blue-bg: #eff6ff; --blue-border: #93c5fd;
+    --purple: #8b5cf6; --purple-bg: #f5f3ff; --purple-border: #c4b5fd;
+    --text: #1f2937; --text-secondary: #6b7280; --text-muted: #9ca3af;
+    --border: #e5e7eb; --bg: #f3f4f6; --surface: #ffffff;
+    --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --factory-fill: #dbeafe; --factory-stroke: #3b82f6;
+    --product-fill: #dcfce7; --product-stroke: #22c55e;
+    --human-fill: #ffedd5; --human-stroke: #f97316;
+    --attractor-fill: #ede9fe; --attractor-stroke: #8b5cf6;
+    --ci-fill: #f3f4f6; --ci-stroke: #6b7280;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; }
+  [data-theme="dark"] {
+    --text: #e5e7eb; --text-secondary: #9ca3af; --text-muted: #6b7280;
+    --border: #374151; --bg: #111827; --surface: #1f2937;
+    --gray-bg: #1f2937; --gray-border: #374151; --gray: #9ca3af;
+    --green-bg: #064e3b; --green-border: #10b981;
+    --yellow-bg: #713f12; --red-bg: #7f1d1d; --orange-bg: #7c2d12;
+    --blue-bg: #1e3a5f; --blue-border: #60a5fa;
+    --purple-bg: #2e1065; --purple-border: #a78bfa;
+    --factory-fill: #1e3a5f; --factory-stroke: #60a5fa;
+    --product-fill: #064e3b; --product-stroke: #34d399;
+    --human-fill: #7c2d12; --human-stroke: #fb923c;
+    --attractor-fill: #2e1065; --attractor-stroke: #a78bfa;
+    --ci-fill: #374151; --ci-stroke: #9ca3af;
+  }
 
-  .header { text-align: center; padding: 40px 20px 20px; }
-  .header h1 { font-size: 28px; font-weight: 600; }
-  .header p { color: var(--muted); margin-top: 8px; font-size: 15px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--text); background: var(--bg); line-height: 1.5; font-size: 14px; }
+  .container { max-width: 1240px; margin: 0 auto; padding: 24px 16px; }
 
-  .tabs { display: flex; justify-content: center; gap: 8px; padding: 20px; flex-wrap: wrap; }
-  .tab { padding: 10px 24px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; font-size: 14px; transition: all 0.2s; }
-  .tab:hover { border-color: var(--factory); color: var(--text); }
-  .tab.active { background: var(--factory); color: #fff; border-color: var(--factory); }
+  /* Header */
+  .header { background: var(--surface); border-radius: 12px; padding: 24px; margin-bottom: 20px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
+  .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
+  .header .subtitle { font-size: 14px; color: var(--text-secondary); }
+  .theme-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .theme-toggle button { border: none; background: transparent; padding: 5px 11px; font-size: 14px; cursor: pointer; color: var(--text-secondary); transition: background 0.15s, color 0.15s; line-height: 1; }
+  .theme-toggle button:hover { background: var(--gray-bg); }
+  .theme-toggle button.active { background: var(--blue); color: white; }
+  .theme-toggle button:not(:last-child) { border-right: 1px solid var(--border); }
 
-  .view { max-width: 1100px; margin: 0 auto; padding: 20px; display: none; }
-  .view.active { display: block; }
+  /* Legend */
+  .legend { background: var(--surface); border-radius: 12px; padding: 14px 24px; margin-bottom: 20px; border: 1px solid var(--border); display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+  .legend-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-right: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 4px; border: 2px solid; }
 
-  /* Architecture Diagram */
-  .arch-flow { display: flex; flex-direction: column; gap: 0; align-items: center; }
-  .arch-node { background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 24px; width: 100%; max-width: 800px; position: relative; }
-  .arch-node h3 { font-size: 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-  .arch-node p { color: var(--muted); font-size: 14px; }
-  .arch-node.human { border-color: var(--human); }
-  .arch-node.human h3 { color: var(--human); }
-  .arch-node.factory { border-color: var(--factory); }
-  .arch-node.factory h3 { color: var(--factory); }
-  .arch-node.codex { border-color: var(--codex); }
-  .arch-node.codex h3 { color: var(--codex); }
-  .arch-node.holdout { border-color: var(--holdout); }
-  .arch-node.holdout h3 { color: var(--holdout); }
-  .arch-node.feedback { border-color: var(--feedback); }
-  .arch-node.feedback h3 { color: var(--feedback); }
-  .arch-node.claude { border-color: var(--claude); }
-  .arch-node.claude h3 { color: var(--claude); }
-  .badge.claude { background: rgba(210,168,255,0.15); color: var(--claude); }
+  /* Main layout */
+  .layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+  @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
 
-  .arrow { width: 2px; height: 40px; background: var(--border); position: relative; }
-  .arrow::after { content: ''; position: absolute; bottom: -6px; left: -5px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid var(--border); }
-  .arrow.colored { background: var(--feedback); }
-  .arrow.colored::after { border-top-color: var(--feedback); }
+  /* Diagram */
+  .diagram-wrap { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 16px; overflow: hidden; }
+  .diagram-wrap svg { width: 100%; height: auto; display: block; }
+  .diagram-wrap svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 
-  .loop-bracket { border: 2px dashed var(--feedback); border-radius: 16px; padding: 16px; margin: -8px 0; width: 100%; max-width: 840px; position: relative; }
-  .loop-label { position: absolute; top: -12px; left: 24px; background: var(--bg); padding: 0 8px; color: var(--feedback); font-size: 13px; font-weight: 600; }
+  /* Detail panel */
+  .panel { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; position: sticky; top: 24px; }
+  .panel-header { padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  .panel-header h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+  .panel-body { padding: 20px; }
+  .panel-empty { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+  .detail-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .detail-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
+  .detail-section { margin-bottom: 14px; }
+  .detail-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; }
+  .detail-list { list-style: none; padding: 0; }
+  .detail-list li { font-size: 12px; font-family: var(--mono); color: var(--text-secondary); padding: 3px 0; display: flex; align-items: center; gap: 8px; }
+  .detail-list li::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .detail-list li.factory::before { background: var(--blue); }
+  .detail-list li.product::before { background: var(--green); }
+  .detail-list li.human::before { background: var(--orange); }
+  .detail-list li.attractor::before { background: var(--purple); }
+  .detail-list li.ci::before { background: var(--gray); }
+  .detail-tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-right: 4px; margin-bottom: 4px; }
+  .detail-tag.gate { background: var(--blue-bg); color: var(--blue); }
+  .detail-tag.boundary { background: var(--red-bg); color: var(--red); }
+  .detail-tag.info { background: var(--gray-bg); color: var(--gray); }
 
-  .sub-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-  .sub-step { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 12px; font-size: 13px; }
-  .sub-step .label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-  .sub-step.l1 .label { color: var(--factory); }
-  .sub-step.l15 .label { color: #d2a8ff; }
-  .sub-step.l2 .label { color: var(--holdout); }
+  /* Sidebar sections */
+  .sidebar-section { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); margin-top: 16px; overflow: hidden; }
+  .sidebar-header { padding: 14px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: background 0.15s; }
+  .sidebar-header:hover { background: var(--gray-bg); }
+  .sidebar-header h3 { font-size: 13px; font-weight: 700; }
+  .sidebar-header .chevron { font-size: 14px; color: var(--text-secondary); transition: transform 0.2s; }
+  .sidebar-section.collapsed .sidebar-body { display: none; }
+  .sidebar-section.collapsed .chevron { transform: rotate(-90deg); }
+  .sidebar-body { padding: 16px 20px; font-size: 13px; }
+  .defense-layer { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .defense-layer:last-child { border-bottom: none; }
+  .defense-num { width: 22px; height: 22px; border-radius: 50%; background: var(--blue); color: white; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .defense-text { font-size: 12px; line-height: 1.5; }
+  .defense-text strong { font-weight: 600; }
+  .boundary-item { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .boundary-item:last-child { border-bottom: none; }
+  .boundary-label { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+  .boundary-desc { font-size: 12px; color: var(--text-secondary); }
+  .agent-item { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; }
+  .agent-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .agent-name { font-size: 12px; font-weight: 600; }
+  .agent-role { font-size: 11px; color: var(--text-secondary); }
 
-  /* Wiring Table */
-  .wiring-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-  .wiring-table th { text-align: left; padding: 12px 16px; background: var(--surface); border-bottom: 2px solid var(--border); font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .wiring-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: top; }
-  .wiring-table tr:hover td { background: rgba(255,255,255,0.02); }
+  /* Footer */
+  .footer { text-align: center; padding: 24px; font-size: 12px; color: var(--text-muted); }
 
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-  .badge.human { background: rgba(240,136,62,0.15); color: var(--human); }
-  .badge.factory { background: rgba(88,166,255,0.15); color: var(--factory); }
-  .badge.codex { background: rgba(63,185,80,0.15); color: var(--codex); }
-  .badge.holdout { background: rgba(248,81,73,0.15); color: var(--holdout); }
-
-  /* Human Interaction Points */
-  .interaction-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
-  .interaction-card h3 { color: var(--human); font-size: 16px; margin-bottom: 8px; }
-  .interaction-card .when { color: var(--muted); font-size: 13px; margin-bottom: 12px; font-style: italic; }
-  .interaction-card .action { font-size: 14px; }
-  .interaction-card code { background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
-
-  /* Validation Checklist */
-  .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .check-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
-  .check-item.pass { border-color: var(--pass); }
-  .check-item.fail { border-color: var(--fail); }
-  .check-item h4 { font-size: 14px; margin-bottom: 4px; }
-  .check-item .status { font-size: 13px; font-weight: 600; }
-  .check-item .status.pass { color: var(--pass); }
-  .check-item .status.fail { color: var(--fail); }
-  .check-item p { color: var(--muted); font-size: 13px; margin-top: 4px; }
-
-  .section-title { font-size: 20px; font-weight: 600; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-
-  .legend { display: flex; gap: 24px; justify-content: center; padding: 16px; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
-  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-
-  .fs-shuffle { background: rgba(248,81,73,0.1); border: 1px dashed var(--holdout); border-radius: 8px; padding: 16px; margin-top: 16px; }
-  .fs-shuffle h4 { color: var(--holdout); font-size: 14px; margin-bottom: 8px; }
-  .fs-shuffle pre { font-size: 12px; color: var(--muted); white-space: pre-wrap; }
+  /* SVG interactive */
+  .node { cursor: pointer; transition: filter 0.15s, opacity 0.15s; }
+  .node:hover { filter: brightness(0.94); }
+  .node.active { filter: brightness(0.88); }
+  .node.dimmed { opacity: 0.2; }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>Dark Factory Architecture</h1>
-  <p>MiniPong RL System — Convergence Loop Infrastructure</p>
-</div>
+<div class="container">
 
-<div class="legend">
-  <div class="legend-item"><div class="legend-dot" style="background:var(--human)"></div> Human (Project Lead)</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--factory)"></div> Factory Orchestrator</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--codex)"></div> Codex (Attractor)</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--holdout)"></div> Holdout Scenarios</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--feedback)"></div> Feedback Loop</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--claude)"></div> Claude Code (Orchestrator)</div>
-</div>
-
-<div class="tabs">
-  <div class="tab active" onclick="showView('architecture')">Architecture</div>
-  <div class="tab" onclick="showView('wiring')">Component Wiring</div>
-  <div class="tab" onclick="showView('human')">Human Interaction</div>
-  <div class="tab" onclick="showView('validation')">Validation Proof</div>
-  <div class="tab" onclick="showView('orchestrator')">Claude Code as Orchestrator</div>
-</div>
-
-<!-- ─── ARCHITECTURE VIEW ─── -->
-<div class="view active" id="view-architecture">
-  <div class="arch-flow">
-
-    <div class="arch-node human">
-      <h3>HUMAN — Project Lead</h3>
-      <p>Authors specs (/specs/*.md) and scenarios (/scenarios/*.md). Sets satisfaction threshold. Triggers factory. Escalates when loop stalls.</p>
-      <div class="sub-steps">
-        <div class="sub-step"><div class="label" style="color:var(--human)">Writes</div>/specs/ — what the system should do</div>
-        <div class="sub-step"><div class="label" style="color:var(--human)">Writes</div>/scenarios/ — holdout evaluation criteria</div>
-      </div>
+  <div class="header">
+    <div>
+      <h1>Dark Factory &mdash; Architecture</h1>
+      <div class="subtitle">Claude Code + Agent Teams Orchestration Model</div>
     </div>
-    <div class="arrow"></div>
+    <div class="theme-toggle" id="themeToggle">
+      <button onclick="setTheme('light')" title="Light">&#9788;</button>
+      <button onclick="setTheme('dark')" title="Dark">&#9790;</button>
+      <button onclick="setTheme('system')" title="System" class="active">&#9881;</button>
+    </div>
+  </div>
 
-    <div class="loop-bracket">
-      <div class="loop-label">CONVERGENCE LOOP (up to N iterations)</div>
+  <div class="legend">
+    <span class="legend-title">Color Key</span>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--factory-fill);border-color:var(--factory-stroke)"></div>Factory Infrastructure</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--product-fill);border-color:var(--product-stroke)"></div>Product Code</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--human-fill);border-color:var(--human-stroke)"></div>Human Actions</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--attractor-fill);border-color:var(--attractor-stroke)"></div>Attractor (Codex)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--ci-fill);border-color:var(--ci-stroke)"></div>CI Background</div>
+  </div>
 
-      <div class="arch-node factory" style="margin-bottom:0">
-        <h3>FACTORY ORCHESTRATOR</h3>
-        <p>.github/workflows/factory.yaml — runs the loop, controls iteration</p>
-        <div class="sub-steps" style="grid-template-columns:1fr 1fr 1fr">
-          <div class="sub-step l1"><div class="label">Gate 1: Deterministic CI</div>make lint + typecheck + test<br><em>If fail → skip remaining, go to feedback</em></div>
-          <div class="sub-step l15"><div class="label">Gate 2: Structural Quality</div>vulture (dead code), radon (complexity), coverage, bandit (security)<br><em>Non-blocking but tracked</em></div>
-          <div class="sub-step l2"><div class="label">Gate 3: Behavioral Scenarios</div>scripts/run_scenarios.py<br><em>12 holdout scenarios, satisfaction scoring</em></div>
+  <div class="layout">
+
+    <!-- SVG Diagram -->
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 740" xmlns="http://www.w3.org/2000/svg" id="archSvg">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,3.5 L0,7z" fill="var(--text-muted)"/></marker>
+          <marker id="arrBlue" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,3.5 L0,7z" fill="var(--factory-stroke)"/></marker>
+          <marker id="arrPurple" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,3.5 L0,7z" fill="var(--attractor-stroke)"/></marker>
+          <marker id="arrOrange" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,3.5 L0,7z" fill="var(--orange)"/></marker>
+          <marker id="arrGreen" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,3.5 L0,7z" fill="var(--product-stroke)"/></marker>
+          <filter id="ds" x="-3%" y="-3%" width="106%" height="106%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.07"/></filter>
+        </defs>
+
+        <!-- ===== HUMAN ===== -->
+        <g class="node" data-id="human" onclick="showDetail('human')" filter="url(#ds)">
+          <rect x="200" y="14" width="360" height="58" rx="10" fill="var(--human-fill)" stroke="var(--human-stroke)" stroke-width="2"/>
+          <text x="380" y="38" text-anchor="middle" font-size="14" font-weight="700" fill="var(--text)">Human (Project Lead)</text>
+          <text x="380" y="56" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Authors /specs/ + /scenarios/ &#x2022; Invokes /factory-orchestrate &#x2022; Reviews PR</text>
+        </g>
+
+        <!-- Human -> Orchestrator -->
+        <line x1="380" y1="72" x2="380" y2="98" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- ===== ORCHESTRATOR ===== -->
+        <g class="node" data-id="orchestrator" onclick="showDetail('orchestrator')" filter="url(#ds)">
+          <rect x="80" y="100" width="600" height="50" rx="10" fill="var(--factory-fill)" stroke="var(--factory-stroke)" stroke-width="2"/>
+          <text x="380" y="122" text-anchor="middle" font-size="14" font-weight="700" fill="var(--text)">Claude Code (Orchestrator)</text>
+          <text x="380" y="140" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">.claude/skills/factory-orchestrate &#x2014; drives the convergence loop</text>
+        </g>
+
+        <!-- ===== CONVERGENCE LOOP BORDER ===== -->
+        <rect x="40" y="166" width="680" height="432" rx="12" fill="none" stroke="var(--factory-stroke)" stroke-width="1" stroke-dasharray="6,4" opacity="0.35"/>
+        <text x="58" y="185" font-size="10" font-weight="700" fill="var(--factory-stroke)" opacity="0.6" letter-spacing="0.8">CONVERGENCE LOOP</text>
+
+        <!-- Step 1-3: Branch + Strip + Push -->
+        <g class="node" data-id="step-branch" onclick="showDetail('step-branch')" filter="url(#ds)">
+          <rect x="56" y="198" width="210" height="56" rx="8" fill="var(--factory-fill)" stroke="var(--factory-stroke)" stroke-width="1.5"/>
+          <circle cx="76" cy="216" r="10" fill="var(--factory-stroke)"/><text x="76" y="220" text-anchor="middle" font-size="10" font-weight="700" fill="white">1</text>
+          <text x="170" y="220" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Create Branch + Strip</text>
+          <text x="166" y="240" text-anchor="middle" font-size="10" fill="var(--text-secondary)">df-crank-vXX &#x2022; strip_holdout.py &#x2022; push</text>
+        </g>
+
+        <!-- Arrow 1 -> 4 -->
+        <line x1="266" y1="226" x2="296" y2="226" stroke="var(--factory-stroke)" stroke-width="1.5" marker-end="url(#arrBlue)"/>
+
+        <!-- Step 4: Invoke Codex -->
+        <g class="node" data-id="step-codex" onclick="showDetail('step-codex')" filter="url(#ds)">
+          <rect x="298" y="198" width="200" height="56" rx="8" fill="var(--attractor-fill)" stroke="var(--attractor-stroke)" stroke-width="1.5"/>
+          <circle cx="318" cy="216" r="10" fill="var(--attractor-stroke)"/><text x="318" y="220" text-anchor="middle" font-size="10" font-weight="700" fill="white">4</text>
+          <text x="406" y="218" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Invoke Codex</text>
+          <text x="398" y="240" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Browser automation &#x2022; ChatGPT Plus UI</text>
+        </g>
+
+        <!-- Arrow 4 -> Codex actor -->
+        <line x1="498" y1="226" x2="524" y2="226" stroke="var(--attractor-stroke)" stroke-width="1.5" marker-end="url(#arrPurple)"/>
+
+        <!-- Codex Actor -->
+        <g class="node" data-id="codex" onclick="showDetail('codex')" filter="url(#ds)">
+          <rect x="526" y="198" width="178" height="56" rx="8" fill="var(--attractor-fill)" stroke="var(--attractor-stroke)" stroke-width="2"/>
+          <text x="615" y="222" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)">Codex (Attractor)</text>
+          <text x="615" y="240" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Creates codex-... branch</text>
+        </g>
+
+        <!-- Info boundary box around Codex -->
+        <rect x="518" y="190" width="194" height="72" rx="6" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.45"/>
+        <text x="615" y="186" text-anchor="middle" font-size="8.5" font-weight="700" fill="var(--red)" opacity="0.6" letter-spacing="0.3">INFORMATION BOUNDARY</text>
+
+        <!-- Codex -> Gate 0 -->
+        <path d="M615,254 L615,282" stroke="var(--attractor-stroke)" stroke-width="1.5" fill="none" marker-end="url(#arrPurple)"/>
+
+        <!-- Step 6: Gate 0 -->
+        <g class="node" data-id="step-gate0" onclick="showDetail('step-gate0')" filter="url(#ds)">
+          <rect x="260" y="284" width="340" height="56" rx="8" fill="var(--factory-fill)" stroke="var(--factory-stroke)" stroke-width="1.5"/>
+          <circle cx="280" cy="302" r="10" fill="var(--factory-stroke)"/><text x="280" y="306" text-anchor="middle" font-size="10" font-weight="700" fill="white">4</text>
+          <text x="438" y="304" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Gate 0: Adversarial Review (Agent Team)</text>
+          <text x="430" y="326" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Tool agents (parallel) + semantic reviewer &#x2022; fail-fast on CRITICAL &#x2022; then merge</text>
+        </g>
+
+        <!-- Gate 0 -> Restore + Gate 1 -->
+        <path d="M430,340 L430,364" stroke="var(--factory-stroke)" stroke-width="1.5" fill="none" marker-end="url(#arrBlue)"/>
+
+        <!-- Step 8-9: Restore + Gate 1 -->
+        <g class="node" data-id="step-gate1" onclick="showDetail('step-gate1')" filter="url(#ds)">
+          <rect x="56" y="366" width="300" height="56" rx="8" fill="var(--product-fill)" stroke="var(--product-stroke)" stroke-width="1.5"/>
+          <circle cx="76" cy="384" r="10" fill="var(--product-stroke)"/><text x="76" y="388" text-anchor="middle" font-size="10" font-weight="700" fill="white">8</text>
+          <text x="214" y="386" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Restore Holdout + Gate 1</text>
+          <text x="206" y="406" text-anchor="middle" font-size="10" fill="var(--text-secondary)">restore_holdout.py &#x2022; make lint &#x2022; typecheck &#x2022; test</text>
+        </g>
+
+        <!-- Step 10-11: Gate 2 + Gate 3 -->
+        <g class="node" data-id="step-gate23" onclick="showDetail('step-gate23')" filter="url(#ds)">
+          <rect x="370" y="366" width="334" height="56" rx="8" fill="var(--product-fill)" stroke="var(--product-stroke)" stroke-width="1.5"/>
+          <circle cx="390" cy="384" r="10" fill="var(--product-stroke)"/><text x="390" y="388" text-anchor="middle" font-size="10" font-weight="700" fill="white">10</text>
+          <text x="545" y="386" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Gate 2 (NFR) + Gate 3 (Holdout)</text>
+          <text x="537" y="406" text-anchor="middle" font-size="10" fill="var(--text-secondary)">nfr_checks.py &#x2022; run_scenarios.py &#x2022; satisfaction score</text>
+        </g>
+
+        <!-- Arrows between gate rows -->
+        <line x1="356" y1="394" x2="370" y2="394" stroke="var(--product-stroke)" stroke-width="1.5" marker-end="url(#arrGreen)"/>
+
+        <!-- Gates -> LLM Judge -->
+        <path d="M206,422 L206,448" stroke="var(--factory-stroke)" stroke-width="1.5" fill="none" marker-end="url(#arrBlue)"/>
+        <path d="M537,422 L537,448" stroke="var(--factory-stroke)" stroke-width="1.5" fill="none" marker-end="url(#arrBlue)"/>
+
+        <!-- Step 12: LLM-as-Judge -->
+        <g class="node" data-id="step-judge" onclick="showDetail('step-judge')" filter="url(#ds)">
+          <rect x="160" y="450" width="440" height="52" rx="8" fill="var(--factory-fill)" stroke="var(--factory-stroke)" stroke-width="2"/>
+          <circle cx="180" cy="470" r="10" fill="var(--factory-stroke)"/><text x="180" y="474" text-anchor="middle" font-size="10" font-weight="700" fill="white">12</text>
+          <text x="388" y="472" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)">LLM-as-Judge: Holistic Evaluation</text>
+          <text x="380" y="490" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Trajectory &#x2022; systemic issues &#x2022; gaming detection &#x2022; go/no-go</text>
+        </g>
+
+        <!-- Judge -> Decision diamond -->
+        <path d="M380,502 L380,524" stroke="var(--factory-stroke)" stroke-width="1.5" fill="none" marker-end="url(#arrBlue)"/>
+
+        <!-- Decision diamond -->
+        <g class="node" data-id="step-decision" onclick="showDetail('step-decision')">
+          <polygon points="380,526 418,550 380,574 342,550" fill="var(--factory-fill)" stroke="var(--factory-stroke)" stroke-width="2"/>
+          <text x="380" y="554" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text)">13</text>
+        </g>
+
+        <!-- Satisfied path -> PR -->
+        <g class="node" data-id="step-pr" onclick="showDetail('step-pr')" filter="url(#ds)">
+          <rect x="478" y="534" width="218" height="44" rx="8" fill="var(--human-fill)" stroke="var(--human-stroke)" stroke-width="2"/>
+          <text x="587" y="553" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">Create PR</text>
+          <text x="587" y="569" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Accept / Merge Gate (human)</text>
+        </g>
+        <line x1="418" y1="550" x2="476" y2="550" stroke="var(--human-stroke)" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="440" y="542" font-size="9" fill="var(--green)" font-weight="700">SATISFIED</text>
+
+        <!-- Feedback loop arrow: left side, back to step 1 -->
+        <path d="M342,550 L66,550 L66,226 L56,226" stroke="var(--orange)" stroke-width="2.5" fill="none" stroke-dasharray="7,4"/>
+        <polygon points="56,219 70,226 56,233" fill="var(--orange)"/>
+        <text x="82" y="544" font-size="9" fill="var(--orange)" font-weight="700">FEEDBACK LOOP</text>
+        <text x="56" y="500" font-size="8.5" fill="var(--orange)" opacity="0.7" transform="rotate(-90,56,500)">compile feedback &#x2192; loop</text>
+
+        <!-- ===== CI BACKGROUND ===== -->
+        <g class="node" data-id="ci" onclick="showDetail('ci')" filter="url(#ds)">
+          <rect x="56" y="614" width="648" height="54" rx="10" fill="var(--ci-fill)" stroke="var(--ci-stroke)" stroke-width="1.5" stroke-dasharray="6,3"/>
+          <text x="380" y="636" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)">CI Validation (Background)</text>
+          <text x="380" y="654" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Runs on push to factory/** or df-crank-** &#x2022; Gates 1-3 &#x2022; feedback compilation</text>
+        </g>
+        <!-- CI dashed link to loop -->
+        <path d="M380,614 L380,598" stroke="var(--ci-stroke)" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+        <text x="395" y="610" font-size="8" fill="var(--text-muted)">reads results</text>
+
+        <!-- Step numbers guide at bottom -->
+        <text x="380" y="698" text-anchor="middle" font-size="10" fill="var(--text-muted)">1-2: branch + strip &#x2022; 3: invoke Codex &#x2022; 4: Gate 0 agent team &#x2022; 5: merge &#x2022; 6-7: restore + Gate 1 &#x2022; 8-9: Gates 2-3 &#x2022; 10: LLM judge &#x2022; 11-12: PR + review pack</text>
+      </svg>
+    </div>
+
+    <!-- Right Column -->
+    <div>
+      <!-- Detail Panel -->
+      <div class="panel" id="detailPanel">
+        <div class="panel-header"><h2>Component Detail</h2></div>
+        <div class="panel-empty" id="panelEmpty">Click any component in the diagram to see its details, key files, and information boundary notes.</div>
+        <div class="panel-body" id="panelBody" style="display:none"></div>
+      </div>
+
+      <!-- Layered Defense -->
+      <div class="sidebar-section">
+        <div class="sidebar-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <h3>Layered Defense</h3><span class="chevron">&#9660;</span>
+        </div>
+        <div class="sidebar-body">
+          <div class="defense-layer">
+            <div class="defense-num">1</div>
+            <div class="defense-text"><strong>Gate 0: Tool Agents</strong> &mdash; Deterministic, parallel. ruff (lint), radon (complexity), vulture (dead code), bandit (security), check_test_quality.py (vacuous tests). Fast, cheap, catches obvious violations in seconds.</div>
+          </div>
+          <div class="defense-layer">
+            <div class="defense-num">2</div>
+            <div class="defense-text"><strong>Gate 0: Semantic Reviewer</strong> &mdash; LLM judgment, runs in parallel with tool agents. Catches subtle gaming, architectural dishonesty, spec violations, integration gaps the tools miss.</div>
+          </div>
+          <div class="defense-layer">
+            <div class="defense-num">3</div>
+            <div class="defense-text"><strong>Gate 3: Holdout Scenarios</strong> &mdash; Ground truth. The attractor never sees these criteria. Verifies actual behavior against human-authored expectations.</div>
+          </div>
         </div>
       </div>
-      <div class="arrow" style="margin: 0 auto"></div>
 
-      <div style="display:flex;gap:16px;width:100%;max-width:800px;margin:0 auto">
-        <div class="arch-node holdout" style="flex:1">
-          <h3>HOLDOUT SCENARIOS</h3>
-          <p>/scenarios/*.md — Codex NEVER sees these. Filesystem shuffle hides them during Codex execution.</p>
+      <!-- Information Boundaries -->
+      <div class="sidebar-section">
+        <div class="sidebar-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <h3>Information Boundaries</h3><span class="chevron">&#9660;</span>
         </div>
-        <div class="arch-node feedback" style="flex:1">
-          <h3>FEEDBACK COMPILER</h3>
-          <p>scripts/compile_feedback.py → artifacts/factory/feedback_iter_N.md</p>
-        </div>
-      </div>
-      <div class="arrow colored" style="margin: 0 auto"></div>
-
-      <div class="arch-node codex">
-        <h3>CODEX (Attractor)</h3>
-        <p>openai/codex-action@v1 — reads /specs/ + feedback, writes code fixes. Non-interactive. Commits directly.</p>
-        <div class="sub-steps">
-          <div class="sub-step"><div class="label" style="color:var(--codex)">Reads</div>/specs/*.md + feedback_iter_N.md</div>
-          <div class="sub-step"><div class="label" style="color:var(--codex)">Writes</div>src/, tests/, configs/, Makefile</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="arrow colored"></div>
-    <div class="arch-node factory" style="border-style:dashed">
-      <h3>EXIT CONDITIONS</h3>
-      <p>Satisfaction threshold met (default 80%) → post PR comment, await project lead's accept/merge decision.<br>Max iterations reached → tag project lead for escalation.</p>
-    </div>
-
-    <div class="fs-shuffle">
-      <h4>Filesystem Shuffle — Scenario Isolation</h4>
-      <pre>Before Codex runs:  mv /scenarios/ /tmp/factory_scenarios    (scenarios disappear)
-Codex executes:     workspace has NO /scenarios/ directory    (hard gate)
-After Codex:        cp -r /tmp/factory_scenarios /scenarios/  (scenarios restored)
-
-Why: .codexignore doesn't exist. This is a filesystem-level gate, not an LLM instruction.</pre>
-    </div>
-  </div>
-</div>
-
-<!-- ─── WIRING VIEW ─── -->
-<div class="view" id="view-wiring">
-  <h2 class="section-title">Component Wiring — How Each File Maps to the Factory</h2>
-  <table class="wiring-table">
-    <thead>
-      <tr><th>File</th><th>Owner</th><th>Dark Factory Role</th><th>Reads From</th><th>Writes To</th></tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>/specs/*.md</code></td>
-        <td><span class="badge human">Human</span></td>
-        <td>Source of truth — what the system should do. Codex reads these as requirements.</td>
-        <td>—</td>
-        <td>Codex prompt context</td>
-      </tr>
-      <tr>
-        <td><code>/scenarios/*.md</code></td>
-        <td><span class="badge holdout">Holdout</span></td>
-        <td>Behavioral holdout set — ML-style validation split. Agent never sees evaluation criteria.</td>
-        <td>—</td>
-        <td>run_scenarios.py</td>
-      </tr>
-      <tr>
-        <td><code>scripts/run_scenarios.py</code></td>
-        <td><span class="badge factory">Factory</span></td>
-        <td>Scenario evaluation engine. Parses scenario markdown, executes eval commands, produces JSON report.</td>
-        <td>/scenarios/*.md</td>
-        <td>artifacts/factory/scenario_results.json</td>
-      </tr>
-      <tr>
-        <td><code>scripts/compile_feedback.py</code></td>
-        <td><span class="badge factory">Factory</span></td>
-        <td>Feedback generation. Reads scenario results + CI logs, infers root causes, produces structured feedback for Codex.</td>
-        <td>scenario_results.json, ci_output.log, previous feedback</td>
-        <td>artifacts/factory/feedback_iter_N.md</td>
-      </tr>
-      <tr>
-        <td><code>.github/workflows/factory.yaml</code></td>
-        <td><span class="badge factory">Factory</span></td>
-        <td>Orchestrator. Implements the convergence loop: validate → scenarios → threshold check → feedback → Codex → repeat.</td>
-        <td>All of the above</td>
-        <td>PR comments, iteration state</td>
-      </tr>
-      <tr>
-        <td><code>.github/codex/prompts/factory_fix.md</code></td>
-        <td><span class="badge factory">Factory</span></td>
-        <td>Codex prompt template. Instructions + constraints for each iteration. Lists protected files, fix priorities.</td>
-        <td>—</td>
-        <td>Codex context</td>
-      </tr>
-      <tr>
-        <td><code>artifacts/factory/feedback_iter_N.md</code></td>
-        <td><span class="badge factory">Factory</span></td>
-        <td>Iteration feedback. Full error output, inferred causes, convergence trajectory. This is what Codex reads to fix things.</td>
-        <td>compile_feedback.py</td>
-        <td>Codex context</td>
-      </tr>
-      <tr>
-        <td><code>CLAUDE.md</code></td>
-        <td><span class="badge factory">Factory</span></td>
-        <td>Repo-level context for Claude Code (escalation path). Documents the factory model, protected files, quick commands.</td>
-        <td>—</td>
-        <td>Claude Code context</td>
-      </tr>
-      <tr>
-        <td><code>src/**</code></td>
-        <td><span class="badge codex">Codex</span></td>
-        <td>Product code. The "opaque weights" — correctness inferred from behavior, not inspection.</td>
-        <td>specs</td>
-        <td>Evaluated by scenarios</td>
-      </tr>
-      <tr>
-        <td><code>Makefile</code></td>
-        <td><span class="badge codex">Codex</span> / <span class="badge factory">Factory</span></td>
-        <td>Build interface. Factory targets (run-scenarios, compile-feedback, factory-local) + product targets (lint, test, train-smoke).</td>
-        <td>—</td>
-        <td>—</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- ─── HUMAN INTERACTION VIEW ─── -->
-<div class="view" id="view-human">
-  <h2 class="section-title">Human Interaction Points</h2>
-  <p style="color:var(--muted);margin-bottom:24px">The factory is designed to run autonomously. The project lead's involvement is limited to six distinct touchpoints:</p>
-
-  <div class="interaction-card">
-    <h3>1. Author Specs</h3>
-    <div class="when">Before the factory runs — defines intent</div>
-    <div class="action">
-      Write or update files in <code>/specs/</code>. These are the requirements Codex reads. The specs define <em>what</em> the system should do.
-      No code. No implementation details. Just behavioral contracts.
-    </div>
-  </div>
-
-  <div class="interaction-card">
-    <h3>2. Author Scenarios</h3>
-    <div class="when">Before the factory runs — defines success criteria</div>
-    <div class="action">
-      Write or update files in <code>/scenarios/</code>. Each scenario is a behavioral expectation with a runnable evaluation command.
-      These are the holdout set — Codex never sees them. This is how you define "done" without reviewing code.
-    </div>
-  </div>
-
-  <div class="interaction-card">
-    <h3>3. Trigger the Factory</h3>
-    <div class="when">When specs and scenarios are ready</div>
-    <div class="action">
-      GitHub Actions UI: <code>Actions → Dark Factory → Run workflow</code><br>
-      Or CLI: <code>gh workflow run factory.yaml -f max_iterations=5 -f satisfaction_threshold=0.80</code><br>
-      Or: push to a <code>factory/*</code> branch.
-    </div>
-  </div>
-
-  <div class="interaction-card">
-    <h3>4. Review Satisfaction Report</h3>
-    <div class="when">After the factory converges or stalls</div>
-    <div class="action">
-      The factory posts a PR comment with the satisfaction score and iteration count.
-      If converged: review the score, decide if it's good enough. You don't read the code.
-      If stalled: read <code>artifacts/factory/feedback_iter_N.md</code> to understand what's stuck.
-    </div>
-  </div>
-
-  <div class="interaction-card">
-    <h3>5. Escalate to Interactive Debug</h3>
-    <div class="when">When the factory stalls for 3+ iterations with no improvement</div>
-    <div class="action">
-      Open the repo in Claude Code (desktop). It reads <code>CLAUDE.md</code> automatically.
-      Point it at the latest feedback file. Claude Code does interactive debugging — the thing the factory loop can't do.
-      Fix the issue, push, let the factory resume.
-    </div>
-  </div>
-
-  <div class="interaction-card">
-    <h3>6. Accept / Promote / Ship</h3>
-    <div class="when">After the factory converges and the satisfaction report looks right</div>
-    <div class="action">
-      Merge the factory branch into main. This is the irreversible human gate — the decision that the product is ready.
-      Review the satisfaction dashboard (scenario pass/fail matrix, convergence trajectory).
-      Do NOT review code. The satisfaction score is your signal.
-    </div>
-  </div>
-
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:24px">
-    <h3 style="color:var(--factory);margin-bottom:12px">What the Project Lead Does NOT Do</h3>
-    <ul style="color:var(--muted);font-size:14px;padding-left:20px">
-      <li>Read diffs or code changes</li>
-      <li>Review PRs for code quality</li>
-      <li>Debug test failures manually</li>
-      <li>Write any production code</li>
-      <li>Approve individual Codex commits</li>
-    </ul>
-    <p style="margin-top:12px;font-size:14px">Code is opaque weights. Correctness is inferred from behavior. This is the validation constraint.</p>
-  </div>
-</div>
-
-<!-- ─── VALIDATION VIEW ─── -->
-<div class="view" id="view-validation">
-  <h2 class="section-title">Factory Validation — What's Built and Proven</h2>
-  <p style="color:var(--muted);margin-bottom:24px">Current status: factory infrastructure complete. Running against main branch (no MiniPong code yet).</p>
-
-  <div class="check-grid">
-    <div class="check-item pass">
-      <h4>CLAUDE.md</h4>
-      <div class="status pass">COMPLETE</div>
-      <p>Repo-level context with factory operating model, protected files, quick commands</p>
-    </div>
-    <div class="check-item pass">
-      <h4>/specs/ (6 files)</h4>
-      <div class="status pass">COMPLETE</div>
-      <p>system.md, env.md, rl.md, training.md, dashboard.md, proof.md</p>
-    </div>
-    <div class="check-item pass">
-      <h4>/scenarios/ (12 files)</h4>
-      <div class="status pass">COMPLETE</div>
-      <p>5 environment, 2 training, 1 pipeline, 1 dashboard, 3 integration</p>
-    </div>
-    <div class="check-item pass">
-      <h4>run_scenarios.py</h4>
-      <div class="status pass">COMPLETE — passes ruff + mypy</div>
-      <p>Parses scenarios, executes eval commands, produces JSON report with satisfaction score</p>
-    </div>
-    <div class="check-item pass">
-      <h4>compile_feedback.py</h4>
-      <div class="status pass">COMPLETE — passes ruff + mypy</div>
-      <p>Reads results + CI logs, infers root causes, produces structured feedback markdown</p>
-    </div>
-    <div class="check-item pass">
-      <h4>factory.yaml workflow</h4>
-      <div class="status pass">COMPLETE</div>
-      <p>Convergence loop with FS shuffle, Codex invocation, PR comments, stall detection</p>
-    </div>
-    <div class="check-item pass">
-      <h4>factory_fix.md prompt</h4>
-      <div class="status pass">COMPLETE</div>
-      <p>Codex instructions: read specs, read feedback, fix priorities, protected file list</p>
-    </div>
-    <div class="check-item pass">
-      <h4>Makefile targets</h4>
-      <div class="status pass">COMPLETE</div>
-      <p>run-scenarios, compile-feedback, factory-local, factory-status</p>
-    </div>
-    <div class="check-item pass">
-      <h4>docs/dark_factory.md</h4>
-      <div class="status pass">COMPLETE</div>
-      <p>Full operating manual: architecture, scenario writing, feedback reading, escalation</p>
-    </div>
-    <div class="check-item pass">
-      <h4>ProjectLeadAsks.md</h4>
-      <div class="status pass">COMPLETE</div>
-      <p>OpenAI API key, satisfaction threshold, branch strategy, token budget</p>
-    </div>
-  </div>
-
-  <h2 class="section-title">Smoke Test Results — Iteration 1 (main branch)</h2>
-  <p style="color:var(--muted);margin-bottom:16px">Expected: most scenarios fail because the MiniPong code is on the Codex branch, not main. This proves the factory detects missing functionality correctly.</p>
-
-  <div class="check-grid">
-    <div class="check-item fail">
-      <h4>Environment Determinism</h4>
-      <div class="status fail">FAIL — ModuleNotFoundError</div>
-      <p>src.envs.minipong doesn't exist on main (expected)</p>
-    </div>
-    <div class="check-item fail">
-      <h4>Observation Space</h4>
-      <div class="status fail">FAIL — ModuleNotFoundError</div>
-      <p>Same root cause — no MiniPong env on main</p>
-    </div>
-    <div class="check-item fail">
-      <h4>Reward Structure</h4>
-      <div class="status fail">FAIL — ModuleNotFoundError</div>
-      <p>Same root cause</p>
-    </div>
-    <div class="check-item fail">
-      <h4>Rendering</h4>
-      <div class="status fail">FAIL — ModuleNotFoundError</div>
-      <p>Same root cause</p>
-    </div>
-    <div class="check-item fail">
-      <h4>Info Dict</h4>
-      <div class="status fail">FAIL — ModuleNotFoundError</div>
-      <p>Same root cause</p>
-    </div>
-    <div class="check-item fail">
-      <h4>Training Artifacts</h4>
-      <div class="status fail">FAIL — No artifacts</div>
-      <p>Training pipeline not on main</p>
-    </div>
-    <div class="check-item fail">
-      <h4>Eval Videos</h4>
-      <div class="status fail">FAIL — No videos</div>
-      <p>Training pipeline not on main</p>
-    </div>
-    <div class="check-item pass">
-      <h4>verify-learning cmd</h4>
-      <div class="status pass">PASS</div>
-      <p>Command exists and runs (with relaxed thresholds)</p>
-    </div>
-    <div class="check-item pass">
-      <h4>Dashboard Loads</h4>
-      <div class="status pass">PASS</div>
-      <p>Module is importable</p>
-    </div>
-    <div class="check-item pass">
-      <h4>env-smoke</h4>
-      <div class="status pass">PASS</div>
-      <p>Makefile target works (existing atari env)</p>
-    </div>
-    <div class="check-item pass">
-      <h4>Lint + Typecheck</h4>
-      <div class="status pass">PASS</div>
-      <p>Codebase passes ruff and mypy</p>
-    </div>
-    <div class="check-item pass">
-      <h4>Full CPU Pipeline</h4>
-      <div class="status pass">PASS</div>
-      <p>Pipeline commands exist (with relaxed thresholds)</p>
-    </div>
-  </div>
-
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:24px">
-    <h3 style="margin-bottom:12px">Satisfaction: 42% (5/12) — Expected for main branch</h3>
-    <p style="color:var(--muted);font-size:14px">
-      The 7 failures are all because the MiniPong code from PR #4 hasn't been merged yet.
-      When the factory runs against the Codex branch, these should start passing — and the factory loop will iterate until 80%+ are satisfied.
-    </p>
-    <p style="color:var(--muted);font-size:14px;margin-top:8px">
-      <strong>Feedback compiler correctly identified:</strong> 5 import errors (missing module), 2 assertion failures (missing artifacts).
-      Root cause inference is working.
-    </p>
-  </div>
-</div>
-
-<!-- ─── CLAUDE CODE AS ORCHESTRATOR VIEW ─── -->
-<div class="view" id="view-orchestrator">
-  <h2 class="section-title">Claude Code as Orchestrator — Hybrid Architecture</h2>
-  <p style="color:var(--muted);margin-bottom:24px">Claude Code runs the convergence loop, invoking Codex via browser. Holdout isolation via branch stripping (not filesystem shuffle). CI handles deterministic validation.</p>
-
-  <div class="arch-flow">
-
-    <div class="arch-node human">
-      <h3>HUMAN — Project Lead</h3>
-      <p>Authors /specs/ and /scenarios/. Says "run a factory crank" to Claude Code. Reviews the PR when the factory converges.</p>
-    </div>
-    <div class="arrow"></div>
-
-    <div class="arch-node claude">
-      <h3>CLAUDE CODE — Orchestrator</h3>
-      <p>Skill: <code>/factory-orchestrate</code> — runs the full convergence loop</p>
-      <div class="sub-steps">
-        <div class="sub-step"><div class="label" style="color:var(--claude)">Creates</div>Branch: df-crank-vXX-{descriptor}</div>
-        <div class="sub-step"><div class="label" style="color:var(--claude)">Strips</div>python scripts/strip_holdout.py</div>
-      </div>
-    </div>
-    <div class="arrow"></div>
-
-    <div class="loop-bracket">
-      <div class="loop-label">CONVERGENCE LOOP (up to N iterations)</div>
-
-      <div class="arch-node codex">
-        <h3>CODEX (Attractor) — via Browser</h3>
-        <p>Codex UI (ChatGPT Plus). Given: stripped branch (no /scenarios/). Creates its own codex-... branch. Reads /specs/ + feedback.</p>
-        <div class="sub-steps">
-          <div class="sub-step"><div class="label" style="color:var(--codex)">Base Branch</div>df-crank-vXX (stripped — no scenarios)</div>
-          <div class="sub-step"><div class="label" style="color:var(--codex)">Creates</div>codex-... branch with fixes</div>
+        <div class="sidebar-body">
+          <div class="boundary-item">
+            <div class="boundary-label" style="color:var(--green)">Codex CAN see</div>
+            <div class="boundary-desc">/specs/, feedback_iter_N.md, its own code, src/, tests/, Makefile</div>
+          </div>
+          <div class="boundary-item">
+            <div class="boundary-label" style="color:var(--red)">Codex NEVER sees</div>
+            <div class="boundary-desc">/scenarios/ (stripped), pr_review_pack.html, pr_diff_data.json, adversarial findings</div>
+          </div>
+          <div class="boundary-item">
+            <div class="boundary-label" style="color:var(--blue)">Mechanism</div>
+            <div class="boundary-desc">Branch stripping &mdash; scenarios physically absent from the pushed branch. Not filesystem hiding; a real information gate.</div>
+          </div>
         </div>
       </div>
-      <div class="arrow" style="margin: 0 auto"></div>
 
-      <div class="arch-node claude" style="border-color:var(--holdout)">
-        <h3 style="color:var(--holdout)">GATE 0: Adversarial Review</h3>
-        <p>Claude Code reviews Codex diff adversarially. Stam tests, gaming, architectural dishonesty, spec violations. CRITICAL → back to Codex. Clean → merge.</p>
-      </div>
-      <div class="arrow" style="margin: 0 auto"></div>
-
-      <div class="arch-node factory" style="margin-bottom:0">
-        <h3>VALIDATION GATES (after merge + holdout restore)</h3>
-        <div class="sub-steps" style="grid-template-columns:1fr 1fr 1fr">
-          <div class="sub-step l1"><div class="label">Gate 1: Deterministic CI</div>make lint + typecheck + test<br><em>(full suite incl. attractor tests)</em><br><em>If fail → feedback → Codex</em></div>
-          <div class="sub-step l15"><div class="label">Gate 2: NFRs ('ilities')</div>ruff extended, radon, vulture, bandit<br><em>Non-blocking — feeds LLM judge</em><br><em>Extensible: add checks as needed</em></div>
-          <div class="sub-step l2"><div class="label">Gate 3: Behavioral Scenarios</div>scripts/run_scenarios.py<br><em>12 holdout scenarios</em><br><em>Produces satisfaction score</em></div>
+      <!-- Agent Teams -->
+      <div class="sidebar-section">
+        <div class="sidebar-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <h3>Claude Code Agent Teams</h3><span class="chevron">&#9660;</span>
+        </div>
+        <div class="sidebar-body">
+          <div class="agent-item"><div class="agent-dot" style="background:var(--blue)"></div><div><div class="agent-name">Main Orchestrator</div><div class="agent-role">Drives convergence loop, invokes Codex via browser, holistic decisions</div></div></div>
+          <div style="margin:8px 0 4px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Gate 0 Agent Team (parallel)</div>
+          <div class="agent-item"><div class="agent-dot" style="background:var(--blue)"></div><div><div class="agent-name">ruff-agent</div><div class="agent-role">Lint violations, style, import issues</div></div></div>
+          <div class="agent-item"><div class="agent-dot" style="background:var(--blue)"></div><div><div class="agent-name">radon-agent</div><div class="agent-role">Cyclomatic complexity &gt; threshold</div></div></div>
+          <div class="agent-item"><div class="agent-dot" style="background:var(--blue)"></div><div><div class="agent-name">vulture-agent</div><div class="agent-role">Unreachable code, unused functions</div></div></div>
+          <div class="agent-item"><div class="agent-dot" style="background:var(--blue)"></div><div><div class="agent-name">bandit-agent</div><div class="agent-role">Security vulnerabilities</div></div></div>
+          <div class="agent-item"><div class="agent-dot" style="background:var(--blue)"></div><div><div class="agent-name">test-quality-agent</div><div class="agent-role">Vacuous tests, stub assertions, mock abuse</div></div></div>
+          <div class="agent-item"><div class="agent-dot" style="background:var(--red)"></div><div><div class="agent-name">adversarial-reviewer</div><div class="agent-role">Semantic review &mdash; gaming, architectural dishonesty, spec violations</div></div></div>
+          <div style="margin:8px 0 4px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">PR Review Pack</div>
+          <div class="agent-item"><div class="agent-dot" style="background:var(--purple)"></div><div><div class="agent-name">Diff Analysis Agent</div><div class="agent-role">Pass 1 &mdash; deterministic file-to-zone mapping</div></div></div>
+          <div class="agent-item"><div class="agent-dot" style="background:var(--green)"></div><div><div class="agent-name">Semantic Analysis Agent</div><div class="agent-role">Pass 2 &mdash; what-changed summaries, decisions, findings</div></div></div>
+          <div style="margin:8px 0 4px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Documentation</div>
+          <div class="agent-item"><div class="agent-dot" style="background:var(--orange)"></div><div><div class="agent-name">Documentation Sweep</div><div class="agent-role">Ensures all affected documentation layers are updated before PR ships</div></div></div>
         </div>
       </div>
-      <div class="arrow colored" style="margin: 0 auto"></div>
-
-      <div class="arch-node claude">
-        <h3>LLM-as-JUDGE — Holistic Evaluation</h3>
-        <p>Claude Code reasons through ALL outputs: satisfaction trajectory, failure patterns, fix quality, Gate 2 NFR findings, systemic issues. Not just "score &ge; threshold."</p>
-      </div>
-      <div class="arrow colored" style="margin: 0 auto"></div>
-
-      <div class="arch-node feedback" style="flex:1">
-        <h3>FEEDBACK COMPILER</h3>
-        <p>scripts/compile_feedback.py + Claude Code's holistic assessment → enriched feedback for next iteration</p>
-      </div>
     </div>
 
-    <div class="arrow colored"></div>
-    <div class="arch-node factory" style="border-style:dashed">
-      <h3>EXIT → ACCEPT/MERGE GATE</h3>
-      <p>LLM judge satisfied → <code>gh pr create</code> with factory-converged label. Human reviews satisfaction report, NFR status, and merges.</p>
-    </div>
-
-    <div style="background:rgba(63,185,80,0.1);border:1px dashed var(--codex);border-radius:8px;padding:16px;margin-top:16px;max-width:840px;width:100%">
-      <h4 style="color:var(--codex);font-size:14px;margin-bottom:8px">Holdout Isolation — Branch Stripping (replaces filesystem shuffle)</h4>
-      <pre style="font-size:12px;color:var(--muted);white-space:pre-wrap">Before Codex:   python scripts/strip_holdout.py     (scenarios removed from branch entirely)
-Codex works:    codex-... branch has NO /scenarios/  (hard gate — files don't exist)
-After Codex:    python scripts/restore_holdout.py    (scenarios restored from origin/main)
-
-Why: Filesystem shuffle (/tmp/) was security theater — Codex could read /tmp/.
-Branch stripping is a real gate. Scenarios are not on the branch Codex sees.</pre>
-    </div>
-
-    <div style="background:rgba(210,168,255,0.1);border:1px dashed var(--claude);border-radius:8px;padding:16px;margin-top:16px;max-width:840px;width:100%">
-      <h4 style="color:var(--claude);font-size:14px;margin-bottom:8px">Branch Flow</h4>
-      <pre style="font-size:12px;color:var(--muted);white-space:pre-wrap">factory/v1 (base)
-  └─ df-crank-v01-minipong (factory branch, created by Claude Code)
-       ├─ [stripped] scenarios removed, pushed
-       ├─ codex-abc123 (Codex creates, works here)
-       ├─ [merged] Codex changes merged after Gate 0
-       ├─ [restored] scenarios restored from origin/main
-       ├─ [validated] Gates 1-3 + LLM judge
-       └─ PR → main (accept/merge gate)</pre>
-    </div>
   </div>
+
+  <div class="footer">Architecture as of PR #5 (factory/v1 &rarr; main) &mdash; Gate 0 agent team + PR review pack skill added</div>
+
 </div>
 
 <script>
-function showView(id) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('view-' + id).classList.add('active');
-  event.target.classList.add('active');
+const C = {
+  human: {
+    title: 'Human (Project Lead)',
+    desc: 'The single human in the loop. Authors specifications that define what the system should do and scenarios that define how to evaluate it. Invokes the factory via the /factory-orchestrate skill in Claude Code. Reviews the final PR at the accept/merge gate \u2014 the only point where a human decision is required.',
+    files: [
+      { n: '/specs/*.md', c: 'human' },
+      { n: '/scenarios/*.md', c: 'human' },
+    ],
+    tags: [{ t: 'Accept/Merge Gate', c: 'gate' }],
+    boundary: 'Owns scenarios \u2014 the ground truth that the attractor never sees. The merge decision is always human; the factory never auto-merges.'
+  },
+  orchestrator: {
+    title: 'Claude Code (Orchestrator)',
+    desc: 'The factory orchestrator. Runs the entire convergence loop via the /factory-orchestrate skill. Uses browser automation to invoke Codex through ChatGPT Plus \u2014 no API key needed. Drives adversarial review (Gate 0), makes holistic judgment calls (LLM-as-Judge), creates PRs. CI provides background validation; Claude Code orchestrates.',
+    files: [
+      { n: '.claude/skills/factory-orchestrate/', c: 'factory' },
+      { n: 'scripts/strip_holdout.py', c: 'factory' },
+      { n: 'scripts/restore_holdout.py', c: 'factory' },
+      { n: 'scripts/compile_feedback.py', c: 'factory' },
+      { n: 'docs/code_quality_standards.md', c: 'factory' },
+      { n: 'CLAUDE.md', c: 'factory' },
+    ],
+    tags: [{ t: 'Gate 0', c: 'gate' }, { t: 'LLM-as-Judge', c: 'gate' }, { t: 'Orchestrator', c: 'info' }],
+    boundary: 'Full visibility \u2014 sees everything including scenarios, adversarial findings, and all gate outputs across all iterations.'
+  },
+  codex: {
+    title: 'Codex (Attractor)',
+    desc: 'The code generator. Invoked via browser automation through the ChatGPT Plus UI. Works on a stripped branch where scenarios have been physically removed. Reads specs and iteration feedback to produce code. Creates its own codex-... branch. Never touches factory infrastructure.',
+    files: [
+      { n: '/specs/*.md (reads)', c: 'human' },
+      { n: 'artifacts/factory/feedback_iter_N.md (reads)', c: 'factory' },
+      { n: 'src/, tests/, configs/, Makefile (writes)', c: 'product' },
+      { n: '.github/codex/prompts/factory_fix.md', c: 'factory' },
+    ],
+    tags: [{ t: 'Information Boundary', c: 'boundary' }, { t: 'Attractor', c: 'info' }],
+    boundary: 'NEVER sees /scenarios/, pr_review_pack.html, pr_diff_data.json, or adversarial findings. Branch stripping creates a real information gate \u2014 files do not exist on the branch Codex works on.'
+  },
+  'step-branch': {
+    title: 'Steps 1\u20133: Branch + Strip + Push',
+    desc: 'Creates a new df-crank-vXX branch. Runs strip_holdout.py to remove /scenarios/ and review pack artifacts. Commits with marker [factory:holdout-stripped]. Pushes the stripped branch to origin. This is where the information boundary is created.',
+    files: [
+      { n: 'scripts/strip_holdout.py', c: 'factory' },
+      { n: 'scripts/restore_holdout.py', c: 'factory' },
+    ],
+    tags: [{ t: 'Information Boundary', c: 'boundary' }, { t: 'Branch Stripping', c: 'info' }],
+    boundary: 'Scenarios physically absent from the pushed branch. Not filesystem hiding \u2014 a real gate. There is nothing to read, no path to guess, no hidden directory to discover.'
+  },
+  'step-codex': {
+    title: 'Step 4: Invoke Codex via Browser',
+    desc: 'Claude Code uses browser automation (MCP tools) to invoke Codex through the ChatGPT Plus UI. No API key needed \u2014 browser automation is the primary path. Codex reads specs and prior feedback, produces code on its own codex-... branch.',
+    files: [
+      { n: '.claude/skills/factory-orchestrate/', c: 'factory' },
+      { n: '.github/codex/prompts/factory_fix.md', c: 'factory' },
+    ],
+    tags: [{ t: 'Browser Automation', c: 'info' }],
+    boundary: 'Codex works on the stripped branch \u2014 cannot access scenarios or adversarial findings by design.'
+  },
+  'step-gate0': {
+    title: 'Gate 0: Adversarial Review (Agent Team)',
+    desc: 'Runs as a parallel agent team before merge. Tool agents (ruff, radon, vulture, bandit, check_test_quality.py) run deterministic checks simultaneously. The semantic adversarial reviewer reads the diff against code_quality_standards.md, adversarial_review.md, and /specs/. All agents have full authority \u2014 any CRITICAL finding from any agent blocks the pipeline. No point sending to CI or later gates if Gate 0 finds issues.',
+    files: [
+      { n: 'scripts/nfr_checks.py (tool agents)', c: 'factory' },
+      { n: 'scripts/check_test_quality.py (tool agent)', c: 'factory' },
+      { n: '.github/codex/prompts/adversarial_review.md', c: 'factory' },
+      { n: 'docs/code_quality_standards.md', c: 'factory' },
+    ],
+    tags: [{ t: 'Gate 0', c: 'gate' }, { t: 'Agent Team', c: 'info' }, { t: 'Fail-Fast', c: 'boundary' }],
+    boundary: 'Layered defense: tool agents catch cheap/obvious violations fast, semantic reviewer catches subtle gaming and architectural dishonesty. Both run in parallel. Gate 3 holdout scenarios verify actual behavior as ground truth.'
+  },
+  'step-gate1': {
+    title: 'Steps 8\u20139: Restore Holdout + Gate 1',
+    desc: 'Restores holdout scenarios from origin/main using restore_holdout.py (intentionally does NOT restore review pack artifacts). Then runs deterministic Gate 1: make lint (ruff), make typecheck (mypy), make test (pytest). If any fail, Gates 2\u20133 are skipped.',
+    files: [
+      { n: 'scripts/restore_holdout.py', c: 'factory' },
+      { n: 'Makefile (lint, typecheck, test)', c: 'product' },
+    ],
+    tags: [{ t: 'Gate 1', c: 'gate' }, { t: 'Deterministic', c: 'info' }],
+    boundary: 'Scenarios restored here \u2014 but only after Codex can no longer see the branch.'
+  },
+  'step-gate23': {
+    title: 'Steps 10\u201311: Gate 2 + Gate 3',
+    desc: 'Gate 2: NFR checks via nfr_checks.py \u2014 code quality (ruff extended), complexity (radon), dead code (vulture), security (bandit). Non-blocking; feeds into LLM evaluation. Gate 3: Behavioral scenarios via run_scenarios.py \u2014 executes holdout scenarios. Produces a satisfaction score: passed / total.',
+    files: [
+      { n: 'scripts/nfr_checks.py', c: 'factory' },
+      { n: 'scripts/run_scenarios.py', c: 'factory' },
+      { n: '/scenarios/*.md', c: 'human' },
+    ],
+    tags: [{ t: 'Gate 2 (non-blocking)', c: 'gate' }, { t: 'Gate 3 (holdout)', c: 'gate' }, { t: 'Defense Layer 3', c: 'boundary' }],
+    boundary: 'Gate 3 is the ground truth \u2014 scenarios the attractor never saw. Defense layer 3: verifies actual behavior against human-authored expectations.'
+  },
+  'step-judge': {
+    title: 'Step 12: LLM-as-Judge',
+    desc: 'Claude Code reasons holistically through ALL gate outputs. Not just "score >= threshold" \u2014 considers trajectory across iterations, systemic issues, Gate 2 warnings, whether fixes are real or whether Codex is gaming. Makes the holistic go/no-go decision.',
+    files: [
+      { n: 'artifacts/factory/feedback_iter_*.md', c: 'factory' },
+      { n: 'artifacts/factory/scenario_results.json', c: 'factory' },
+    ],
+    tags: [{ t: 'LLM-as-Judge', c: 'gate' }, { t: 'Holistic Decision', c: 'info' }],
+    boundary: 'Full visibility into all gates, all iterations, all findings. The judge sees everything the attractor does not.'
+  },
+  'step-decision': {
+    title: 'Step 13: Converge or Loop',
+    desc: 'The decision point. If the LLM-as-Judge is satisfied: create a PR with factory-converged and accept-merge-gate labels. If not: compile detailed feedback into feedback_iter_N.md and loop back to step 1 with a new branch version.',
+    files: [
+      { n: 'artifacts/factory/feedback_iter_N.md', c: 'factory' },
+      { n: 'scripts/compile_feedback.py', c: 'factory' },
+    ],
+    tags: [{ t: 'Decision Point', c: 'info' }],
+    boundary: 'Feedback file is visible to Codex in the next iteration \u2014 but stripped of scenario details and adversarial findings.'
+  },
+  'step-pr': {
+    title: 'Accept / Merge Gate + PR Review Pack',
+    desc: 'The single human decision point. The factory creates a PR, then generates a PR review pack via the /pr-review-pack skill \u2014 a self-contained interactive HTML file. Joey reviews the report, not the code. The review pack provides architecture diagrams, adversarial findings, CI performance, key decisions, convergence status, and post-merge items.',
+    files: [
+      { n: '.claude/skills/pr-review-pack/ (skill)', c: 'factory' },
+      { n: 'docs/pr_review_pack.html (output)', c: 'factory' },
+      { n: 'docs/pr_diff_data.json (output)', c: 'factory' },
+    ],
+    tags: [{ t: 'Human Gate', c: 'gate' }, { t: 'Never Auto-Merges', c: 'boundary' }],
+    boundary: 'Code was never reviewed by humans during production. The PR review pack is the artifact that communicates factory status to the human. Without it, the accept/merge gate is a rubber stamp.'
+  },
+  ci: {
+    title: 'CI Validation (Background)',
+    desc: 'GitHub Actions (.github/workflows/factory.yaml) runs validation on every push to factory/** or df-crank-** branches. Executes Gates 1\u20133 plus feedback compilation. CI validates \u2014 it does not orchestrate. Claude Code reads CI results as input to its decisions.',
+    files: [
+      { n: '.github/workflows/factory.yaml', c: 'ci' },
+      { n: 'scripts/run_scenarios.py', c: 'factory' },
+      { n: 'scripts/compile_feedback.py', c: 'factory' },
+      { n: 'scripts/nfr_checks.py', c: 'factory' },
+    ],
+    tags: [{ t: 'Gates 1\u20133', c: 'gate' }, { t: 'Background Validation', c: 'info' }],
+    boundary: 'Runs on pushed branches. CI does not orchestrate \u2014 it provides signal that the orchestrator consumes.'
+  }
+};
+
+function showDetail(id) {
+  const c = C[id];
+  if (!c) return;
+  document.querySelectorAll('.node').forEach(n => {
+    n.classList.remove('active','dimmed');
+    if (n.dataset.id !== id) n.classList.add('dimmed');
+  });
+  const active = document.querySelector('.node[data-id="'+id+'"]');
+  if (active) active.classList.add('active');
+  document.getElementById('panelEmpty').style.display = 'none';
+  const body = document.getElementById('panelBody');
+  body.style.display = 'block';
+  const tags = c.tags.map(t => '<span class="detail-tag '+t.c+'">'+t.t+'</span>').join('');
+  const files = c.files.map(f => '<li class="'+f.c+'">'+f.n+'</li>').join('');
+  body.innerHTML =
+    '<div class="detail-title">'+c.title+'</div>'+
+    '<div class="detail-desc">'+c.desc+'</div>'+
+    (tags ? '<div style="margin-bottom:14px">'+tags+'</div>' : '')+
+    (c.files.length ? '<div class="detail-section"><div class="detail-section-title">Key Files</div><ul class="detail-list">'+files+'</ul></div>' : '')+
+    (c.boundary ? '<div class="detail-section"><div class="detail-section-title">Information Boundary</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.6">'+c.boundary+'</div></div>' : '');
 }
+
+document.getElementById('archSvg').addEventListener('click', function(e) {
+  if (!e.target.closest('.node')) {
+    document.querySelectorAll('.node').forEach(n => n.classList.remove('active','dimmed'));
+    document.getElementById('panelEmpty').style.display = 'block';
+    document.getElementById('panelBody').style.display = 'none';
+  }
+});
+
+function setTheme(m) {
+  document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+  const btns = document.querySelectorAll('.theme-toggle button');
+  if (m==='light') { document.documentElement.setAttribute('data-theme','light'); btns[0].classList.add('active'); }
+  else if (m==='dark') { document.documentElement.setAttribute('data-theme','dark'); btns[1].classList.add('active'); }
+  else { document.documentElement.removeAttribute('data-theme'); btns[2].classList.add('active'); applySys(); }
+  localStorage.setItem('archTheme',m);
+}
+function applySys() {
+  if (window.matchMedia('(prefers-color-scheme:dark)').matches) document.documentElement.setAttribute('data-theme','dark');
+  else document.documentElement.removeAttribute('data-theme');
+}
+(function(){
+  var s = localStorage.getItem('archTheme') || 'system';
+  setTheme(s);
+  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', function(){
+    if ((localStorage.getItem('archTheme')||'system')==='system') applySys();
+  });
+})();
 </script>
 </body>
 </html>
