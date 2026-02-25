@@ -1,5 +1,6 @@
-# Development dependencies
-mypy
-pre-commit
-pytest
+-r requirements.in
 ruff
+mypy
+pytest
+pip-tools
+types-PyYAML

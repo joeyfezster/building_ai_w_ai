@@ -1,0 +1,5 @@
+run_id: demo_local
+episodes: 4
+seeds: [11, 22]
+frame_stack: 4
+max_steps: 800

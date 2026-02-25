@@ -1,6 +1,5 @@
-# Whitepapers
+# Whitepapers Store
 
-## TODO
-- Add overview of planned whitepapers.
-- Store PDFs in `pdfs/`.
-- Link published PDFs here.
+- `links.yaml`: canonical paper URLs
+- `manifest.json`: acquired paper manifest
+- `pdfs/`: downloaded PDFs

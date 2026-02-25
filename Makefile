@@ -1,4 +1,13 @@
-.PHONY: lint test typecheck deps docker-build docker-smoke env-smoke train-smoke eval-smoke verify-learning dashboard validate run-scenarios compile-feedback factory-local factory-status
+.PHONY: deps install-hooks lint typecheck test docker-build docker-smoke whitepapers-acquire whitepapers-verify env-smoke train-smoke eval-smoke verify-learning dashboard validate run-scenarios compile-feedback nfr-check factory-local factory-status
+
+deps:
+	pip-compile requirements.in
+	pip-compile requirements-dev.in
+	pip install -r requirements.txt -r requirements-dev.txt
+
+install-hooks: ## Set up git hooks (ruff + mypy on every commit, no virtualenv needed)
+	git config core.hooksPath .githooks
+	@echo "✅ Git hooks installed from .githooks/"
 
 # ── Quality ──────────────────────────────────────────────
 lint:
@@ -10,10 +19,21 @@ typecheck:
 test:
 	pytest -q
 
-deps:
-	pip-compile requirements.in
-	pip-compile requirements-dev.in
-	pip install -r requirements.txt -r requirements-dev.txt
+# ── Docker ───────────────────────────────────────────────
+docker-build:
+	docker build -f infra/docker/Dockerfile.train --build-arg BASE_IMAGE=python:3.12-slim -t minipong-train .
+	docker build -f infra/docker/Dockerfile.demo -t minipong-demo .
+
+docker-smoke:
+	docker run --rm minipong-train python -m src.train.train_dqn --help
+	docker run --rm minipong-demo python -m src.train.record_video --help
+
+# ── Whitepapers ──────────────────────────────────────────
+whitepapers-acquire:
+	python scripts/acquire_whitepapers.py
+
+whitepapers-verify:
+	python scripts/verify_whitepapers.py
 
 # ── Environment ──────────────────────────────────────────
 env-smoke:
@@ -33,17 +53,8 @@ verify-learning:
 dashboard:
 	streamlit run src/dashboard/app.py
 
-# ── Docker ───────────────────────────────────────────────
-docker-build:
-	docker build -f infra/docker/Dockerfile.train --build-arg BASE_IMAGE=python:3.12-slim -t minipong-train .
-	docker build -f infra/docker/Dockerfile.demo -t minipong-demo .
-
-docker-smoke:
-	docker run --rm minipong-train python -m src.train.train_dqn --help
-	docker run --rm minipong-demo python -m src.train.record_video --help
-
 # ── Validation ───────────────────────────────────────────
-validate: lint typecheck test docker-build docker-smoke env-smoke
+validate: lint typecheck test docker-build docker-smoke env-smoke whitepapers-verify
 
 # ── Dark Factory ─────────────────────────────────────────
 run-scenarios: ## Run holdout scenario evaluation
@@ -52,8 +63,14 @@ run-scenarios: ## Run holdout scenario evaluation
 compile-feedback: ## Compile validation results into feedback markdown
 	python scripts/compile_feedback.py
 
-factory-local: ## Run one factory iteration locally (validate → scenarios → feedback)
-	@echo "=== Layer 1: lint + typecheck + test ==="
+nfr-check: ## Run Gate 2 NFR checks (non-blocking quality analysis)
+	@mkdir -p artifacts/factory
+	python scripts/nfr_checks.py --output artifacts/factory/nfr_results.json
+	python scripts/nfr_checks.py
+
+factory-local: ## Run one factory iteration locally (Gate 1 → Gate 2 → Gate 3 → feedback)
+	@mkdir -p artifacts/factory
+	@echo "=== Gate 1: lint + typecheck + test ==="
 	@make lint 2>&1 | tee -a artifacts/factory/ci_output.log; \
 	LINT_EXIT=$$?; \
 	make typecheck 2>&1 | tee -a artifacts/factory/ci_output.log; \
@@ -61,11 +78,14 @@ factory-local: ## Run one factory iteration locally (validate → scenarios → 
 	make test 2>&1 | tee -a artifacts/factory/ci_output.log; \
 	TEST_EXIT=$$?; \
 	if [ $$LINT_EXIT -ne 0 ] || [ $$TYPE_EXIT -ne 0 ] || [ $$TEST_EXIT -ne 0 ]; then \
-		echo "Layer 1 FAILED — skipping scenarios"; \
-		echo '{"total":0,"passed":0,"failed":0,"skipped":0,"satisfaction_score":0.0,"results":[],"timestamp":"N/A","layer1_failed":true}' > artifacts/factory/scenario_results.json; \
+		echo "Gate 1 FAILED — skipping Gates 2-3"; \
+		echo '{"total":0,"passed":0,"failed":0,"skipped":0,"satisfaction_score":0.0,"results":[],"timestamp":"N/A","gate1_failed":true}' > artifacts/factory/scenario_results.json; \
 	else \
 		echo ""; \
-		echo "=== Layer 2: Behavioral scenarios ==="; \
+		echo "=== Gate 2: NFR checks (non-blocking) ==="; \
+		make nfr-check 2>&1 | tee -a artifacts/factory/ci_output.log || true; \
+		echo ""; \
+		echo "=== Gate 3: Behavioral scenarios ==="; \
 		python scripts/run_scenarios.py --timeout 180 || true; \
 	fi
 	@echo ""

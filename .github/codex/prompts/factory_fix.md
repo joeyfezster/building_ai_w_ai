@@ -25,6 +25,11 @@ Read the feedback file for this iteration to understand what's broken:
 - `/.github/codex/prompts/factory_fix.md` (this file)
 - `/CLAUDE.md`
 - `/specs/` (read-only — these are your requirements)
+- `/agents/` (pre-factory reference, not product code)
+- `/scripts/strip_holdout.py` (holdout isolation gate)
+- `/scripts/restore_holdout.py` (holdout restoration)
+- `/scripts/nfr_checks.py` (Gate 2 NFR checker)
+- `/scripts/check_test_quality.py` (anti-vacuous scanner)
 
 **DO modify** source code in:
 - `src/` — all Python source
@@ -35,6 +40,49 @@ Read the feedback file for this iteration to understand what's broken:
 - `infra/docker/` — Dockerfiles
 - `pyproject.toml` — project configuration
 
+## Validation Guidelines
+
+Before considering any change complete, ensure:
+
+### Hard Constraints
+- No proprietary ROM dependencies — MiniPong is self-contained
+- Policy consumes pixels only (84×84 uint8 observations)
+- `make validate` must pass (lint + typecheck + test + docker + env-smoke)
+- `make verify-learning` must pass for any training-related change
+
+### Definition of Done
+- Functional requirements from `/specs/` are implemented
+- Architectural consistency maintained (no ad-hoc patterns)
+- Integration checks pass end-to-end
+- Required artifacts generated and linked (checkpoints, metrics, videos)
+
+### Quality Checklist
+- [ ] `make lint` passes (ruff check)
+- [ ] `make typecheck` passes (mypy src)
+- [ ] `make test` passes (pytest)
+- [ ] No new dead imports or unused code introduced
+- [ ] Changes are minimal and surgical — fix what's broken, don't refactor
+
+## Anti-Gaming Rules
+
+You are evaluated by an external holdout system you cannot see. These rules exist because the factory has adversarial review — attempts to game the system will be caught and will waste iterations.
+
+### Tests Must Be Real
+- **No vacuous tests.** Every test must exercise real behavior through real code paths. A test that passes by construction proves nothing.
+- **No mocking the system under test.** Mocks are for isolating external dependencies (network, filesystem, third-party APIs) — never for bypassing the logic you're supposed to be testing.
+- **No stub implementations.** Functions must contain real logic, not `return True`, `return 0`, `pass`, or hardcoded lookup tables that happen to match test cases.
+- **No patching away the thing being tested.** If a test patches the function it claims to test, it tests nothing.
+
+### Implementations Must Be General
+- **No hardcoded special cases** that coincidentally pass known test inputs. Example: `is_prime(x): return x in {2, 3, 5, 7, 11, 13}` is not a prime checker.
+- **No output-matching shortcuts.** If a function is supposed to compute something, it must actually compute it — not return a cached/hardcoded result.
+- **No overfitting to error messages.** If a scenario fails with a specific assertion, fix the root cause — don't just make that specific assertion pass while breaking the general case.
+
+### Integration Must Be Honest
+- If a test file requires imports from `src/`, those imports must exercise the real module, not a local redefinition.
+- Configuration files must reflect actual runtime parameters, not test-only shortcuts.
+- Docker builds must include all real dependencies — don't skip packages to speed up builds if the code needs them at runtime.
+
 ## Your Approach
 
 1. Read the latest feedback file to understand all failures
@@ -43,9 +91,9 @@ Read the feedback file for this iteration to understand what's broken:
    - Import errors and missing modules first
    - File/artifact production issues next
    - Behavioral correctness last
-4. Keep changes minimal and surgical — fix what's broken, don't refactor
-5. Run `make lint` and `make typecheck` before finishing to ensure you haven't introduced new issues
-6. Do NOT add new test files that duplicate scenario evaluation logic
+4. Validate locally: run `make lint && make typecheck` before finishing
+5. Do NOT add new test files that duplicate scenario evaluation logic
+6. Do NOT refactor code that isn't related to the current failures
 
 ## Success Criteria
 

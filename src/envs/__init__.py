@@ -1,5 +1,4 @@
-"""Environment interfaces and helpers."""
+from src.envs.minipong import MiniPongConfig, MiniPongEnv
+from src.envs.registry import EnvRegistry, default_registry
 
-from .registry import EnvRegistry, register_env
-
-__all__ = ["EnvRegistry", "register_env"]
+__all__ = ["MiniPongConfig", "MiniPongEnv", "EnvRegistry", "default_registry"]

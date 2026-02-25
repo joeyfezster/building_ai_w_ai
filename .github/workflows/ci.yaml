@@ -5,22 +5,126 @@ on:
   pull_request:
 
 jobs:
-  lint-test:
+  # ── Product Code Validation ─────────────────────────────────
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install dependencies
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: make lint
+      - run: make typecheck
+      - run: make test
+      - run: docker build -f infra/docker/Dockerfile.train --build-arg BASE_IMAGE=python:3.12-slim -t minipong-train .
+      - run: docker run --rm minipong-train python -m src.train.train_dqn --help
+
+  # ── Factory Infrastructure Validation ───────────────────────
+  # Tests the factory's own components — the validation system
+  # must itself be validated, or it can't be trusted.
+  factory-self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install pytest
+
+      # Lint factory scripts
+      - name: Lint factory scripts
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt -r requirements-dev.txt
-      - name: Ruff
-        run: ruff check .
-      - name: Mypy
-        run: mypy src
-      - name: Pytest
-        run: pytest -q
+          pip install ruff
+          ruff check scripts/run_scenarios.py scripts/compile_feedback.py
+
+      # Type-check factory scripts
+      - name: Type-check factory scripts
+        run: |
+          pip install mypy
+          mypy scripts/run_scenarios.py scripts/compile_feedback.py --ignore-missing-imports
+
+      # Run factory component tests
+      - name: Test scenario runner
+        run: pytest tests/test_factory_run_scenarios.py -v
+
+      - name: Test feedback compiler
+        run: pytest tests/test_factory_compile_feedback.py -v
+
+      # Verify scenario format consistency
+      - name: Validate scenario file format
+        run: |
+          python -c "
+          from pathlib import Path
+          import re
+          import sys
+
+          required_sections = [
+              'Category', 'Preconditions', 'Behavioral Expectation',
+              'Evaluation Method', 'Pass Criteria', 'Evidence Required'
+          ]
+
+          errors = []
+          for f in sorted(Path('scenarios').glob('*.md')):
+              content = f.read_text()
+              for section in required_sections:
+                  if f'## {section}' not in content:
+                      errors.append(f'{f.name}: missing ## {section}')
+              # Verify evaluation method has a code block
+              if '\`\`\`bash' not in content and '\`\`\`sh' not in content:
+                  errors.append(f'{f.name}: no bash code block in Evaluation Method')
+
+          if errors:
+              print('Scenario format errors:')
+              for e in errors:
+                  print(f'  - {e}')
+              sys.exit(1)
+          else:
+              print(f'All {len(list(Path(\"scenarios\").glob(\"*.md\")))} scenarios have valid format')
+          "
+
+      # Verify factory-protected files list is consistent
+      - name: Verify factory-protected files referenced correctly
+        run: |
+          python -c "
+          from pathlib import Path
+          import sys
+
+          # These files must exist and be referenced in both
+          # CLAUDE.md and factory_fix.md as protected
+          protected_dirs = ['scenarios', 'scripts', 'agents', 'specs']
+          protected_files = [
+              '.github/workflows/factory.yaml',
+              '.github/codex/prompts/factory_fix.md',
+              'CLAUDE.md',
+          ]
+
+          errors = []
+          for d in protected_dirs:
+              if not Path(d).exists():
+                  errors.append(f'Protected dir {d}/ does not exist')
+
+          for f in protected_files:
+              if not Path(f).exists():
+                  errors.append(f'Protected file {f} does not exist')
+
+          # Check CLAUDE.md references them
+          claude_md = Path('CLAUDE.md').read_text()
+          for d in protected_dirs:
+              if f'/{d}/' not in claude_md:
+                  errors.append(f'CLAUDE.md does not reference /{d}/')
+
+          if errors:
+              print('Factory integrity errors:')
+              for e in errors:
+                  print(f'  - {e}')
+              sys.exit(1)
+          else:
+              print('Factory integrity check passed')
+          "
+
+      # Anti-gaming test quality check
+      - name: Check test quality (anti-vacuous, anti-gaming)
+        run: python scripts/check_test_quality.py

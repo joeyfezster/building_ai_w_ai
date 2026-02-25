@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Pre-commit hook: runs ruff and mypy on staged Python files.
+# Install: make install-hooks (or: git config core.hooksPath .githooks)
+#
+# This replaces the pre-commit tool — same guarantees, no virtualenv dependency.
+# Uses whatever Python environment is active (conda py312 expected).
+
+set -e
+
+# Collect staged Python files
+STAGED_PY=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)
+
+if [ -z "$STAGED_PY" ]; then
+    exit 0
+fi
+
+echo "🔍 Pre-commit: checking $(echo "$STAGED_PY" | wc -l | tr -d ' ') Python file(s)..."
+
+# ── Lint ──
+echo "  ruff check..."
+if ! echo "$STAGED_PY" | xargs ruff check --no-fix; then
+    echo "❌ ruff check failed. Fix issues and re-stage."
+    exit 1
+fi
+
+# ── Format check (no auto-fix, just verify) ──
+echo "  ruff format --check..."
+if ! echo "$STAGED_PY" | xargs ruff format --check 2>/dev/null; then
+    echo "❌ ruff format check failed. Run 'ruff format' and re-stage."
+    exit 1
+fi
+
+# ── Type check (factory scripts only — product code needs full deps) ──
+FACTORY_SCRIPTS=$(echo "$STAGED_PY" | grep '^scripts/' || true)
+if [ -n "$FACTORY_SCRIPTS" ]; then
+    echo "  mypy (factory scripts)..."
+    if ! echo "$FACTORY_SCRIPTS" | xargs mypy --ignore-missing-imports 2>/dev/null; then
+        echo "❌ mypy failed on factory scripts. Fix type errors and re-stage."
+        exit 1
+    fi
+fi
+
+echo "✅ Pre-commit checks passed."

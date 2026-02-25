@@ -22,7 +22,7 @@ The final proof is ALL of:
 
 - Python 3.12+
 - pip-based dependencies using requirements.in / requirements-dev.in compiled to requirements.txt / requirements-dev.txt (use pip-tools)
-- High code quality: ruff, mypy, pytest, pre-commit, GitHub Actions (non-negotiable)
+- High code quality: ruff, mypy, pytest, git hooks (`make install-hooks`), GitHub Actions CI (non-negotiable)
 - Testing philosophy: no mocks/stubs/patches — favor functional and behavioral tests
 
 ## Component Architecture
