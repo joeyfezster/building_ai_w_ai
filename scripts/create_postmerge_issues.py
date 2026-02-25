@@ -44,7 +44,7 @@ def load_postmerge_items(filepath: Path | None, pr_number: int) -> list[dict]:
         return data.get("post_merge_items", [])
 
     # If no file provided, return empty — caller should provide data
-    print(f"No post-merge data file found. Provide --file path or create:")
+    print("No post-merge data file found. Provide --file path or create:")
     print(f"  artifacts/factory/postmerge_pr{pr_number}.json")
     return []
 
@@ -68,10 +68,10 @@ def create_issue(
     # Build issue body
     body_parts = [
         f"## From PR #{pr_number}",
-        f"",
+        "",
         f"**Priority:** {priority}",
         f"**Zones:** {', '.join(zones) if zones else 'unassigned'}",
-        f"",
+        "",
     ]
 
     if body_text:
@@ -84,7 +84,7 @@ def create_issue(
             body_parts.append(f"- `{ref}`")
         body_parts.append("")
 
-    body_parts.append(f"---")
+    body_parts.append("---")
     body_parts.append(f"Created from post-merge items in PR #{pr_number}")
 
     body = "\n".join(body_parts)
@@ -163,7 +163,10 @@ def main() -> int:
     filepath = Path(args.file) if args.file else None
     if not filepath:
         # Default location
-        default = Path(__file__).resolve().parent.parent / f"artifacts/factory/postmerge_pr{args.pr}.json"
+        default = (
+            Path(__file__).resolve().parent.parent
+            / f"artifacts/factory/postmerge_pr{args.pr}.json"
+        )
         if default.exists():
             filepath = default
 
@@ -173,7 +176,8 @@ def main() -> int:
         print("No post-merge items found. Nothing to create.")
         return 0
 
-    print(f"{'DRY RUN — ' if args.dry_run else ''}Creating {len(items)} issues from PR #{args.pr}...")
+    prefix = "DRY RUN — " if args.dry_run else ""
+    print(f"{prefix}Creating {len(items)} issues from PR #{args.pr}...")
 
     created = 0
     for item in items:
