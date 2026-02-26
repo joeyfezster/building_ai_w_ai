@@ -192,6 +192,8 @@ After the PR is created, bot reviewers (Copilot, Codex connector) post comments 
    - **Attractor** (product code OR complex logic OR security issues OR code performance): Synthesize into `artifacts/factory/post_merge_feedback.md` — preserving the file path, line number, what was flagged, and the orchestrator's assessment. Then loop back to the attractor (new factory iteration via Step 3) with this feedback included.
    - **Invalid/false-positive**: Resolve the thread with a reply explaining why.
 
+**Every thread resolution MUST include a reply comment** explaining how it was resolved — what action was taken, by whom (orchestrator vs attractor), and where the evidence lives (commit SHA, feedback file path). Never resolve a thread silently.
+
 **Continuity across cranks:** When starting a new factory crank, check `artifacts/factory/post_merge_feedback.md` for items synthesized from the previous iteration's review comments. These must be included in the attractor's seed feedback so they are not dropped.
 
 ### Step 11: Create PR (Accept/Merge Gate)
