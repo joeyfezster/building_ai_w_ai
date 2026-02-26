@@ -68,6 +68,7 @@ class MiniPongEnv(gym.Env[np.ndarray, int]):
         self.agent_score = 0
         self.opponent_score = 0
         self.episode_reason = "running"
+        self._manual_opponent_action = None
 
         self.agent_y = (self.config.height - self.config.paddle_height) / 2
         self.opponent_y = self.agent_y
