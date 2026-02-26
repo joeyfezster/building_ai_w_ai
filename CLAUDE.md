@@ -54,6 +54,14 @@ All code written in this repository — by Codex, Claude Code, or humans — mus
 
 These standards are enforced by Gate 0 (adversarial review), Gate 1 (lint/typecheck/test), Gate 2 (NFR checks), and the LLM-as-judge.
 
+## Factory Orchestration Rules (Non-Negotiable)
+
+When running `/factory-orchestrate`, these rules are hard constraints — not suggestions:
+
+1. **Gate 0 MUST use agent teams.** Use `TeamCreate` to spawn all 6 Gate 0 agents (5 tool agents + 1 adversarial reviewer) in parallel via the `Task` tool. Running tool checks as bare `Bash` calls or skipping the adversarial reviewer is a protocol violation. Every iteration gets a full team review — no exceptions, no "the diff is small enough to eyeball."
+2. **Gate 0 failure: keep Codex's code.** Merge onto the factory branch so iteration N+1 is incremental. NEVER revert.
+3. **Delete Codex's remote branch immediately after merge.** Every merge, pass or fail. Stale branches pollute the namespace.
+
 ## Quick Commands
 
 ```bash
