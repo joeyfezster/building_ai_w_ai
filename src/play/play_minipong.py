@@ -21,6 +21,8 @@ Action = int
 class GameController:
     left_agent_enabled: bool = False
     right_agent_enabled: bool = False
+    debug: bool = False
+    checkpoint_path: str = ""
 
     def toggle_agent(self, side: Side) -> bool:
         if side == "left":
@@ -33,17 +35,18 @@ class GameController:
         enabled = self.left_agent_enabled if side == "left" else self.right_agent_enabled
         return "agent" if enabled else "human"
 
-    def get_status_tag(self, side: Side, debug: bool, policy_name: str) -> str:
+    def get_status_tag(self, side: Side) -> str:
         if self.get_controller(side) == "agent":
-            return f"Policy: {policy_name}" if debug else "AI Agent"
+            if not self.debug:
+                return "AI Agent"
+            policy_name = Path(self.checkpoint_path).name if self.checkpoint_path else "random"
+            return f"Policy: {policy_name}"
         if side == "left":
             return "Keyboard: Up:Q, Down:A"
         return "Keyboard: Up:P, Down:L"
 
-    def restart(
-        self, env: MiniPongEnv, seed: int | None = None
-    ) -> tuple[np.ndarray, dict[str, Any]]:
-        return env.reset(seed=seed)
+    def restart(self) -> None:
+        return None
 
 
 def get_action_from_keys(side: Side, pressed: set[str]) -> Action:
@@ -75,7 +78,7 @@ class AgentPolicy:
 
         if checkpoint:
             checkpoint_path = Path(checkpoint)
-            data = torch.load(checkpoint_path, map_location=self.device)
+            data = torch.load(checkpoint_path, map_location=self.device, weights_only=True)
             state = data["model"] if isinstance(data, dict) and "model" in data else data
             self.network.load_state_dict(state)
             self.policy_name = checkpoint_path.name
@@ -114,7 +117,12 @@ def run_game(debug: bool, checkpoint: str, left_agent: bool, right_agent: bool) 
     env = MiniPongEnv(render_mode="rgb_array", config=MiniPongConfig(score_limit=11))
     obs, info = env.reset(seed=0)
 
-    controller = GameController(left_agent_enabled=left_agent, right_agent_enabled=right_agent)
+    controller = GameController(
+        left_agent_enabled=left_agent,
+        right_agent_enabled=right_agent,
+        debug=debug,
+        checkpoint_path=checkpoint,
+    )
     policy = AgentPolicy(obs.shape, checkpoint)
 
     pygame.init()
@@ -133,7 +141,8 @@ def run_game(debug: bool, checkpoint: str, left_agent: bool, right_agent: bool) 
                 if event.key == pygame.K_ESCAPE:
                     running = False
                 elif event.key == pygame.K_r:
-                    obs, info = controller.restart(env, seed=0)
+                    controller.restart()
+                    obs, info = env.reset(seed=0)
                 elif event.key == pygame.K_a and (event.mod & pygame.KMOD_SHIFT):
                     controller.toggle_agent("left")
                 elif event.key == pygame.K_l and (event.mod & pygame.KMOD_SHIFT):
@@ -152,7 +161,8 @@ def run_game(debug: bool, checkpoint: str, left_agent: bool, right_agent: bool) 
         env.set_opponent_action(right_action)
         obs, _, terminated, truncated, info = env.step(left_action)
         if terminated or truncated:
-            obs, info = controller.restart(env, seed=0)
+            controller.restart()
+            obs, info = env.reset(seed=0)
 
         frame = env.render()
         surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
@@ -166,8 +176,8 @@ def run_game(debug: bool, checkpoint: str, left_agent: bool, right_agent: bool) 
         score_text = f"Left {info['agent_score']} : {info['opponent_score']} Right"
         screen.blit(font.render(score_text, True, (255, 255, 255)), (10, 10))
 
-        left_tag = controller.get_status_tag("left", debug, policy.policy_name)
-        right_tag = controller.get_status_tag("right", debug, policy.policy_name)
+        left_tag = controller.get_status_tag("left")
+        right_tag = controller.get_status_tag("right")
         screen.blit(font.render(left_tag, True, (255, 255, 255)), (10, 42))
         right_surface = font.render(right_tag, True, (255, 255, 255))
         screen.blit(right_surface, (window_size[0] - right_surface.get_width() - 10, 42))
