@@ -68,15 +68,11 @@ play-agent-vs-agent:
 validate: lint typecheck test docker-build docker-smoke env-smoke whitepapers-verify
 
 # ── Dark Factory ─────────────────────────────────────────
-# [factory:holdout-stripped] — stripped by strip_holdout.py
-# run-scenarios: ## Run holdout scenario evaluation
-# 	python scripts/run_scenarios.py
-# end [factory:holdout-stripped]
+run-scenarios: ## Run holdout scenario evaluation
+	python scripts/run_scenarios.py
 
-# [factory:holdout-stripped] — stripped by strip_holdout.py
-# compile-feedback: ## Compile validation results into feedback markdown
-# 	python scripts/compile_feedback.py
-# end [factory:holdout-stripped]
+compile-feedback: ## Compile validation results into feedback markdown
+	python scripts/compile_feedback.py
 
 nfr-check: ## Run Gate 2 NFR checks (non-blocking quality analysis)
 	@mkdir -p artifacts/factory
