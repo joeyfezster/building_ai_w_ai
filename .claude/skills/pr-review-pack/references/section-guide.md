@@ -2,29 +2,7 @@
 
 Section-by-section reference for building the review pack. Each section documents what it shows, where the data comes from, required fields, interactive behaviors, and validation rules.
 
-## Section 1: Readiness Checklist
-
-**What it shows:** Quick pass/fail gate. If anything fails here, stop reading.
-
-**Data source:** Pass 1 (CI check data from `gh pr checks`) + Pass 2 (comment resolution audit).
-
-**Required fields:**
-- `readiness.ciChecks` -- status, label, detail, link to CI run
-- `readiness.comments` -- status, count of resolved/total, link
-- `readiness.reviewPack` -- always "pass" (the reader is looking at it)
-
-**HTML structure:** A `.gate` div with green border (all pass) or red border (any fail). Three `.check-row` items with `.badge.pass` or `.badge.fail` on the right.
-
-**Interactive behaviors:** None. This section is static.
-
-**Validation rules:**
-- If any readiness item is "fail", the gate border changes to red
-- CI status must reference the HEAD SHA specifically, not a previous commit
-- Comment count must include both human and AI reviewer comments
-
----
-
-## Section 2: Architecture (Baseline + Update)
+## Section 1: Architecture (Baseline + Update)
 
 **What it shows:** Two SVG diagrams showing system architecture zones. "Update" shows the PR-modified zones highlighted. "Baseline" dims all zones to show the pre-merge state.
 

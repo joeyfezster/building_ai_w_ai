@@ -15,9 +15,13 @@ from src.rl.replay import ReplayBuffer
 
 
 def record_video(
-    checkpoint: Path | None, output_path: Path, seed: int = 0, max_steps: int = 1000
+    checkpoint: Path | None,
+    output_path: Path,
+    seed: int = 0,
+    max_steps: int = 1000,
+    frame_stack: int = 4,
 ) -> None:
-    env = wrap_env(MiniPongEnv(render_mode="rgb_array"), frame_stack=4)
+    env = wrap_env(MiniPongEnv(render_mode="rgb_array"), frame_stack=frame_stack)
     obs, _ = env.reset(seed=seed)
     replay = ReplayBuffer(capacity=8)
     agent = DQNAgent(obs.shape, env.action_space.n, replay, DQNConfig())
