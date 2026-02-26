@@ -142,6 +142,7 @@ interface WhatChangedZoneDetail {
 ```typescript
 interface AdversarialReview {
   overallGrade: string;             // "B+" — aggregate grade
+  reviewMethod: "main-agent" | "agent-teams";  // how the review was performed
   findings: AdversarialFinding[];
 }
 
@@ -152,6 +153,7 @@ interface AdversarialFinding {
   notable: string;                  // one-line summary of finding
   detail: string;                   // full explanation (HTML-safe)
   gradeSortOrder: number;           // 0=N/A, 1=B, 2=B+, 3=A (for severity sort)
+  agent: string;                    // which agent produced this finding (e.g. "ruff-agent", "adversarial-reviewer", "main")
 }
 ```
 

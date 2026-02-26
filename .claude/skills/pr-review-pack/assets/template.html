@@ -63,6 +63,9 @@
   [data-theme="dark"] .grade.c { background: #7c2d12; color: #fdba74; }
   [data-theme="dark"] .grade.f { background: #7f1d1d; color: #fca5a5; }
   [data-theme="dark"] .grade.na { background: #374151; color: #9ca3af; }
+  [data-theme="dark"] .review-method-badge.agent-teams { background: #1e3a5f; color: #93c5fd; }
+  [data-theme="dark"] .review-method-badge.main-agent { background: #374151; color: #9ca3af; }
+  [data-theme="dark"] .agent-tag { background: #374151; color: #9ca3af; }
   [data-theme="dark"] .priority.low { background: #1e3a5f; color: #93c5fd; }
   [data-theme="dark"] .priority.medium { background: #713f12; color: #fde047; }
   [data-theme="dark"] .priority.cosmetic { background: #374151; color: #9ca3af; }
@@ -204,6 +207,14 @@
   .grade.c { background: var(--orange-bg); color: #9a3412; }
   .grade.f { background: var(--red-bg); color: #991b1b; }
   .grade.na { background: var(--gray-bg); color: var(--gray); }
+
+  /* ── Review method badge ── */
+  .review-method-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; vertical-align: middle; margin-left: 8px; }
+  .review-method-badge.agent-teams { background: var(--blue-bg, #dbeafe); color: #1d4ed8; }
+  .review-method-badge.main-agent { background: var(--gray-bg); color: var(--gray); }
+
+  /* ── Agent column in adversarial table ── */
+  .agent-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; background: var(--gray-bg); color: var(--gray); }
 
   /* ── Timing ── */
   .time-label { font-family: var(--mono); font-size: 15px; font-weight: 700; }
@@ -547,14 +558,14 @@
     <!-- Section: Adversarial Review -->
     <div class="section">
       <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
-        <h2 id="adv-header">Adversarial Review</h2>
+        <h2 id="adv-header">Adversarial Review <!-- INJECT: adversarial review method badge --></h2>
         <span class="chevron">&#x25BC;</span>
       </div>
       <div class="section-body">
         <div class="adv-scroll">
         <div id="adv-no-match" class="adv-no-match">No adversarial findings in this zone.</div>
         <table id="adv-table">
-          <thead><tr><th>File</th><th>Grade</th><th>Zone</th><th>Notable</th></tr></thead>
+          <thead><tr><th>File</th><th>Grade</th><th>Agent</th><th>Zone</th><th>Notable</th></tr></thead>
           <tbody>
             <!-- INJECT: adversarial finding rows from DATA.adversarialReview.findings -->
             <!-- Each row: tr.adv-row[data-zones="..."][data-grade-sort="N"] + tr.adv-detail-row -->

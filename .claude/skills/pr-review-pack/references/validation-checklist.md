@@ -34,6 +34,8 @@ Pre-delivery checks to run before handing the review pack to Joey. Organized by 
 - [ ] Zone tags on findings match valid zones from the registry
 - [ ] Grades are valid values: A, B, B+, C, F, or N/A
 - [ ] Findings are sorted by severity (most severe first)
+- [ ] `reviewMethod` is set to `"main-agent"` or `"agent-teams"` (must accurately reflect how review was performed)
+- [ ] Every finding has an `agent` field identifying which agent produced it
 
 ### CI Data Verification
 - [ ] CI check names match `gh pr checks` output

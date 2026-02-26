@@ -251,6 +251,13 @@ def render_what_changed_zones(wc: dict) -> str:
     return "\n        ".join(divs)
 
 
+def render_adversarial_method_badge(adv: dict) -> str:
+    method = adv.get("reviewMethod", "main-agent")
+    css = "agent-teams" if method == "agent-teams" else "main-agent"
+    label = "Agent Teams" if method == "agent-teams" else "Main Agent"
+    return f'<span class="review-method-badge {css}">{label}</span>'
+
+
 def render_adversarial_rows(adv: dict) -> str:
     rows = []
     for f in adv.get("findings", []):
@@ -258,6 +265,7 @@ def render_adversarial_rows(adv: dict) -> str:
         grade_css = GRADE_CLASS.get(grade, "na")
         zones = f.get("zones", "")
         sort_order = f.get("gradeSortOrder", 0)
+        agent = f.get("agent", "")
         # detail may contain HTML
         rows.append(
             f'<tr class="adv-row" data-zones="{esc(zones)}" '
@@ -267,12 +275,13 @@ def render_adversarial_rows(adv: dict) -> str:
             f"openFileModal('{esc(f['file'])}')\">"
             f'{esc(f["file"])}</code></td>\n'
             f'  <td><span class="grade {grade_css}">{esc(grade)}</span></td>\n'
+            f'  <td><span class="agent-tag">{esc(agent)}</span></td>\n'
             f'  <td><span class="zone-tag {layer_tag_class("product")}">'
             f'{esc(zones)}</span></td>\n'
             f'  <td>{esc(f.get("notable", ""))}</td>\n'
             f'</tr>\n'
             f'<tr class="adv-detail-row" data-zones="{esc(zones)}">\n'
-            f'  <td colspan="4">{f.get("detail", "")}</td>\n'
+            f'  <td colspan="5">{f.get("detail", "")}</td>\n'
             f'</tr>'
         )
     return "\n            ".join(rows)
@@ -640,6 +649,9 @@ def render(
         ),
         "<!-- INJECT: wc-zone-detail divs for each zone -->": (
             render_what_changed_zones(data.get("whatChanged", {}))
+        ),
+        "<!-- INJECT: adversarial review method badge -->": (
+            render_adversarial_method_badge(data.get("adversarialReview", {}))
         ),
         "<!-- INJECT: adversarial finding rows from DATA.adversarialReview.findings -->": (
             render_adversarial_rows(data.get("adversarialReview", {}))

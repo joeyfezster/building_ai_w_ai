@@ -62,6 +62,12 @@ When running `/factory-orchestrate`, these rules are hard constraints — not su
 2. **Gate 0 failure: keep Codex's code.** Merge onto the factory branch so iteration N+1 is incremental. NEVER revert.
 3. **Delete Codex's remote branch immediately after merge.** Every merge, pass or fail. Stale branches pollute the namespace.
 
+## Fix-Forward Principle
+
+When a process mistake happens — a skipped step, a wrong routing decision, a protocol violation — the fix is never just correcting the immediate error. The fix must update the durable instructions (skill files, CLAUDE.md, memory, docs) so that the next session, agent, or context window doesn't repeat it. A verbal "I'll remember" is worthless — context compacts, sessions end, agents rotate. Only written-down fixes persist.
+
+This applies to every actor: orchestrator, attractor feedback, review pack generation, agent teams. If you make a mistake, ask: "what file do I change so this can't happen again?"
+
 ## Quick Commands
 
 ```bash

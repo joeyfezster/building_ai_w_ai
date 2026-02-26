@@ -96,20 +96,25 @@ Section-by-section reference for building the review pack. Each section document
 
 ## Section 5: Adversarial Review
 
-**What it shows:** Graded table of adversarial findings per file or file group.
+**What it shows:** Graded table of adversarial findings per file or file group, with attribution of which agent produced each finding.
 
-**Data source:** Pass 2 (adversarial reviewer agent).
+**Data source:** Pass 2 (adversarial reviewer agent or agent team).
 
 **Required fields:**
 - `adversarialReview.overallGrade` -- aggregate grade for section header
-- `adversarialReview.findings[]` -- file, grade, zones, notable, detail, gradeSortOrder
+- `adversarialReview.reviewMethod` -- `"main-agent"` or `"agent-teams"` — rendered as a badge in the section header
+- `adversarialReview.findings[]` -- file, grade, zones, notable, detail, gradeSortOrder, agent
 
 **HTML structure:**
-- `.section` with header showing "Adversarial Review -- Grade: {overallGrade}"
+- `.section` with header showing "Adversarial Review -- Grade: {overallGrade}" + review method badge
 - `.adv-scroll` wrapper (max-height 500px, overflow scroll)
-- `<table id="adv-table">` with thead (File | Grade | Zone | Notable)
+- `<table id="adv-table">` with thead (File | Grade | Agent | Zone | Notable)
 - Alternating `.adv-row` (clickable) and `.adv-detail-row` (hidden until clicked)
 - `#adv-no-match` message (shown when zone filter has no matches)
+
+**Review method badge rendering:**
+- `main-agent`: `.review-method-badge.main-agent` (gray, indicates single-agent review)
+- `agent-teams`: `.review-method-badge.agent-teams` (blue, indicates parallel team review)
 
 **Grade rendering:**
 - A: `.grade.a` (green)
