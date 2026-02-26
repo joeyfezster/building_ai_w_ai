@@ -7,7 +7,6 @@ Complete TypeScript-style interfaces for the `ReviewPackData` object. This is th
 ```typescript
 interface ReviewPackData {
   header: PRHeader;
-  readiness: ReadinessChecklist;
   architecture: ArchitectureData;
   specs: Specification[];
   scenarios: Scenario[];
@@ -42,26 +41,16 @@ interface PRHeader {
 
 interface StatusBadge {
   label: string;                    // "CI 5/5"
-  type: "pass" | "info" | "warn";  // determines color
+  type: "pass" | "info" | "warn" | "fail";  // determines color
   icon: string;                     // Unicode character, e.g. "\u2713"
 }
-```
 
-## Readiness Checklist
-
-```typescript
-interface ReadinessChecklist {
-  ciChecks: ReadinessItem;
-  comments: ReadinessItem;
-  reviewPack: ReadinessItem;
-}
-
-interface ReadinessItem {
-  label: string;                    // "CI checks: all green on HEAD"
-  status: "pass" | "fail";
-  detail: string;                   // "5/5 checks passing on efbf3d4"
-  link: string | null;              // URL to CI run or comment thread
-}
+// Required badges (Pass 2 must always include these):
+// 1. CI: "CI X/Y"         → pass if all green, fail otherwise
+// 2. Scenarios: "X/Y Scenarios" → pass if all pass, warn/fail otherwise
+// 3. Comments: "X/Y comments resolved" → pass if all resolved (or 0 total),
+//              warn if unresolved exist. Use fail if prerequisite was not met.
+// Additional badges (Gate 2 findings, etc.) are optional.
 ```
 
 ## Architecture

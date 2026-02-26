@@ -76,15 +76,7 @@ interface PRHeader {
   deletions: number;                // Total lines deleted
   filesChanged: number;             // Total files in diff
   commits: number;                  // Commit count on branch
-  readiness: ReadinessChecklist;
   factorySummary: string | null;    // "Pre-crank · 3+validation iterations · 4 interventions"
-}
-
-interface ReadinessChecklist {
-  ciStatus: "pass" | "fail";
-  ciDetail: string;                 // "CI 5/5"
-  commentsStatus: "pass" | "fail";
-  commentsDetail: string;           // "Comments 3/3"
 }
 ```
 
@@ -410,35 +402,7 @@ Each zone specifies `x`, `y`, `width`, `height` for its `<rect>` element.
 
 ## 4. Section-by-Section Build Guide
 
-### Section 1: Readiness Checklist
-
-**What it shows**: Pass/fail gate at the top of the header. Three status badges in a row: CI check count, comment resolution count, and a factory summary badge.
-
-**Data source**: Pass 1 (CI status from `gh pr checks`), Pass 2 (comment resolution from `gh api`).
-
-**Required data fields**: `PRHeader.readiness.ciStatus`, `PRHeader.readiness.ciDetail`, `PRHeader.readiness.commentsStatus`, `PRHeader.readiness.commentsDetail`, `PRHeader.factorySummary`.
-
-**Interactive behaviors**: None — static badges.
-
-**Visual design**:
-- Badges use `.status-badge` class with `.pass` (green background) or `.fail` (red background) modifier.
-- Factory summary badge uses `.info` (blue background).
-- Badges are displayed in a `.status-row` flex container with `gap: 8px`.
-
-```html
-<div class="status-row">
-  <span class="status-badge pass">&#x2713; CI 5/5</span>
-  <span class="status-badge pass">&#x2713; Comments 3/3</span>
-  <span class="status-badge info">&#x1F504; Pre-crank &middot; 3+validation iterations</span>
-</div>
-```
-
-**Validation checks**:
-- CI status must match actual `gh pr checks` output for HEAD SHA.
-- Comment count must match actual resolved/total from GitHub API.
-- If any check is `fail`, the review pack must state the blocker — do not proceed to other sections.
-
-### Section 2: Architecture (Baseline + Update)
+### Section 1: Architecture (Baseline + Update)
 
 **What it shows**: An inline SVG diagram with all architecture zones arranged in rows by layer. Two toggle views: "Update (this PR)" shows zones with file-count badges, "Baseline (before merge)" dims all zones to show the pre-merge state. A floating minimap version appears when the inline diagram scrolls out of view.
 
@@ -919,7 +883,6 @@ gh api repos/{owner}/{repo}/pulls/{pr}/reviews --jq '[.[] | select(.state == "CH
   "fileZoneMapping": { "path/to/file.py": ["zone-id-1", "zone-id-2"] },
   "zoneFileCounts": { "zone-id": 5 },
   "ciChecks": [ { "name": "...", "status": "pass", "time": "19s", "health": "normal" } ],
-  "readiness": { "ciStatus": "pass", "commentsStatus": "pass" }
 }
 ```
 

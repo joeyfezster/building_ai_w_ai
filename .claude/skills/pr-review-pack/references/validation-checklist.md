@@ -99,8 +99,8 @@ Pre-delivery checks to run before handing the review pack to Joey. Organized by 
 ## Content Completeness
 
 ### Required Sections (Review Tab)
-- [ ] Section 1: Readiness Checklist present with all three items
-- [ ] Section 2: Architecture diagram with all zones
+- [ ] Header status badges present (CI, Scenarios, Comments)
+- [ ] Section 1: Architecture diagram with all zones
 - [ ] Section 3: Specs listed, Scenarios with status
 - [ ] Section 4: What Changed with Infrastructure and Product layers
 - [ ] Section 5: Adversarial Review with graded findings
@@ -152,5 +152,5 @@ Before delivering to Joey:
 5. Toggle dark mode -- does everything remain readable?
 6. Scroll past the architecture section -- does the floating diagram appear?
 7. Switch to Factory History tab (if present) -- does it render correctly?
-8. Check the readiness gate -- are all items green?
+8. Check header status badges -- are CI, Scenarios, and Comments all green?
 9. Verify the HEAD SHA in the header matches the actual PR HEAD

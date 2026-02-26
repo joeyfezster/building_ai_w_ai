@@ -15,6 +15,7 @@ from src.obs.logging import MetricsLogger
 from src.rl.replay import ReplayBuffer, Transition
 from src.rl.schedules import linear_schedule
 from src.train.evaluate import evaluate_policy
+from src.train.record_video import record_video
 
 
 def train(config: dict) -> str:
@@ -100,6 +101,15 @@ def train(config: dict) -> str:
                     "eval/mean_hits": metrics["mean_hits"],
                 },
             )
+            eval_seeds = config.get("eval_seeds", [])
+            if eval_seeds:
+                video_path = run_dir / "videos" / f"eval_step_{step}.mp4"
+                record_video(
+                    ckpt_path,
+                    video_path,
+                    seed=int(eval_seeds[0]),
+                    frame_stack=int(config["frame_stack"]),
+                )
 
     logger.close()
     return run_id
