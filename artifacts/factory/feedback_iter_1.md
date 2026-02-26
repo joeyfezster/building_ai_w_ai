@@ -1,115 +1,93 @@
-# Factory Feedback — Iteration 1
-Generated: 2026-02-23 01:42:47 UTC
+# Factory Feedback — Iteration 1 (Pong Interfaces Crank)
 
 ## Summary
-- **Satisfaction score: 42%** (5/12 scenarios passed)
-- Passed: 5 | Failed: 7 | Total: 12
 
-## Likely Root Causes
-1. Import errors in 5 scenario(s): Environment Determinism, Environment Observation Space, Environment Reward Structure, Environment Rendering, Environment Info Dict Completeness. Likely missing module or wrong import path.
-2. Assertion failures in 2 scenario(s): Training Produces Required Artifacts, Evaluation Produces Videos. Check the specific assertion messages.
+**Gate 0 BLOCKED — 5 CRITICAL findings.** Validation gates (1-3) not reached.
 
-## Failed Scenarios — Full Details
+Codex produced a solid first implementation across 7 files (+353/-9 lines). The core logic is correct — multi-rally `score_limit`, `GameController`, `get_action_from_keys`, `prepare_agent_obs`, Makefile targets, and pygame dependency are all present and structurally sound.
 
-### Environment Determinism
-**Category:** environment
-**Exit code:** 1
-**Duration:** 0.02s
-**Error summary:** ModuleNotFoundError: No module named 'src.envs.minipong'
+However, the `GameController` public API does not match the expected interface. Fix these and the implementation will likely pass.
 
-**stderr:**
-```
-Traceback (most recent call last):
-  File "<string>", line 2, in <module>
-ModuleNotFoundError: No module named 'src.envs.minipong'
+## CRITICAL Fixes Required (Must fix ALL before next submission)
+
+### 1. `GameController.__init__` must accept `debug` and `checkpoint_path` kwargs
+
+**Current:**
+```python
+@dataclass
+class GameController:
+    left_agent_enabled: bool = False
+    right_agent_enabled: bool = False
 ```
 
-### Environment Observation Space
-**Category:** environment
-**Exit code:** 1
-**Duration:** 0.02s
-**Error summary:** ModuleNotFoundError: No module named 'src.envs.minipong'
+**Required:** The constructor must accept:
+- `GameController()` — no args, both sides human, no debug
+- `GameController(debug=False)` — explicit debug flag
+- `GameController(debug=True, checkpoint_path='checkpoint_50000.pt')` — debug mode with checkpoint path
 
-**stderr:**
-```
-Traceback (most recent call last):
-  File "<string>", line 2, in <module>
-ModuleNotFoundError: No module named 'src.envs.minipong'
-```
+Store `debug` and `checkpoint_path` as instance attributes. `checkpoint_path` defaults to `""` or `None`.
 
-### Environment Reward Structure
-**Category:** environment
-**Exit code:** 1
-**Duration:** 0.02s
-**Error summary:** ModuleNotFoundError: No module named 'src.envs.minipong'
+### 2. `get_status_tag(side)` must work with ONE argument
 
-**stderr:**
-```
-Traceback (most recent call last):
-  File "<string>", line 2, in <module>
-ModuleNotFoundError: No module named 'src.envs.minipong'
-```
+**Current:** `get_status_tag(self, side, debug, policy_name)` — requires 3 args
 
-### Environment Rendering
-**Category:** environment
-**Exit code:** 1
-**Duration:** 0.02s
-**Error summary:** ModuleNotFoundError: No module named 'src.envs.minipong'
+**Required:** `get_status_tag(self, side)` — uses stored `self.debug` and derives policy name from `self.checkpoint_path`. Returns:
+- Human left: `"Keyboard: Up:Q, Down:A"`
+- Human right: `"Keyboard: Up:P, Down:L"`
+- Agent (not debug): `"AI Agent"`
+- Agent (debug, with checkpoint): `"Policy: checkpoint_50000.pt"` (just the filename from checkpoint_path)
+- Agent (debug, no checkpoint): `"Policy: random"`
 
-**stderr:**
-```
-Traceback (most recent call last):
-  File "<string>", line 2, in <module>
-ModuleNotFoundError: No module named 'src.envs.minipong'
+### 3. `restart()` must work with ZERO arguments
+
+**Current:** `restart(self, env, seed)` — requires env
+
+**Required:** `restart(self)` — resets only GameController's own internal state (if any), while preserving agent toggle state. The controller should NOT call env.reset(). The caller handles env.reset() separately.
+
+### 4. `_manual_opponent_action` must be cleared in `reset()`
+
+In `MiniPongEnv.reset()`, add:
+```python
+self._manual_opponent_action = None
 ```
 
-### Environment Info Dict Completeness
-**Category:** environment
-**Exit code:** 1
-**Duration:** 0.02s
-**Error summary:** ModuleNotFoundError: No module named 'src.envs.minipong'
+This prevents state leaking between episodes.
 
-**stderr:**
-```
-Traceback (most recent call last):
-  File "<string>", line 2, in <module>
-ModuleNotFoundError: No module named 'src.envs.minipong'
+### 5. `torch.load()` must use `weights_only=True`
+
+In `AgentPolicy.__init__`, change line 78 to:
+```python
+data = torch.load(checkpoint_path, map_location=self.device, weights_only=True)
 ```
 
-### Training Produces Required Artifacts
-**Category:** training
-**Exit code:** 1
-**Duration:** 0.03s
-**Error summary:** AssertionError: Run directory not created: artifacts/scenario_test
+## WARNING Fixes (Should fix, non-blocking)
 
-**stderr:**
-```
-Traceback (most recent call last):
-  File "<string>", line 5, in <module>
-AssertionError: Run directory not created: artifacts/scenario_test
-```
+### 6. Add test coverage for `set_opponent_action()`
+Verify that `set_opponent_action(0)` moves opponent up and `set_opponent_action(None)` restores AI.
 
-### Evaluation Produces Videos
-**Category:** training
-**Exit code:** 1
-**Duration:** 0.03s
-**Error summary:** AssertionError: No video files produced in artifacts/scenario_video_test/videos/
+### 7. Update `run_game()` call sites
+After fixing `get_status_tag` and `restart` signatures, update all call sites in `run_game()`.
 
-**stderr:**
-```
-Traceback (most recent call last):
-  File "<string>", line 6, in <module>
-AssertionError: No video files produced in artifacts/scenario_video_test/videos/
+### 8. Add missing right-side STAY test
+```python
+assert get_action_from_keys("right", set()) == 2
 ```
 
-## Instructions for Coding Agent
+## Priority Order
 
-Fix the failures above. Priorities:
-1. Import errors and missing modules first
-2. File/artifact production issues next
-3. Behavioral assertion failures last
+1. Fix `GameController.__init__` (CRITICAL #1)
+2. Fix `get_status_tag` signature (CRITICAL #2)
+3. Fix `restart()` signature (CRITICAL #3)
+4. Fix `_manual_opponent_action` reset (CRITICAL #4)
+5. Fix `torch.load` security (CRITICAL #5)
+6. Update `run_game()` call sites
+7. Add tests (WARNINGs)
+8. Run `make lint && make typecheck` before finishing
 
-Constraints:
-- Do NOT modify /scenarios/, /scripts/, or /.github/workflows/factory.yaml
-- Do NOT modify /specs/ — read them as requirements
-- Keep changes minimal — fix what's broken, don't refactor
+## What NOT to Change
+- `get_action_from_keys()` — correct as-is
+- `prepare_agent_obs()` — correct as-is
+- `MiniPongConfig.score_limit` — correct as-is
+- `_finish_point()` multi-rally logic — correct as-is
+- Makefile targets — correct as-is
+- `requirements.in` pygame entry — correct as-is
