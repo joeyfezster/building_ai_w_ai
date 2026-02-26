@@ -91,7 +91,8 @@ CI runs validation-only on every push to `factory/**` or `df-crank-**` branches:
 
 ### Gate 0: Adversarial Code Review (Agent Team)
 - Runs as a **parallel agent team** before merge — deterministic tool agents + LLM semantic reviewer, simultaneously
-- **Fail-fast rule:** Any CRITICAL finding from any agent → stop. Do NOT merge. Compile findings as feedback and loop back to Codex. No point sending to CI or later gates.
+- **Fail-fast rule:** Any CRITICAL finding from any agent → stop. Do NOT proceed to Gates 1-3. Compile findings as feedback and loop back to Codex. No point sending to CI or later gates.
+- **On Gate 0 failure:** Merge Codex's code anyway (so iteration N+1 is incremental), commit feedback, push, and loop. Never revert — Codex iterates on its own code with feedback, not from scratch.
 - Clean or WARNING-only across all agents → proceed to merge + Gate 1
 - Full agent team composition and execution: see `factory-orchestrate/SKILL.md` Step 4
 

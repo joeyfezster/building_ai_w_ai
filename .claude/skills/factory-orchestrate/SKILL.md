@@ -74,7 +74,21 @@ Before merging Codex's changes, run a **full adversarial review via agent teams*
 
 4. **Aggregate findings.** Collect all agent outputs. Each finding has a severity: CRITICAL, WARNING, or NIT.
 
-5. **Fail-fast rule:** If **any agent** reports a CRITICAL finding, Gate 0 fails. Do NOT merge. Compile all findings (from all agents) as feedback and loop back to Step 3 with specific remediation instructions.
+5. **Fail-fast rule:** If **any agent** reports a CRITICAL finding, Gate 0 fails. Do NOT proceed to later gates (1-3). However, **DO merge Codex's changes onto the factory branch** so that iteration N+1 is incremental — Codex iterates on its own code with feedback, rather than rebuilding from scratch. Compile all findings (from all agents) as feedback and loop back to Step 3 with specific remediation instructions.
+
+   **Gate 0 failure workflow:**
+   ```bash
+   # 1. Merge Codex's code (keep it for incremental iteration)
+   git merge origin/codex-{branch} --no-ff -m "factory: merge codex iteration N (Gate 0 blocked — iterating)"
+   # 2. Commit feedback file
+   git add artifacts/factory/feedback_iter_N.md
+   git commit -m "factory: Gate 0 feedback for iteration N"
+   # 3. Push — Codex's next run sees its own code + feedback
+   git push
+   # 4. Loop back to Step 3 (invoke Codex again)
+   ```
+
+   **NEVER revert Codex's merge on Gate 0 failure.** Reverting forces Codex to rebuild from zero, wasting an iteration. The feedback is specific enough to guide incremental fixes. The code is "wrong but close" — keep it and steer.
 
 **If clean or WARNING-only across all agents**: Proceed to Step 5. WARNING findings are tracked — they feed into the LLM-as-judge evaluation in Step 10.
 
