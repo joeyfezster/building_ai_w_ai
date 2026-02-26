@@ -15,7 +15,7 @@ python -c "
 from src.envs.minipong import MiniPongEnv, MiniPongConfig
 
 # Use a multi-point config — game should not end after 1 point
-config = MiniPongConfig(max_steps=5000)
+config = MiniPongConfig(max_steps=5000, score_limit=11)
 env = MiniPongEnv(config=config)
 obs, info = env.reset(seed=42)
 
