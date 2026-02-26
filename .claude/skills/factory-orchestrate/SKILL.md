@@ -80,12 +80,14 @@ Before merging Codex's changes, run a **full adversarial review via agent teams*
    ```bash
    # 1. Merge Codex's code (keep it for incremental iteration)
    git merge origin/codex-{branch} --no-ff -m "factory: merge codex iteration N (Gate 0 blocked — iterating)"
-   # 2. Commit feedback file
+   # 2. Delete Codex's remote branch (consumed by merge, prevent branch pollution)
+   git push origin --delete codex-{branch}
+   # 3. Commit feedback file
    git add artifacts/factory/feedback_iter_N.md
    git commit -m "factory: Gate 0 feedback for iteration N"
-   # 3. Push — Codex's next run sees its own code + feedback
+   # 4. Push — Codex's next run sees its own code + feedback
    git push
-   # 4. Loop back to Step 3 (invoke Codex again)
+   # 5. Loop back to Step 3 (invoke Codex again)
    ```
 
    **NEVER revert Codex's merge on Gate 0 failure.** Reverting forces Codex to rebuild from zero, wasting an iteration. The feedback is specific enough to guide incremental fixes. The code is "wrong but close" — keep it and steer.
@@ -98,6 +100,16 @@ Before merging Codex's changes, run a **full adversarial review via agent teams*
 ```bash
 git merge origin/codex-{branch} --no-ff -m "factory: merge codex iteration N"
 ```
+
+### Step 5a: Delete Codex's Remote Branch
+
+**Immediately after merging**, delete Codex's branch from origin. The factory is branch-heavy — stale Codex branches pollute the namespace and create confusion about which branch is current. The code is preserved in the merge commit on the factory branch.
+
+```bash
+git push origin --delete codex-{branch}
+```
+
+This applies to EVERY merge — whether Gate 0 passes or fails. The Codex branch is consumed by the merge; it has no further purpose.
 
 ### Step 5b: Check CI Results
 
