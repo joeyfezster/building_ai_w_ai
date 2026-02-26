@@ -60,7 +60,17 @@ gh api graphql -f query='
 
 If `unresolved > 0`: resolve or address every comment before proceeding. Both human and AI reviewer comments (Copilot, Codex bot) count.
 
-**Pass the comment counts to Pass 2** so they appear in the header status badges.
+**Handling unresolved comments:** For each comment, the orchestrator must evaluate and route:
+
+1. **Evaluate** the comment. Bot reviewers can be wrong. For each recommendation, reason about: Is it valid? Is it in scope? What severity does it actually warrant? Not every recommendation becomes action.
+2. **Route by who can fix it:**
+   - **Orchestrator's agent team territory** (non-product: infra, config, dependency compilation, docs, CI): Spawn an agent to fix it directly. Resolve the thread after the fix is pushed.
+   - **Attractor territory** (product code OR complex logic OR security issues OR code performance): Synthesize the comment into `artifacts/factory/post_merge_feedback.md` — preserving the file path, line number, what was flagged, and the orchestrator's assessment. Then loop back to the attractor (new factory iteration) with this feedback.
+   - **Invalid/false-positive**: Resolve the thread with a reply explaining why the recommendation was declined.
+
+In both routing cases, the goal is to fix it now — not carry tech debt. The distinction is only about which actor handles the fix.
+
+**Comment counts are deterministic metadata.** They must be pulled via the GraphQL query above and injected directly into the review pack data — never passed through an LLM agent for counting. Pass 1 (deterministic) owns PR metadata extraction, not Pass 2 (semantic). The badge shows `X/Y comments resolved` where Y is the total thread count and X is the resolved count, both from the API.
 
 ### Gate 3: The review pack itself
 

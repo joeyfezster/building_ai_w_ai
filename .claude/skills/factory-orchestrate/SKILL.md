@@ -180,6 +180,20 @@ You ARE the judge. Don't just check `satisfaction_score >= threshold`. Reason th
 **If satisfied**: Proceed to Step 11.
 **If not satisfied**: Compile feedback with your holistic assessment, loop to Step 3.
 
+### Step 10b: Resolve Bot Reviewer Comments
+
+After the PR is created, bot reviewers (Copilot, Codex connector) post comments recommending changes. The orchestrator evaluates and routes each one — the goal is to fix everything now, not carry tech debt.
+
+**Workflow:**
+1. Read all unresolved PR review threads (after CI completes — bots post after CI).
+2. **Evaluate each comment.** Bot reviewers can be wrong. For each recommendation, reason about: Is it valid? Is it in scope? What severity does it actually warrant?
+3. **Route by who can fix it:**
+   - **Orchestrator's agent team** (non-product: infra, config, dependency compilation, docs, CI): Spawn an agent to fix it directly. Push the fix, resolve the thread.
+   - **Attractor** (product code OR complex logic OR security issues OR code performance): Synthesize into `artifacts/factory/post_merge_feedback.md` — preserving the file path, line number, what was flagged, and the orchestrator's assessment. Then loop back to the attractor (new factory iteration via Step 3) with this feedback included.
+   - **Invalid/false-positive**: Resolve the thread with a reply explaining why.
+
+**Continuity across cranks:** When starting a new factory crank, check `artifacts/factory/post_merge_feedback.md` for items synthesized from the previous iteration's review comments. These must be included in the attractor's seed feedback so they are not dropped.
+
 ### Step 11: Create PR (Accept/Merge Gate)
 ```bash
 gh pr create \
