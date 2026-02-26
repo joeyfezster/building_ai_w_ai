@@ -1,0 +1,61 @@
+zones:
+  environment:
+    paths: ["src/envs/**"]
+    specs: ["specs/env.md"]
+    category: product
+    label: "Environment"
+    sublabel: "MiniPong Gymnasium env"
+  rl-core:
+    paths: ["src/rl/**"]
+    specs: ["specs/rl.md"]
+    category: product
+    label: "RL Core"
+    sublabel: "DQN algorithm components"
+  agent:
+    paths: ["src/agents/**"]
+    specs: ["specs/rl.md"]
+    category: product
+    label: "Agent"
+    sublabel: "DQN agent"
+  training:
+    paths: ["src/train/**"]
+    specs: ["specs/training.md", "specs/proof.md"]
+    category: product
+    label: "Training"
+    sublabel: "Pipeline, eval, video, verification"
+  observability:
+    paths: ["src/obs/**"]
+    specs: []
+    category: product
+    label: "Observability"
+    sublabel: "Logging, metrics"
+  dashboard:
+    paths: ["src/dashboard/**"]
+    specs: ["specs/dashboard.md"]
+    category: product
+    label: "Dashboard"
+    sublabel: "Streamlit training dashboard"
+  tests:
+    paths: ["tests/**"]
+    specs: []
+    category: product
+    label: "Tests"
+    sublabel: "pytest suite"
+  config:
+    paths: ["configs/**", "pyproject.toml", "Makefile", "requirements*.in", "requirements*.txt"]
+    specs: []
+    category: infra
+    label: "Config"
+    sublabel: "Build, deps, project config"
+  factory:
+    paths: ["scripts/**", ".github/**", ".claude/skills/**", "docs/dark_factory.md", "docs/code_quality_standards.md", "CLAUDE.md"]
+    specs: []
+    category: factory
+    label: "Factory"
+    sublabel: "Convergence loop infrastructure"
+  docker:
+    paths: ["infra/**", ".devcontainer/**"]
+    specs: []
+    category: infra
+    label: "Docker/Infra"
+    sublabel: "Containers, compute"

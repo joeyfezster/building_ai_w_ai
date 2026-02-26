@@ -69,6 +69,7 @@
   [data-theme="dark"] .status-badge.pass { background: #064e3b; color: #34d399; }
   [data-theme="dark"] .status-badge.info { background: #1e3a5f; color: #93c5fd; }
   [data-theme="dark"] .status-badge.warn { background: #713f12; color: #fde047; }
+  [data-theme="dark"] .status-badge.fail { background: #7f1d1d; color: #fca5a5; }
   [data-theme="dark"] .zone-tag { background: #1e3a5f; color: #93c5fd; }
   [data-theme="dark"] .zone-tag.factory { background: #1e3a5f; color: #93c5fd; }
   [data-theme="dark"] .zone-tag.product { background: #064e3b; color: #6ee7b7; }
@@ -82,6 +83,7 @@
   [data-theme="dark"] .file-path-link:hover { border-bottom-color: #60a5fa; color: #60a5fa; }
   [data-theme="dark"] .stat { background: #1f2937; }
   [data-theme="dark"] .stat.green { background: #064e3b; color: #34d399; }
+  [data-theme="dark"] .stat.red { background: #7f1d1d; color: #fca5a5; }
   [data-theme="dark"] #arch-diagram { background: #1a2332; border-color: #374151; }
   [data-theme="dark"] .history-timeline::before { background: #374151; }
   [data-theme="dark"] .history-legend { background: #1f2937; }
@@ -150,11 +152,9 @@
   .stat { background: var(--gray-bg); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 500; }
   .stat .num { font-weight: 700; font-size: 15px; }
   .stat.green { background: var(--green-bg); color: #166534; }
+  .stat.red { background: #fef2f2; color: #991b1b; }
 
-  /* ── Gate ── */
-  .gate { background: white; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; border: 2px solid var(--green); }
-  .gate.gate-fail { border-color: var(--red); }
-  .gate h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  /* ── Gate (removed — readiness info lives in status badges) ── */
   .gate .check-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
   .gate .check-row:last-child { border-bottom: none; }
   .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
@@ -420,6 +420,7 @@
   .status-badge.pass { background: var(--green-bg); color: #166534; }
   .status-badge.info { background: var(--blue-bg); color: #1d4ed8; }
   .status-badge.warn { background: var(--yellow-bg); color: #854d0e; }
+  .status-badge.fail { background: #fef2f2; color: #991b1b; }
   .gate-popover { display: none; position: absolute; background: white; border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); font-size: 12px; z-index: 50; max-width: 300px; }
   .gate-popover.visible { display: block; }
   .gate-clickable { cursor: pointer; border-bottom: 1px dashed var(--text-muted); }
@@ -461,12 +462,6 @@
         <button onclick="setTheme('system')" title="System theme" data-theme-btn="system">&#x2699;</button>
       </div>
     </div>
-  </div>
-
-  <!-- ══ READINESS GATE ══ -->
-  <div class="gate" id="readiness-gate">
-    <h2>Readiness Checklist</h2>
-    <!-- INJECT: readiness check rows -->
   </div>
 
   <!-- ══ TAB BAR ══ -->
@@ -1009,7 +1004,28 @@ function openFileModal(path) {
     }
     currentFileData = data.files[path] || null;
     if (!currentFileData) {
-      body.innerHTML = '<div class="diff-error">File not found in diff data: ' + escapeHtml(path) + '</div>';
+      // Check for embedded reference file content (spec files, etc.)
+      var refContent = (typeof REFERENCE_FILES !== 'undefined') && REFERENCE_FILES[path];
+      if (refContent) {
+        currentFileData = { raw: refContent, diff: '', additions: 0, deletions: 0 };
+        statsEl.innerHTML = '<span style="color:var(--text-secondary);font-size:12px">' +
+          'Reference file &mdash; not modified in this PR</span>';
+        // Default to raw view for reference files
+        currentView = 'raw';
+        document.querySelectorAll('.file-modal-tab').forEach(function(t) { t.classList.remove('active'); });
+        var rawTab = document.querySelector('.file-modal-tab[data-view="raw"]');
+        if (rawTab) rawTab.classList.add('active');
+        renderDiffView('raw');
+        return;
+      }
+      var ghLink = link.href;
+      body.innerHTML = '<div style="text-align:center;padding:40px 20px">' +
+        '<div style="font-size:14px;color:var(--text-secondary);margin-bottom:16px">' +
+        'This file was not modified in this PR.</div>' +
+        '<a href="' + escapeHtml(ghLink) + '" target="_blank" ' +
+        'style="display:inline-block;padding:10px 24px;background:var(--blue);color:white;' +
+        'border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">' +
+        'View on GitHub &rarr;</a></div>';
       return;
     }
     statsEl.innerHTML = '<span class="fm-add">+' + currentFileData.additions + '</span> <span class="fm-del">-' + currentFileData.deletions + '</span>';
