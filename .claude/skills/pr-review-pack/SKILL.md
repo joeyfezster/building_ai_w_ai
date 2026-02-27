@@ -103,27 +103,53 @@ Extract the raw diff and map every changed file to its architecture zone(s).
 
 **Trust level:** Deterministic. Zero hallucination risk. Code diffs are ground truth.
 
-### Pass 2: Semantic Analysis (Delegated Agent Team)
+### Pass 2: Scaffold + Semantic Analysis
 
-Spawn a dedicated agent team (not the main thread) to analyze the diff. The team reads the diff output from Pass 1 and the zone registry. It produces:
+Pass 2 has two stages: a deterministic scaffold, then LLM semantic enrichment.
 
-- **What Changed summaries** -- two-layer (Infrastructure / Product), plus per-zone detail blocks
-- **Key Decisions** -- each with title, rationale, zone associations, and affected file list
-- **Adversarial findings** -- per-file grade (A/B/C/F), zone tag, and finding detail
-- **Post-merge items** -- priority tag, code snippets with file/line references, failure and success scenarios
-- **Convergence result** -- gate-by-gate status, satisfaction score
-- **CI performance data** -- from `gh pr checks` output with timing
-- **Header status badges** -- the following badges are **mandatory** (the template enforces visual affordances):
-  - `CI X/Y` — type `pass` if all green, `fail` otherwise
-  - `X/Y Scenarios` — type `pass` if all pass, `warn` or `fail` otherwise
-  - `X/Y comments resolved` — type `pass` if all resolved (or 0 total), `warn` if unresolved exist. Comment counts come from the prerequisite Gate 2 check — the orchestrating agent must pass these to the Pass 2 team.
+#### Pass 2a: Deterministic Scaffold (No LLM)
+
+Run the scaffold script to populate ALL deterministic fields from git, GitHub API, and scenario data:
+
+```bash
+python3 .claude/skills/pr-review-pack/scripts/scaffold_review_pack_data.py \
+  --pr {N} --diff-data docs/pr{N}_diff_data.json \
+  --output /tmp/pr{N}_review_pack_data.json
+```
+
+The scaffold script populates:
+- **Header** — title, branch, SHA, additions/deletions, file count, commits (from `gh pr view`)
+- **Status badges** — Gate 0 (from `gate0_results.json`), CI pass/fail (from `gh pr checks`), scenario pass/fail (from `scenario_results.json`), comment resolution (from GraphQL)
+- **Architecture** — zone positions, modified flags, arrows (from zone registry + diff data)
+- **Specs** — list from zone registry
+- **Scenarios** — pass/fail per scenario (from `scenario_results.json`)
+- **CI Performance** — job names, timing, health tags (from `gh pr checks`)
+- **Convergence** — gate-by-gate status including Gate 0 tier 1 data (from `gate0_results.json`)
+
+If `--existing` is passed, semantic fields from a previous JSON are preserved (for re-scaffolding after new commits without losing LLM analysis).
+
+**Output:** `/tmp/pr{N}_review_pack_data.json` with all deterministic fields populated, semantic fields empty.
+
+**Trust level:** Deterministic. All data from git, GitHub API, and factory artifacts. Zero LLM involvement.
+
+#### Pass 2b: Semantic Enrichment (Delegated Agent Team)
+
+Spawn a dedicated agent team (not the main thread) to fill ONLY the semantic fields. The team reads the scaffold JSON + the diff data. It fills:
+
+- **What Changed summaries** — two-layer (Infrastructure / Product), plus per-zone detail blocks
+- **Key Decisions** — each with title, rationale, zone associations, and affected file list
+- **Agentic review findings** — per-file grade (A/B/C/F), zone tag, agent attribution, and finding detail
+- **Post-merge items** — priority tag, code snippets with file/line references, failure and success scenarios
+- **Factory history** — iteration timeline, gate findings
+
+The team does NOT touch deterministic fields (header, badges, architecture, specs, scenarios, CI, convergence). Those are already correct from the scaffold.
 
 Every claim the semantic team makes is verifiable:
 - Decision-to-zone claims must have at least one file in the diff touching that zone's paths. If not, flag as "unverified."
 - Code snippet line references must exist in the actual diff.
 - File paths must appear in the diff file list.
 
-**Output:** Structured JSON matching the `ReviewPackData` schema (see `references/data-schema.md`). Save to `/tmp/pr{N}_review_pack_data.json`.
+**Output:** Updated `/tmp/pr{N}_review_pack_data.json` with both deterministic and semantic fields populated.
 
 **Trust level:** LLM-produced but verifiable. Every claim checked against Pass 1 output.
 
@@ -168,7 +194,7 @@ After rendering, validate that the pack renders correctly:
        ('No unreplaced markers (outside scripts)', '<!-- INJECT:' not in outside_scripts),
        ('PR title present', 'PR #{N}' in html),
        ('Scenario cards', html.count('scenario-card') >= 1),
-       ('Adversarial rows', 'adv-row' in html),
+       ('Agentic review rows', 'adv-row' in html),
        ('CI rows', 'expandable' in html),
        ('Decision cards', 'decision-card' in html),
        ('Convergence grid', 'conv-card' in html),

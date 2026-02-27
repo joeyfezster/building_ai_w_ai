@@ -29,13 +29,13 @@ Pre-delivery checks to run before handing the review pack to Joey. Organized by 
 - [ ] Line ranges in code snippets correspond to actual lines in the diff
 - [ ] Code snippet content matches the actual file content (not fabricated)
 
-### Pass 2 Verification -- Adversarial Review
-- [ ] Every adversarial finding references files in the diff
+### Pass 2 Verification -- Agentic Review
+- [ ] Every agentic finding references files in the diff
 - [ ] Zone tags on findings match valid zones from the registry
 - [ ] Grades are valid values: A, B, B+, C, F, or N/A
 - [ ] Findings are sorted by severity (most severe first)
 - [ ] `reviewMethod` is set to `"main-agent"` or `"agent-teams"` (must accurately reflect how review was performed)
-- [ ] Every finding has an `agent` field identifying which agent produced it
+- [ ] Every finding has an `agent` field identifying which agent produced it (code-health, security, test-integrity, adversarial)
 
 ### CI Data Verification
 - [ ] CI check names match `gh pr checks` output
@@ -107,7 +107,7 @@ Pre-delivery checks to run before handing the review pack to Joey. Organized by 
 - [ ] Section 1: Architecture diagram with all zones
 - [ ] Section 3: Specs listed, Scenarios with status
 - [ ] Section 4: What Changed with Infrastructure and Product layers
-- [ ] Section 5: Adversarial Review with graded findings
+- [ ] Section 5: Agentic Review with graded findings
 - [ ] Section 6: CI Performance with all jobs
 - [ ] Section 7: Key Decisions (at least one)
 - [ ] Section 8: Convergence Result with gate-by-gate status

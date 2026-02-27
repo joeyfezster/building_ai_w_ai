@@ -31,6 +31,22 @@ LAYER_COLORS = {
 
 GRADE_CLASS = {"A": "a", "B+": "b", "B": "b", "C": "c", "F": "f", "N/A": "na"}
 
+# Agent abbreviations for compact badges
+AGENT_ABBREV = {
+    "code-health": "CH",
+    "security": "SE",
+    "test-integrity": "TI",
+    "adversarial": "AD",
+    "code-health-reviewer": "CH",
+    "security-reviewer": "SE",
+    "test-integrity-reviewer": "TI",
+    "adversarial-reviewer": "AD",
+    "main": "MA",
+    "main-agent": "MA",
+}
+
+GRADE_SORT = {"F": 0, "C": 1, "B": 2, "B+": 3, "A": 4, "N/A": 5}
+
 HEALTH_CLASS = {
     "normal": "normal",
     "acceptable": "acceptable",
@@ -258,39 +274,117 @@ def render_what_changed_zones(wc: dict) -> str:
     return "\n        ".join(divs)
 
 
-def render_adversarial_method_badge(adv: dict) -> str:
-    method = adv.get("reviewMethod", "main-agent")
+def render_agentic_method_badge(review: dict) -> str:
+    method = review.get("reviewMethod", "main-agent")
     css = "agent-teams" if method == "agent-teams" else "main-agent"
     label = "Agent Teams" if method == "agent-teams" else "Main Agent"
     return f'<span class="review-method-badge {css}">{label}</span>'
 
 
-def render_adversarial_rows(adv: dict) -> str:
+def render_agentic_legend() -> str:
+    """Render compact legend for agent abbreviations."""
+    entries = [
+        ("CH", "Code Health", "code quality + complexity + dead code"),
+        ("SE", "Security", "vulnerabilities beyond bandit"),
+        ("TI", "Test Integrity", "test quality beyond AST scanner"),
+        ("AD", "Adversarial", "gaming, spec violations, architecture"),
+    ]
+    items = []
+    for abbrev, name, desc in entries:
+        items.append(
+            f'<span class="agent-legend-item" title="{esc(desc)}">'
+            f'<span class="agent-abbrev">{abbrev}</span> {esc(name)}</span>'
+        )
+    return (
+        '<div class="agent-legend">'
+        + " ".join(items)
+        + "</div>"
+    )
+
+
+def render_agentic_rows(review: dict) -> str:
+    """Render agentic review rows grouped by file.
+
+    Each file gets one master row with compact agent grade badges.
+    Expanding shows per-agent detail.
+    """
+    from collections import OrderedDict
+
+    findings = review.get("findings", [])
+    if not findings:
+        return ""
+
+    # Group by file, preserving order of first appearance
+    by_file: OrderedDict[str, list[dict]] = OrderedDict()
+    for f in findings:
+        filepath = f.get("file", "unknown")
+        by_file.setdefault(filepath, []).append(f)
+
     rows = []
-    for f in adv.get("findings", []):
-        grade = f.get("grade", "N/A")
-        grade_css = GRADE_CLASS.get(grade, "na")
-        zones = f.get("zones", "")
-        sort_order = f.get("gradeSortOrder", 0)
-        agent = f.get("agent", "")
-        # detail may contain HTML
+    for filepath, file_findings in by_file.items():
+        # Worst grade determines file sort order
+        worst_sort = min(f.get("gradeSortOrder", 99) for f in file_findings)
+        zones = file_findings[0].get("zones", "")
+
+        # Compact agent badges: CH:A  SE:B  TI:A  AD:B
+        badges = []
+        for f in file_findings:
+            agent_name = f.get("agent", "") or "main"
+            abbrev = AGENT_ABBREV.get(agent_name, agent_name[:2].upper() if agent_name else "?")
+            grade = f.get("grade", "N/A")
+            grade_css = GRADE_CLASS.get(grade, "na")
+            badges.append(
+                f'<span class="agent-grade-badge">'
+                f'<span class="agent-abbrev">{esc(abbrev)}</span>'
+                f'<span class="grade {grade_css}">{esc(grade)}</span>'
+                f'</span>'
+            )
+        badges_html = " ".join(badges)
+
+        # Most notable finding for the summary column
+        notable_finding = min(file_findings, key=lambda f: GRADE_SORT.get(f.get("grade", "N/A"), 5))
+        notable_text = notable_finding.get("notable", "")
+
+        # Master row (one per file)
         rows.append(
             f'<tr class="adv-row" data-zones="{esc(zones)}" '
-            f'data-grade-sort="{sort_order}" onclick="toggleAdvDetail(this)">\n'
+            f'data-grade-sort="{worst_sort}" onclick="toggleAdvDetail(this)">\n'
             f'  <td><code class="file-path-link" '
             f"onclick=\"event.stopPropagation();"
-            f"openFileModal('{esc(f['file'])}')\">"
-            f'{esc(f["file"])}</code></td>\n'
-            f'  <td><span class="grade {grade_css}">{esc(grade)}</span></td>\n'
-            f'  <td><span class="agent-tag">{esc(agent)}</span></td>\n'
+            f"openFileModal('{esc(filepath)}')\">"
+            f'{esc(filepath)}</code></td>\n'
+            f'  <td class="agent-badges-cell">{badges_html}</td>\n'
             f'  <td><span class="zone-tag {layer_tag_class("product")}">'
             f'{esc(zones)}</span></td>\n'
-            f'  <td>{esc(f.get("notable", ""))}</td>\n'
+            f'  <td>{esc(notable_text)}</td>\n'
             f'</tr>\n'
+        )
+
+        # Detail row: per-agent breakdown
+        detail_parts = []
+        for f in file_findings:
+            agent_name = f.get("agent", "") or "main"
+            abbrev = AGENT_ABBREV.get(agent_name, agent_name[:2].upper() if agent_name else "?")
+            grade = f.get("grade", "N/A")
+            grade_css = GRADE_CLASS.get(grade, "na")
+            detail_text = f.get("detail", "") or f.get("notable", "")
+            detail_parts.append(
+                f'<div class="agent-detail-entry">'
+                f'<span class="agent-detail-header">'
+                f'<span class="agent-abbrev">{esc(abbrev)}</span>'
+                f'<span class="grade {grade_css}">{esc(grade)}</span>'
+                f'<span class="agent-detail-name">{esc(agent_name)}</span>'
+                f'</span>'
+                f'<div class="agent-detail-body">{detail_text}</div>'
+                f'</div>'
+            )
+
+        rows.append(
             f'<tr class="adv-detail-row" data-zones="{esc(zones)}">\n'
-            f'  <td colspan="5">{f.get("detail", "")}</td>\n'
+            f'  <td colspan="4">{"".join(detail_parts)}</td>\n'
             f'</tr>'
         )
+
     return "\n            ".join(rows)
 
 
@@ -712,10 +806,11 @@ def render(
             render_what_changed_zones(data.get("whatChanged", {}))
         ),
         "<!-- INJECT: adversarial review method badge -->": (
-            render_adversarial_method_badge(data.get("adversarialReview", {}))
+            render_agentic_method_badge(data.get("agenticReview", {}))
+            + render_agentic_legend()
         ),
-        "<!-- INJECT: adversarial finding rows from DATA.adversarialReview.findings -->": (
-            render_adversarial_rows(data.get("adversarialReview", {}))
+        "<!-- INJECT: adversarial finding rows from DATA.agenticReview.findings -->": (
+            render_agentic_rows(data.get("agenticReview", {}))
         ),
         "<!-- INJECT: CI check rows from DATA.ciPerformance -->": render_ci_rows(
             data.get("ciPerformance", [])

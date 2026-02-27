@@ -13,8 +13,9 @@ from __future__ import annotations
 
 import argparse
 import ast
+import json
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 
@@ -199,6 +200,11 @@ def main() -> int:
         help="Treat warnings as errors",
     )
     parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output results as JSON (for automation)",
+    )
+    parser.add_argument(
         "--path",
         type=str,
         default=None,
@@ -220,14 +226,31 @@ def main() -> int:
         findings = check_file(path)
         all_findings.extend(findings)
 
-    if not all_findings:
-        print("No test quality issues found.")
-        return 0
-
     # Group by severity
     critical = [f for f in all_findings if f.severity == "CRITICAL"]
     warnings = [f for f in all_findings if f.severity == "WARNING"]
     nits = [f for f in all_findings if f.severity == "NIT"]
+
+    if args.json:
+        result = {
+            "name": "test_quality",
+            "tool": "check_test_quality.py",
+            "status": "failed" if critical else "passed",
+            "summary": (
+                f"{len(all_findings)} findings ({len(critical)} critical)"
+                if critical
+                else f"{len(all_findings)} findings"
+                if all_findings
+                else "Clean"
+            ),
+            "findings": [asdict(f) for f in all_findings],
+        }
+        print(json.dumps(result, indent=2))
+        return 1 if critical else 0
+
+    if not all_findings:
+        print("No test quality issues found.")
+        return 0
 
     for finding in all_findings:
         print(

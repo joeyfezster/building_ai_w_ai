@@ -13,10 +13,10 @@ This file is the **operating manual** — the "what" and "why" of the factory. O
 | Concept | Source of Truth | This File |
 |---------|----------------|-----------|
 | Convergence loop steps | `.claude/skills/factory-orchestrate/SKILL.md` | Summary in ASCII diagram |
-| Gate 0 agent team composition | `factory-orchestrate/SKILL.md` Step 4 | Behavioral contract only |
+| Gate 0 two-tier composition | `factory-orchestrate/SKILL.md` Step 4 | Behavioral contract only |
+| Gate 0 review paradigm docs | `.claude/skills/factory-orchestrate/review-prompts/` | References, doesn't repeat |
 | PR review pack pipeline | `.claude/skills/pr-review-pack/SKILL.md` | What the human reviews |
 | Code quality standards | `docs/code_quality_standards.md` | References, doesn't repeat |
-| Adversarial review checklist | `.github/codex/prompts/adversarial_review.md` | References, doesn't repeat |
 
 When updating gate behavior or agent composition, update the **skill first**, then check this file's summary still holds.
 
@@ -89,12 +89,13 @@ CI runs validation-only on every push to `factory/**` or `df-crank-**` branches:
 
 ## Validation Gates
 
-### Gate 0: Adversarial Code Review (Agent Team)
-- Runs as a **parallel agent team** before merge — deterministic tool agents + LLM semantic reviewer, simultaneously
-- **Fail-fast rule:** Any CRITICAL finding from any agent → stop. Do NOT proceed to Gates 1-3. Compile findings as feedback and loop back to Codex. No point sending to CI or later gates.
+### Gate 0: Two-Tier Code Review (Script + Agent Team)
+- **Tier 1 (deterministic):** `scripts/run_gate0.py` runs all 5 tool checks in parallel (ruff, radon, vulture, bandit, test-quality). Produces `artifacts/factory/gate0_results.json`. Fast, cheap, catches the obvious stuff.
+- **Tier 2 (LLM semantic):** 4 specialized agents review the same paradigms at semantic depth, building on tier 1 output. Agents: code-health, security, test-integrity, adversarial. Paradigm prompts: `.claude/skills/factory-orchestrate/review-prompts/`
+- **Fail-fast rule:** Any CRITICAL finding from either tier → stop. Do NOT proceed to Gates 1-3.
 - **On Gate 0 failure:** Merge Codex's code anyway (so iteration N+1 is incremental), commit feedback, push, and loop. Never revert — Codex iterates on its own code with feedback, not from scratch.
-- Clean or WARNING-only across all agents → proceed to merge + Gate 1
-- Full agent team composition and execution: see `factory-orchestrate/SKILL.md` Step 4
+- Clean or WARNING-only across both tiers → proceed to merge + Gate 1
+- Full two-tier composition and execution: see `factory-orchestrate/SKILL.md` Step 4
 
 ### Gate 1: Deterministic CI
 - `make lint` — ruff check
@@ -241,6 +242,7 @@ Escalate to interactive debugging (Claude Code) when:
 
 ```
 artifacts/factory/
+├── gate0_results.json       # Gate 0 tier 1 tool check results (gitignored)
 ├── scenario_results.json    # Latest run results (gitignored)
 ├── ci_output.log            # Latest CI output (gitignored)
 ├── iteration_count.txt      # Current iteration number (committed)
@@ -255,7 +257,7 @@ Architecture decisions that are correct for the current proof-of-concept but sho
 |----------|--------------|-------------------|--------|
 | Separate factory-loop + validate CI workflows | Overlap provides redundancy | Factory running regularly with stable gates | Consolidate into single workflow with clear separation |
 | `.devcontainer` setup | Not yet configured | Multiple developers or CI environments diverging | Add devcontainer with pinned Python, deps, hooks |
-| Gate 2 checks are tool-only | Deterministic, reliable | Need for architectural or design-level quality checks | Add LLM-based advisory checks (clearly labeled non-deterministic) |
+| Gate 2 NFR framework is code-review only | Static analysis checks (ruff, radon, vulture, bandit) | System deployed to infrastructure environments | Add infrastructure-level NFR checks: elasticity, scaling, deployment health |
 | Post-merge items tracked in review pack only | PR review pack captures items | Items getting lost after merge | `scripts/create_postmerge_issues.py` creates GH issues automatically |
 | Manual `make install-hooks` required | Prominent in docs, not enforced | New contributors missing it | `.devcontainer` or CI check that validates hooks are installed |
 
@@ -269,11 +271,12 @@ Architecture decisions that are correct for the current proof-of-concept but sho
 | `/scripts/compile_feedback.py` | Factory | Feedback generation |
 | `/scripts/strip_holdout.py` | Factory | Holdout stripping (isolation gate) |
 | `/scripts/restore_holdout.py` | Factory | Holdout restoration |
-| `/scripts/nfr_checks.py` | Factory | Gate 0 tool agents + Gate 2 NFR checker |
-| `/scripts/check_test_quality.py` | Factory | Gate 0 tool agent — vacuous test detection |
+| `/scripts/run_gate0.py` | Factory | Gate 0 tier 1 — parallel deterministic tool runner |
+| `/scripts/nfr_checks.py` | Factory | Gate 0 tier 1 checks + Gate 2 NFR framework |
+| `/scripts/check_test_quality.py` | Factory | Gate 0 tier 1 — vacuous test detection |
 | `/.github/workflows/factory.yaml` | Factory | CI validation on push |
 | `/.github/codex/prompts/factory_fix.md` | Factory | Codex instruction template |
-| `/.github/codex/prompts/adversarial_review.md` | Factory | Gate 0 semantic reviewer checklist |
+| `/.claude/skills/factory-orchestrate/review-prompts/` | Factory | Gate 0 review agent paradigm docs (adversarial, code-health, security, test-integrity) |
 | `/.claude/skills/factory-orchestrate/` | Factory | Claude Code orchestration skill |
 | `/.claude/skills/pr-review-pack/` | Factory | PR review pack generation (accept/merge gate) |
 | `/docs/code_quality_standards.md` | Factory | Universal code quality standards |

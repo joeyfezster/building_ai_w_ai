@@ -1,0 +1,118 @@
+{
+  "timestamp": "2026-02-27T02:53:55.095155+00:00",
+  "tier": "deterministic",
+  "total_elapsed_s": 0.07,
+  "checks": {
+    "security": {
+      "name": "security",
+      "status": "skipped",
+      "findings": [
+        {
+          "nfr": "security",
+          "severity": "INFO",
+          "message": "bandit not available \u2014 install with: pip install bandit",
+          "file": "",
+          "line": 0,
+          "metric": "",
+          "value": "",
+          "threshold": ""
+        }
+      ],
+      "tool": "bandit",
+      "summary": "bandit not available \u2014 install with: pip install bandit",
+      "elapsed_s": 0.03
+    },
+    "dead_code": {
+      "name": "dead_code",
+      "status": "skipped",
+      "findings": [
+        {
+          "nfr": "dead_code",
+          "severity": "INFO",
+          "message": "vulture not available \u2014 install with: pip install vulture",
+          "file": "",
+          "line": 0,
+          "metric": "",
+          "value": "",
+          "threshold": ""
+        }
+      ],
+      "tool": "vulture",
+      "summary": "vulture not available \u2014 install with: pip install vulture",
+      "elapsed_s": 0.03
+    },
+    "complexity": {
+      "name": "complexity",
+      "status": "skipped",
+      "findings": [
+        {
+          "nfr": "complexity",
+          "severity": "INFO",
+          "message": "radon not available \u2014 install with: pip install radon",
+          "file": "",
+          "line": 0,
+          "metric": "",
+          "value": "",
+          "threshold": ""
+        }
+      ],
+      "tool": "radon",
+      "summary": "radon not available \u2014 install with: pip install radon",
+      "elapsed_s": 0.03
+    },
+    "test_quality": {
+      "name": "test_quality",
+      "tool": "check_test_quality.py",
+      "status": "passed",
+      "summary": "1 findings",
+      "findings": [
+        {
+          "file": "/Users/joelbaruch/repos/building_ai_w_ai/.claude/worktrees/humble-petting-jellyfish/tests/test_imports.py",
+          "line": 4,
+          "severity": "WARNING",
+          "pattern": "no_assertions",
+          "detail": "Test 'test_imports' has no assertions \u2014 may pass vacuously"
+        }
+      ],
+      "elapsed_s": 0.05
+    },
+    "code_quality": {
+      "name": "code_quality",
+      "status": "passed",
+      "findings": [
+        {
+          "nfr": "code_quality",
+          "severity": "WARNING",
+          "message": "RET504: Unnecessary assignment to `rgb` before `return` statement",
+          "file": "/Users/joelbaruch/repos/building_ai_w_ai/.claude/worktrees/humble-petting-jellyfish/src/envs/minipong.py",
+          "line": 124,
+          "metric": "",
+          "value": "",
+          "threshold": ""
+        },
+        {
+          "nfr": "code_quality",
+          "severity": "WARNING",
+          "message": "C901: `run_game` is too complex (12 > 10)",
+          "file": "/Users/joelbaruch/repos/building_ai_w_ai/.claude/worktrees/humble-petting-jellyfish/src/play/play_minipong.py",
+          "line": 110,
+          "metric": "",
+          "value": "",
+          "threshold": ""
+        }
+      ],
+      "tool": "ruff (extended)",
+      "summary": "2 warnings",
+      "elapsed_s": 0.07
+    }
+  },
+  "summary": {
+    "total_checks": 5,
+    "passed": 2,
+    "failed": 0,
+    "error": 3,
+    "critical_findings": 0,
+    "warning_findings": 3,
+    "has_critical": false
+  }
+}

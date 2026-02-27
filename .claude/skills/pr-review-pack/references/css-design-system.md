@@ -310,4 +310,4 @@ Zone state classes:
 | Floating diagram | opacity, transform | 0.3s ease |
 | Hover backgrounds | background | 0.15s |
 | CI chevron | transform (rotation) | 0.2s |
-| Adversarial row collapse | max-height, opacity, padding | 0.3s ease |
+| Agentic row collapse | max-height, opacity, padding | 0.3s ease |

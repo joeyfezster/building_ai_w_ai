@@ -3,7 +3,7 @@
 
 Populates header, architecture, specs, scenarios, ciPerformance, and
 convergence gates from git/gh/scenario data.  Semantic fields (decisions,
-adversarialReview, whatChanged, postMergeItems, factoryHistory) are left
+agenticReview, whatChanged, postMergeItems, factoryHistory) are left
 empty for the Pass 2 LLM agent to fill — or preserved from an existing
 JSON via --existing.
 
@@ -102,8 +102,20 @@ def parse_ci_time(started: str, completed: str) -> float:
 
 def build_header(pr_number: int, diff_data: dict, pr_meta: dict,
                  scenario_data: dict | None, ci_checks: list,
-                 comment_counts: dict) -> dict:
+                 comment_counts: dict, gate0_data: dict | None) -> dict:
     """Build the header section from deterministic sources."""
+    # Gate 0 badge
+    if gate0_data:
+        summary = gate0_data.get("summary", {})
+        has_critical = summary.get("has_critical", False)
+        g0_type = "fail" if has_critical else "pass"
+        g0_label = f"Gate 0: {summary.get('critical_findings', 0)} critical, {summary.get('warning_findings', 0)} warn"
+        g0_icon = "\u2717" if has_critical else "\u2713"
+    else:
+        g0_type = "warn"
+        g0_label = "Gate 0 NOT RUN"
+        g0_icon = "\u26a0"
+
     # CI badge
     ci_total = len(ci_checks)
     ci_pass = sum(1 for c in ci_checks if c.get("state") == "SUCCESS")
@@ -138,6 +150,7 @@ def build_header(pr_number: int, diff_data: dict, pr_meta: dict,
         "filesChanged": diff_data.get("total_files", pr_meta.get("changedFiles", 0)),
         "commits": num_commits,
         "statusBadges": [
+            {"label": g0_label, "type": g0_type, "icon": g0_icon},
             {"label": f"CI {ci_pass}/{ci_total}", "type": ci_type, "icon": "\u2713" if ci_type == "pass" else "\u2717"},
             {"label": f"{sc_pass}/{sc_total} Scenarios", "type": sc_type, "icon": "\u2713" if sc_type == "pass" else "\u26a0"},
             {"label": f"{resolved}/{total_comments} comments resolved", "type": cm_type, "icon": "\u2713" if cm_type == "pass" else "\u26a0"},
@@ -273,8 +286,25 @@ def build_ci_performance(ci_checks_raw: list[dict]) -> list[dict]:
     return checks
 
 
-def build_convergence(scenario_data: dict | None, ci_checks: list) -> dict:
+def build_convergence(scenario_data: dict | None, ci_checks: list,
+                      gate0_data: dict | None) -> dict:
     """Build convergence gates from deterministic data."""
+    # Gate 0 — from gate0_results.json (tier 1 deterministic)
+    if gate0_data:
+        g0_summary = gate0_data.get("summary", {})
+        gate0_pass = not g0_summary.get("has_critical", False)
+        g0_checks = g0_summary.get("total_checks", 0)
+        g0_passed = g0_summary.get("passed", 0)
+        g0_criticals = g0_summary.get("critical_findings", 0)
+        g0_warnings = g0_summary.get("warning_findings", 0)
+        g0_status_text = f"Tier 1: {g0_passed}/{g0_checks} checks, {g0_criticals} critical, {g0_warnings} warn"
+        g0_elapsed = gate0_data.get("total_elapsed_s", "?")
+        g0_detail = f"Deterministic tool checks ran in {g0_elapsed}s (parallel)."
+    else:
+        gate0_pass = False
+        g0_status_text = "NOT RUN"
+        g0_detail = "gate0_results.json not found. Run: python scripts/run_gate0.py"
+
     # Gate 1 — we can only say pass/fail based on CI validate job
     validate_jobs = [c for c in ci_checks if c.get("name") == "validate"]
     gate1_pass = all(c.get("state") == "SUCCESS" for c in validate_jobs) if validate_jobs else False
@@ -288,15 +318,15 @@ def build_convergence(scenario_data: dict | None, ci_checks: list) -> dict:
         sc_pass = sc_total = 0
         gate3_pass = False
 
-    all_pass = gate1_pass and gate3_pass
+    all_pass = gate0_pass and gate1_pass and gate3_pass
 
     return {
         "gates": [
             {
-                "name": "Gate 0 \u2014 Adversarial Review",
-                "status": "passing",
-                "statusText": "PASS",
-                "summary": "",
+                "name": "Gate 0 \u2014 Two-Tier Review",
+                "status": "passing" if gate0_pass else "failing",
+                "statusText": g0_status_text,
+                "summary": g0_detail,
                 "detail": "",
             },
             {
@@ -335,8 +365,8 @@ def build_convergence(scenario_data: dict | None, ci_checks: list) -> dict:
 # ── Main ────────────────────────────────────────────────────────────
 
 def scaffold(pr_number: int, diff_data_path: str, zone_registry_path: str,
-             scenario_results_path: str | None, existing_path: str | None,
-             output_path: str) -> None:
+             scenario_results_path: str | None, gate0_results_path: str | None,
+             existing_path: str | None, output_path: str) -> None:
     # Load inputs
     diff_data = json.loads(Path(diff_data_path).read_text())
     zones_registry = yaml.safe_load(Path(zone_registry_path).read_text()).get("zones", {})
@@ -345,10 +375,17 @@ def scaffold(pr_number: int, diff_data_path: str, zone_registry_path: str,
     if scenario_results_path and Path(scenario_results_path).exists():
         scenario_data = json.loads(Path(scenario_results_path).read_text())
 
+    gate0_data = None
+    if gate0_results_path and Path(gate0_results_path).exists():
+        gate0_data = json.loads(Path(gate0_results_path).read_text())
+
     # Load existing JSON for semantic field preservation
     existing: dict | None = None
     if existing_path and Path(existing_path).exists():
         existing = json.loads(Path(existing_path).read_text())
+        # Migrate legacy key: adversarialReview → agenticReview
+        if "adversarialReview" in existing and "agenticReview" not in existing:
+            existing["agenticReview"] = existing.pop("adversarialReview")
 
     # Fetch PR metadata and CI checks from GitHub
     pr_meta_raw = run_gh([
@@ -382,17 +419,17 @@ def scaffold(pr_number: int, diff_data_path: str, zone_registry_path: str,
     comment_counts = json.loads(comment_raw) if comment_raw else {"total": 0, "unresolved": 0}
 
     # Build deterministic sections
-    header = build_header(pr_number, diff_data, pr_meta, scenario_data, ci_checks, comment_counts)
+    header = build_header(pr_number, diff_data, pr_meta, scenario_data, ci_checks, comment_counts, gate0_data)
     architecture = build_architecture(zones_registry, diff_data)
     specs = build_specs(zones_registry)
     scenarios = build_scenarios(scenario_data)
     ci_perf = build_ci_performance(ci_checks)
-    convergence = build_convergence(scenario_data, ci_checks)
+    convergence = build_convergence(scenario_data, ci_checks, gate0_data)
 
     # Semantic fields: preserve from existing or leave empty
     semantic_defaults = {
         "whatChanged": {"defaultSummary": {"infrastructure": "", "product": ""}, "zoneDetails": []},
-        "adversarialReview": {"overallGrade": "", "reviewMethod": "main-agent", "findings": []},
+        "agenticReview": {"overallGrade": "", "reviewMethod": "main-agent", "findings": []},
         "decisions": [],
         "postMergeItems": [],
         "factoryHistory": None,
@@ -404,7 +441,7 @@ def scaffold(pr_number: int, diff_data_path: str, zone_registry_path: str,
         "specs": specs,
         "scenarios": scenarios,
         "whatChanged": existing.get("whatChanged", semantic_defaults["whatChanged"]) if existing else semantic_defaults["whatChanged"],
-        "adversarialReview": existing.get("adversarialReview", semantic_defaults["adversarialReview"]) if existing else semantic_defaults["adversarialReview"],
+        "agenticReview": existing.get("agenticReview", semantic_defaults["agenticReview"]) if existing else semantic_defaults["agenticReview"],
         "ciPerformance": ci_perf,
         "decisions": existing.get("decisions", semantic_defaults["decisions"]) if existing else semantic_defaults["decisions"],
         "convergence": convergence,
@@ -433,7 +470,7 @@ def scaffold(pr_number: int, diff_data_path: str, zone_registry_path: str,
 
     # Report
     det_fields = ["header", "architecture", "specs", "scenarios", "ciPerformance"]
-    sem_fields = ["whatChanged", "adversarialReview", "decisions", "postMergeItems", "factoryHistory"]
+    sem_fields = ["whatChanged", "agenticReview", "decisions", "postMergeItems", "factoryHistory"]
     sem_source = "preserved from existing" if existing else "empty (for Pass 2 agent)"
 
     print(f"Scaffolded: {output_path}")
@@ -452,6 +489,8 @@ def main() -> None:
     parser.add_argument("--zone-registry", default=".claude/zone-registry.yaml", help="Path to zone registry YAML")
     parser.add_argument("--scenario-results", default="artifacts/factory/scenario_results.json",
                         help="Path to scenario results JSON")
+    parser.add_argument("--gate0-results", default="artifacts/factory/gate0_results.json",
+                        help="Path to Gate 0 tier 1 results JSON")
     parser.add_argument("--existing", default=None, help="Path to existing ReviewPackData JSON (preserves semantic fields)")
     parser.add_argument("--output", required=True, help="Output path for scaffolded JSON")
     args = parser.parse_args()
@@ -461,6 +500,7 @@ def main() -> None:
         diff_data_path=args.diff_data,
         zone_registry_path=args.zone_registry,
         scenario_results_path=args.scenario_results,
+        gate0_results_path=args.gate0_results,
         existing_path=args.existing,
         output_path=args.output,
     )

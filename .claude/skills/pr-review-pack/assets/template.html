@@ -44,6 +44,10 @@
   [data-theme="dark"] .history-event { background: #1f2937; border-color: #374151; }
   [data-theme="dark"] tr.detail-row td,
   [data-theme="dark"] .adv-detail-row td { background: #1a2332; }
+  [data-theme="dark"] .agent-grade-badge { background: #2a3441; }
+  [data-theme="dark"] .agent-legend-item .agent-abbrev { background: #2a3441; }
+  [data-theme="dark"] .agent-detail-header .agent-abbrev { background: #2a3441; }
+  [data-theme="dark"] .agent-detail-entry { border-bottom-color: #2a3441; }
   [data-theme="dark"] .arch-legend { background: #1f2937; }
   [data-theme="dark"] .conv-card { border-color: #374151; }
   [data-theme="dark"] .decision-card { border-color: #374151; }
@@ -213,7 +217,7 @@
   .review-method-badge.agent-teams { background: var(--blue-bg, #dbeafe); color: #1d4ed8; }
   .review-method-badge.main-agent { background: var(--gray-bg); color: var(--gray); }
 
-  /* ── Agent column in adversarial table ── */
+  /* ── Agent badges in agentic review table ── */
   .agent-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; background: var(--gray-bg); color: var(--gray); }
 
   /* ── Timing ── */
@@ -342,7 +346,7 @@
   .wc-zone-detail.active { display: block; }
   .wc-zone-detail h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
 
-  /* ── Adversarial review enhancements ── */
+  /* ── Agentic review ── */
   .adv-scroll { max-height: 500px; overflow-y: auto; }
   .adv-row { cursor: pointer; transition: max-height 0.3s ease, opacity 0.3s ease; }
   .adv-row:hover { background: var(--gray-bg); }
@@ -352,6 +356,26 @@
   .adv-detail-row { display: none; }
   .adv-detail-row.open { display: table-row; }
   .adv-detail-row td { background: #fafbfc; padding: 12px 20px; font-size: 12px; border-bottom: 1px solid var(--border); }
+
+  /* Agent grade badges (compact per-file) */
+  .agent-badges-cell { white-space: nowrap; }
+  .agent-grade-badge { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; padding: 1px 4px; border-radius: 4px; background: var(--gray-bg); font-size: 11px; }
+  .agent-grade-badge .agent-abbrev { font-weight: 700; color: var(--text-muted); font-size: 10px; font-family: var(--mono); }
+  .agent-grade-badge .grade { font-size: 11px; padding: 0 2px; }
+
+  /* Agent legend */
+  .agent-legend { display: inline-flex; gap: 12px; margin-left: 12px; font-size: 11px; color: var(--text-muted); vertical-align: middle; }
+  .agent-legend-item { display: inline-flex; align-items: center; gap: 3px; cursor: help; }
+  .agent-legend-item .agent-abbrev { font-weight: 700; font-family: var(--mono); font-size: 10px; background: var(--gray-bg); padding: 1px 3px; border-radius: 3px; }
+
+  /* Per-agent detail breakdown (inside expanded row) */
+  .agent-detail-entry { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .agent-detail-entry:last-child { border-bottom: none; }
+  .agent-detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .agent-detail-header .agent-abbrev { font-weight: 700; font-family: var(--mono); font-size: 10px; background: var(--gray-bg); padding: 1px 4px; border-radius: 3px; }
+  .agent-detail-header .grade { font-size: 11px; }
+  .agent-detail-name { font-size: 11px; color: var(--text-muted); }
+  .agent-detail-body { font-size: 12px; line-height: 1.5; padding-left: 4px; }
 
   /* ── CI sub-check drill-down ── */
   .ci-check-item { padding: 6px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
@@ -565,20 +589,20 @@
       </div>
     </div>
 
-    <!-- Section: Adversarial Review -->
+    <!-- Section: Agentic Review -->
     <div class="section">
       <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
-        <h2 id="adv-header">Adversarial Review <!-- INJECT: adversarial review method badge --></h2>
+        <h2 id="adv-header">Agentic Review <!-- INJECT: adversarial review method badge --></h2>
         <span class="chevron">&#x25BC;</span>
       </div>
       <div class="section-body">
         <div class="adv-scroll">
-        <div id="adv-no-match" class="adv-no-match">No adversarial findings in this zone.</div>
+        <div id="adv-no-match" class="adv-no-match">No review findings in this zone.</div>
         <table id="adv-table">
-          <thead><tr><th>File</th><th>Grade</th><th>Agent</th><th>Zone</th><th>Notable</th></tr></thead>
+          <thead><tr><th>File</th><th>Agents</th><th>Zone</th><th>Notable</th></tr></thead>
           <tbody>
-            <!-- INJECT: adversarial finding rows from DATA.adversarialReview.findings -->
-            <!-- Each row: tr.adv-row[data-zones="..."][data-grade-sort="N"] + tr.adv-detail-row -->
+            <!-- INJECT: adversarial finding rows from DATA.agenticReview.findings -->
+            <!-- Each row: tr.adv-row (file-level, grouped) + tr.adv-detail-row (per-agent breakdown) -->
           </tbody>
         </table>
         </div>
