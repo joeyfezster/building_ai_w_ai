@@ -15,6 +15,10 @@ Read the component specifications in `/specs/` to understand what the system sho
 Read the feedback file for this iteration to understand what's broken:
 - `artifacts/factory/feedback_iter_*.md` — latest feedback with full error output
 
+Read the decision log for architectural context from previous cranks:
+- `docs/decisions/decision_log.json` — cumulative log of accepted architectural decisions
+- These decisions were reviewed and approved by the project lead. Follow them unless specs or feedback explicitly contradict them.
+
 ## Your Constraints
 
 **NEVER read, modify, or delete these files:**
@@ -30,6 +34,8 @@ Read the feedback file for this iteration to understand what's broken:
 - `/scripts/restore_holdout.py` (holdout restoration)
 - `/scripts/nfr_checks.py` (Gate 2 NFR checker)
 - `/scripts/check_test_quality.py` (anti-vacuous scanner)
+- `/docs/decisions/` (decision log — read for context, never modify)
+- `/scripts/persist_decisions.py` (decision persistence script)
 
 **DO modify** source code in:
 - `src/` — all Python source

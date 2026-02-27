@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "decisions": [
+    {
+      "id": "PR6-1",
+      "globalSeq": 1,
+      "prNumber": 6,
+      "title": "Wire existing record_video() rather than rewriting",
+      "rationale": "The video recording function was already implemented and tested — it just wasn't called from the training loop.",
+      "body": "Rather than creating a new video recording mechanism or modifying the evaluation flow, we simply imported the existing <code>record_video()</code> function and called it at the same point where checkpoints and metrics are already saved. This is the minimal change that fixes the scenario failure.",
+      "zones": [
+        "training"
+      ],
+      "files": [
+        {
+          "path": "src/train/train_dqn.py",
+          "change": "Added import and call to record_video() in eval block"
+        },
+        {
+          "path": "src/train/record_video.py",
+          "change": "Added frame_stack parameter for config compatibility"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-02-26T04:26:25Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/6",
+      "headSha": "bce032a",
+      "status": "active"
+    },
+    {
+      "id": "PR6-2",
+      "globalSeq": 2,
+      "prNumber": 6,
+      "title": "Parameterize frame_stack instead of hardcoding",
+      "rationale": "Hardcoded frame_stack=4 caused shape mismatches when training config used a different value.",
+      "body": "The original <code>record_video()</code> hardcoded <code>frame_stack=4</code>. When the test suite runs with <code>frame_stack=2</code>, loading a checkpoint into a model with mismatched input channels causes a RuntimeError. Adding the parameter with default=4 maintains backward compatibility while allowing the training loop to pass the correct value.",
+      "zones": [
+        "training"
+      ],
+      "files": [
+        {
+          "path": "src/train/record_video.py",
+          "change": "Added frame_stack parameter with default=4"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-02-26T04:26:25Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/6",
+      "headSha": "bce032a",
+      "status": "active"
+    }
+  ]
+}
