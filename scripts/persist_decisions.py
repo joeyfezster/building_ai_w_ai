@@ -52,13 +52,19 @@ def extract_decisions_from_json(path: Path) -> tuple[list[dict], dict]:
 def extract_decisions_from_html(path: Path) -> tuple[list[dict], dict]:
     """Extract decisions from rendered HTML by parsing the embedded DATA object.
 
-    The review pack HTML contains a `const DATA = {...};` block with the full
-    ReviewPackData JSON. We extract it with a regex and parse it.
+    The review pack HTML contains a `const DATA = {"header":...};` block with
+    the full ReviewPackData JSON. We anchor the regex to `"header"` to avoid
+    matching `const DATA` references inside embedded diff data (which may
+    contain source code of this very script).
     """
     html = path.read_text()
-    match = re.search(r"const DATA = ({.*?});\s*\n", html, re.DOTALL)
+    # Anchor to the actual DATA object (first key is always "header").
+    # The opening brace and "header" may be on separate lines.
+    match = re.search(
+        r'const DATA = (\{\s*"header".*?);\s*\n', html, re.DOTALL
+    )
     if not match:
-        print("ERROR: Could not find 'const DATA = {...}' in HTML file.")
+        print("ERROR: Could not find 'const DATA = {\"header\"...}' in HTML file.")
         sys.exit(1)
 
     # The embedded JSON may contain <\/script> escapes from the renderer.
