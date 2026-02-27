@@ -61,6 +61,7 @@ When running `/factory-orchestrate`, these rules are hard constraints — not su
 1. **Gate 0 MUST use agent teams.** Use `TeamCreate` to spawn all 6 Gate 0 agents (5 tool agents + 1 adversarial reviewer) in parallel via the `Task` tool. Running tool checks as bare `Bash` calls or skipping the adversarial reviewer is a protocol violation. Every iteration gets a full team review — no exceptions, no "the diff is small enough to eyeball."
 2. **Gate 0 failure: keep Codex's code.** Merge onto the factory branch so iteration N+1 is incremental. NEVER revert.
 3. **Delete Codex's remote branch immediately after merge.** Every merge, pass or fail. Stale branches pollute the namespace.
+4. **Convergence requires ALL scenarios passing.** A single failing scenario blocks convergence — no exceptions, no percentage thresholds. The factory owns its output quality end-to-end. Never excuse a failure by attributing it to a previous iteration or the base branch. If a scenario fails, fix it and re-run, regardless of cause.
 
 ## Fix-Forward Principle
 

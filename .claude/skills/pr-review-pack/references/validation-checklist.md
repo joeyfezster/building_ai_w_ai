@@ -60,9 +60,11 @@ Pre-delivery checks to run before handing the review pack to Joey. Organized by 
 
 ### Architecture Diagram
 - [ ] All zones from the registry appear in the SVG
+- [ ] No zones are clipped or out of bounds (viewBox fits all content)
 - [ ] Zone labels and sublabels are readable
 - [ ] File count circles show correct numbers
 - [ ] Zone colors match category (blue=factory, green=product, purple=infra)
+- [ ] Zoom controls (+/−/Fit) work correctly
 - [ ] Baseline view dims all zones
 - [ ] Update view shows all zones at full opacity
 - [ ] Floating diagram appears when main diagram scrolls out of view
@@ -143,16 +145,25 @@ These are the core trust properties. If any fails, the review pack is unreliable
 - [ ] **Unverified claims are flagged** -- not silently rendered
 - [ ] **The renderer has zero intelligence** -- pure template consuming verified data
 
+## Embedded Content Safety
+
+- [ ] No literal `</script>` in embedded diff data or reference files (must be escaped as `<\/script`)
+- [ ] No visible gibberish or raw JSON at the bottom of the page
+- [ ] File modal opens and shows diffs (not stuck on "Loading diff data...")
+
 ## Pre-Delivery Final Check
 
 Before delivering to Joey:
 
 1. Open the HTML in a browser
-2. Click through all expandable sections -- do they open and close?
-3. Click a zone in the architecture diagram -- does filtering work?
-4. Click a file path -- does the diff modal open with correct content?
-5. Toggle dark mode -- does everything remain readable?
-6. Scroll past the architecture section -- does the floating diagram appear?
-7. Switch to Factory History tab (if present) -- does it render correctly?
-8. Check header status badges -- are CI, Scenarios, and Comments all green?
-9. Verify the HEAD SHA in the header matches the actual PR HEAD
+2. **The red "This Pack Has NOT Been Visually Inspected" banner should be visible** -- this confirms the template rendered correctly. Remove it (delete the `#visual-inspection-banner` and `#visual-inspection-spacer` elements) only after completing all visual checks below.
+3. Click through all expandable sections -- do they open and close?
+4. Click a zone in the architecture diagram -- does filtering work?
+5. Click a file path -- does the diff modal open with correct content?
+6. Toggle dark mode -- does everything remain readable?
+7. Scroll past the architecture section -- does the floating diagram appear?
+8. Switch to Factory History tab (if present) -- does it render correctly?
+9. Check header status badges -- are CI, Scenarios, and Comments all green?
+10. Verify the HEAD SHA in the header matches the actual PR HEAD
+11. Scroll to the very bottom -- no gibberish or raw data visible?
+12. Remove the visual inspection banner and spacer from the HTML

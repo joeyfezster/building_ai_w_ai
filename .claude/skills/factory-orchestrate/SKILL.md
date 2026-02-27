@@ -8,13 +8,23 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Edit
 
 You are the factory orchestrator. You run the convergence loop that turns specs into working software through iterative AI coding + validation.
 
+## Crank Lifecycle
+
+A factory crank progresses through three states:
+- **IN PROGRESS** — iterating (Codex coding, gates running, feedback looping)
+- **CONVERGED** — ALL scenarios passing, PR created with review pack, pending human merge decision
+- **COMPLETE** — factory branch merged to main
+
+A crank is NOT complete until the factory branch is merged to main. Convergence is necessary but not sufficient — the human accept/merge gate is what completes a crank.
+
 ## Prerequisites
 
 - Chrome is logged into Codex (ChatGPT Plus account)
 - Repository: `joeyfezster/building_ai_w_ai`
 - Branch to base work on: confirm with user or default to `factory/v1`
-- Satisfaction threshold: confirm with user or default to 80%
 - Max iterations: confirm with user or default to 5
+
+**Convergence requires ALL scenarios passing.** There is no percentage threshold — a single failing scenario blocks convergence, regardless of cause (regression, merge conflict, transient issue, or new failure). The factory owns its output quality end-to-end. Never declare convergence with a failing scenario, and never excuse a failure by attributing it to a previous iteration or the base branch.
 
 ## The Loop
 
@@ -166,9 +176,11 @@ python scripts/run_scenarios.py --timeout 180
 
 Produces `artifacts/factory/scenario_results.json` with satisfaction score.
 
+**Hard gate: if ANY scenario fails, the crank has NOT converged.** Do not proceed to Step 10. Compile feedback and loop back to Step 3. The satisfaction score is a trajectory metric (is progress being made?) — it is NOT the convergence criterion. Convergence = zero failures.
+
 ### Step 10: LLM-as-Judge — Holistic Evaluation
 
-You ARE the judge. Don't just check `satisfaction_score >= threshold`. Reason through:
+You ARE the judge. All scenarios passed — but passing is necessary, not sufficient. Reason through:
 
 1. **Satisfaction trajectory**: Is the score improving across iterations? Plateaued? Regressing?
 2. **Failure patterns**: Are the same scenarios failing repeatedly? Different ones each time?

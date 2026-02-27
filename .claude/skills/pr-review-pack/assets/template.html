@@ -449,6 +449,11 @@
 </style>
 </head>
 <body>
+<!-- Visual inspection watermark: visible until removed by the reviewing agent -->
+<div id="visual-inspection-banner" style="position:fixed;top:0;left:0;right:0;z-index:10000;background:#dc2626;color:white;text-align:center;padding:12px 20px;font-weight:700;font-size:15px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3);letter-spacing:0.3px">
+  This Pack Has NOT Been Visually Inspected
+</div>
+<div id="visual-inspection-spacer" style="height:48px"></div>
 <div class="container">
 
   <!-- ══ DATA INJECTION POINT ══ -->
@@ -495,6 +500,11 @@
         <div class="arch-controls">
           <button class="arch-toggle active" onclick="setArchView('update',this)">Update (this PR)</button>
           <button class="arch-toggle" onclick="setArchView('baseline',this)">Baseline (before merge)</button>
+          <span style="margin-left:auto;display:inline-flex;gap:4px;align-items:center">
+            <button class="arch-toggle" onclick="archZoom(-1)" title="Zoom out">&minus;</button>
+            <button class="arch-toggle" onclick="archZoom(0)" title="Fit to content">Fit</button>
+            <button class="arch-toggle" onclick="archZoom(1)" title="Zoom in">+</button>
+          </span>
           <span class="arch-hint">Click a zone to filter findings &bull; Click background to reset</span>
         </div>
         <svg id="arch-diagram" viewBox="0 0 780 360" style="width:100%;max-width:780px;background:#fafbfc;border-radius:8px;border:1px solid var(--border)">
@@ -911,6 +921,33 @@ function setArchView(view, btn) {
     });
     document.getElementById('zone-filter-info').style.display = 'none';
   }
+}
+
+// ═══════════════════════════════════════════
+// Architecture zoom
+// ═══════════════════════════════════════════
+let archZoomLevel = 1;
+const archOriginalViewBox = (function() {
+  const svg = document.getElementById('arch-diagram');
+  return svg ? svg.getAttribute('viewBox') : '0 0 780 400';
+})();
+
+function archZoom(direction) {
+  const svg = document.getElementById('arch-diagram');
+  if (!svg) return;
+  const parts = archOriginalViewBox.split(/\s+/).map(Number);
+  if (direction === 0) {
+    archZoomLevel = 1;
+  } else {
+    archZoomLevel = Math.max(0.5, Math.min(2.5, archZoomLevel + direction * 0.25));
+  }
+  const cx = parts[0] + parts[2] / 2;
+  const cy = parts[1] + parts[3] / 2;
+  const newW = parts[2] / archZoomLevel;
+  const newH = parts[3] / archZoomLevel;
+  svg.setAttribute('viewBox',
+    (cx - newW/2).toFixed(0) + ' ' + (cy - newH/2).toFixed(0) + ' ' +
+    newW.toFixed(0) + ' ' + newH.toFixed(0));
 }
 
 // ═══════════════════════════════════════════

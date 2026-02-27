@@ -142,8 +142,9 @@ The renderer:
 1. Reads the template (`assets/template.html`) and the ReviewPackData JSON.
 2. Generates HTML for every `<!-- INJECT: ... -->` marker (26 injection points across all sections).
 3. Injects the full JSON into `const DATA = {...}` for JS interactivity (zone filtering, file modal, etc.).
-4. **Embeds diff data inline** in a `<script>` block, making the pack truly self-contained. No companion JSON file needed, no CORS issues when opening via `file://` protocol.
-5. Validates that no unreplaced markers remain (warns on stderr if any do).
+4. **Embeds diff data inline** in a `<script>` block, making the pack truly self-contained. No companion JSON file needed, no CORS issues when opening via `file://` protocol. Embedded content is automatically escaped to prevent HTML parser conflicts.
+5. **Calculates the SVG viewBox dynamically** from architecture zone positions, preventing zones from being clipped.
+6. Validates that no unreplaced markers remain outside of embedded `<script>` blocks (markers inside diff data are false positives and are excluded).
 
 **Self-contained guarantee:** The `--diff-data` flag embeds the Pass 1 output directly in the HTML. The diff data is raw `git diff`/`git show` output — deterministic, zero LLM — byte-equivalent to what GitHub displays for the same commit SHA. Always use `--diff-data` to embed it.
 
@@ -160,10 +161,11 @@ After rendering, validate that the pack renders correctly:
 1. **Programmatic check (always run):**
    ```python
    python3 -c "
+   import re
    html = open('docs/pr{N}_review_pack.html').read()
+   outside_scripts = re.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=re.DOTALL)
    checks = [
-       ('No unreplaced markers', '<!-- INJECT:' not in html),
-       ('DATA injected', 'const DATA = {};' not in html),
+       ('No unreplaced markers (outside scripts)', '<!-- INJECT:' not in outside_scripts),
        ('PR title present', 'PR #{N}' in html),
        ('Scenario cards', html.count('scenario-card') >= 1),
        ('Adversarial rows', 'adv-row' in html),
@@ -177,6 +179,8 @@ After rendering, validate that the pack renders correctly:
        ('Stat colors', 'stat green' in html and 'stat red' in html),
        ('Spec file links', html.count('file-path-link') >= 3),
        ('Comments badge', 'comments' in html.lower() and 'resolved' in html.lower()),
+       ('Script escaping', '<\\\\/script' in html),
+       ('Zoom controls', 'archZoom' in html),
    ]
    for name, ok in checks:
        print(f'  [{\"PASS\" if ok else \"FAIL\"}] {name}')
@@ -185,16 +189,46 @@ After rendering, validate that the pack renders correctly:
    "
    ```
 
-2. **Browser check (when possible):** Open the HTML file and verify:
+2. **Browser visual check (mandatory):**
+
+   The template includes a red **"This Pack Has NOT Been Visually Inspected"** banner. It is visible until you remove it. If you skip this step, the human reviewer sees the banner and knows.
+
+   **How to view from CLI (macOS):**
+   ```bash
+   # Open in Chrome
+   osascript -e 'tell application "Google Chrome" to tell window 1 to make new tab with properties {URL:"file:///path/to/docs/pr{N}_review_pack.html"}'
+
+   # Screenshot and view (Read tool is multimodal — it can see images)
+   screencapture -x /tmp/review_pack_check.png
+   # Then: Read /tmp/review_pack_check.png
+
+   # Scroll down (repeat to page through)
+   osascript -e 'tell application "System Events" to tell process "Google Chrome" to keystroke space'
+
+   # Scroll up
+   osascript -e 'tell application "System Events" to tell process "Google Chrome" to keystroke space using shift down'
+   ```
+
+   **What to verify** (screenshot after each scroll):
    - All 9 sections render with content (not empty)
-   - Architecture diagram shows zones with correct colors
+   - Architecture diagram shows zones with correct colors, not clipped, zoom controls present
    - Theme toggle works (light/dark/system)
    - Expandable sections toggle on click
    - File modal opens when clicking file paths (including spec file paths)
    - Stats show labeled additions (green) and deletions (red)
    - Factory History tab (if present) switches and shows content
+   - **Bottom of page**: clean footer, NO gibberish or raw JSON
 
-3. **If browser viewing is unavailable** (e.g., headless environment, agent cannot see browser output): The programmatic check is the minimum bar. State clearly in the delivery message: "Programmatic validation passed. Browser visual validation was not performed due to [reason]. Please verify rendering before sharing."
+   **After visual review passes:** Remove the banner from the rendered HTML:
+   ```python
+   python3 -c "
+   html = open('docs/pr{N}_review_pack.html').read()
+   html = html.replace('<div id=\"visual-inspection-banner\"' + html.split('<div id=\"visual-inspection-banner\"')[1].split('</div>')[0] + '</div>', '')
+   html = html.replace('<div id=\"visual-inspection-spacer\" style=\"height:48px\"></div>', '')
+   open('docs/pr{N}_review_pack.html', 'w').write(html)
+   print('Visual inspection banner removed.')
+   "
+   ```
 
 ## Zone Registry Setup
 
