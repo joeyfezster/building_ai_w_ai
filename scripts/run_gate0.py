@@ -30,7 +30,7 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -119,7 +119,7 @@ def _run_check(
             "name": name,
             "tool": description,
             "status": "error",
-            "summary": f"Timeout after 120s",
+            "summary": "Timeout after 120s",
             "findings": [
                 {
                     "severity": "WARNING",
@@ -197,7 +197,7 @@ def run_all() -> dict:
     )
 
     return {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "tier": "deterministic",
         "total_elapsed_s": round(total_elapsed, 2),
         "checks": checks,

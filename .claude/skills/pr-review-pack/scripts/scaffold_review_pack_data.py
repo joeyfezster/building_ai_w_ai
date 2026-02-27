@@ -25,11 +25,11 @@ import json
 import subprocess
 import sys
 import time
+from datetime import UTC
 from fnmatch import fnmatch
 from pathlib import Path
 
 import yaml
-
 
 # ── Zone position layout ────────────────────────────────────────────
 # Deterministic: category → row, sequential x within row.
@@ -88,11 +88,11 @@ def format_time(seconds: float) -> str:
 
 def parse_ci_time(started: str, completed: str) -> float:
     """Parse ISO timestamps and return duration in seconds."""
-    from datetime import datetime, timezone
+    from datetime import datetime
     fmt = "%Y-%m-%dT%H:%M:%SZ"
     try:
-        start = datetime.strptime(started, fmt).replace(tzinfo=timezone.utc)
-        end = datetime.strptime(completed, fmt).replace(tzinfo=timezone.utc)
+        start = datetime.strptime(started, fmt).replace(tzinfo=UTC)
+        end = datetime.strptime(completed, fmt).replace(tzinfo=UTC)
         return max((end - start).total_seconds(), 0)
     except (ValueError, TypeError):
         return 0
@@ -109,7 +109,9 @@ def build_header(pr_number: int, diff_data: dict, pr_meta: dict,
         summary = gate0_data.get("summary", {})
         has_critical = summary.get("has_critical", False)
         g0_type = "fail" if has_critical else "pass"
-        g0_label = f"Gate 0: {summary.get('critical_findings', 0)} critical, {summary.get('warning_findings', 0)} warn"
+        crit = summary.get("critical_findings", 0)
+        warn = summary.get("warning_findings", 0)
+        g0_label = f"Gate 0: {crit} critical, {warn} warn"
         g0_icon = "\u2717" if has_critical else "\u2713"
     else:
         g0_type = "warn"
@@ -127,7 +129,10 @@ def build_header(pr_number: int, diff_data: dict, pr_meta: dict,
         sc_total = scenario_data.get("total", 0)
     else:
         sc_pass = sc_total = 0
-    sc_type = "pass" if sc_pass == sc_total and sc_total > 0 else ("warn" if sc_pass > 0 else "fail")
+    if sc_pass == sc_total and sc_total > 0:
+        sc_type = "pass"
+    else:
+        sc_type = "warn" if sc_pass > 0 else "fail"
 
     # Comment badge
     total_comments = comment_counts.get("total", 0)
@@ -136,7 +141,10 @@ def build_header(pr_number: int, diff_data: dict, pr_meta: dict,
     cm_type = "pass" if unresolved == 0 else "warn"
 
     commits_list = pr_meta.get("commits", [])
-    num_commits = len(commits_list) if isinstance(commits_list, list) else int(pr_meta.get("commits", 0))
+    if isinstance(commits_list, list):
+        num_commits = len(commits_list)
+    else:
+        num_commits = int(pr_meta.get("commits", 0))
 
     return {
         "title": pr_meta.get("title", f"PR #{pr_number}"),
@@ -150,10 +158,17 @@ def build_header(pr_number: int, diff_data: dict, pr_meta: dict,
         "filesChanged": diff_data.get("total_files", pr_meta.get("changedFiles", 0)),
         "commits": num_commits,
         "statusBadges": [
-            {"label": g0_label, "type": g0_type, "icon": g0_icon},
-            {"label": f"CI {ci_pass}/{ci_total}", "type": ci_type, "icon": "\u2713" if ci_type == "pass" else "\u2717"},
-            {"label": f"{sc_pass}/{sc_total} Scenarios", "type": sc_type, "icon": "\u2713" if sc_type == "pass" else "\u26a0"},
-            {"label": f"{resolved}/{total_comments} comments resolved", "type": cm_type, "icon": "\u2713" if cm_type == "pass" else "\u26a0"},
+            {"label": g0_label, "type": g0_type,
+             "icon": g0_icon},
+            {"label": f"CI {ci_pass}/{ci_total}",
+             "type": ci_type,
+             "icon": "\u2713" if ci_type == "pass" else "\u2717"},
+            {"label": f"{sc_pass}/{sc_total} Scenarios",
+             "type": sc_type,
+             "icon": "\u2713" if sc_type == "pass" else "\u26a0"},
+            {"label": f"{resolved}/{total_comments} comments resolved",
+             "type": cm_type,
+             "icon": "\u2713" if cm_type == "pass" else "\u26a0"},
         ],
         "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "generatedBy": "dark factory review agent",
@@ -297,7 +312,10 @@ def build_convergence(scenario_data: dict | None, ci_checks: list,
         g0_passed = g0_summary.get("passed", 0)
         g0_criticals = g0_summary.get("critical_findings", 0)
         g0_warnings = g0_summary.get("warning_findings", 0)
-        g0_status_text = f"Tier 1: {g0_passed}/{g0_checks} checks, {g0_criticals} critical, {g0_warnings} warn"
+        g0_status_text = (
+            f"Tier 1: {g0_passed}/{g0_checks} checks, "
+            f"{g0_criticals} critical, {g0_warnings} warn"
+        )
         g0_elapsed = gate0_data.get("total_elapsed_s", "?")
         g0_detail = f"Deterministic tool checks ran in {g0_elapsed}s (parallel)."
     else:
@@ -412,14 +430,20 @@ def scaffold(pr_number: int, diff_data_path: str, zone_registry_path: str,
     comment_raw = run_gh([
         "api", "graphql", "-f", f"query={comment_query}",
         "--jq", """{
-          total: (.data.repository.pullRequest.reviewThreads.nodes | length),
-          unresolved: ([.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length)
-        }"""
+  total: (.data.repository.pullRequest.reviewThreads.nodes
+    | length),
+  unresolved: ([
+    .data.repository.pullRequest.reviewThreads.nodes[]
+    | select(.isResolved == false)] | length)
+}"""
     ])
     comment_counts = json.loads(comment_raw) if comment_raw else {"total": 0, "unresolved": 0}
 
     # Build deterministic sections
-    header = build_header(pr_number, diff_data, pr_meta, scenario_data, ci_checks, comment_counts, gate0_data)
+    header = build_header(
+        pr_number, diff_data, pr_meta, scenario_data,
+        ci_checks, comment_counts, gate0_data,
+    )
     architecture = build_architecture(zones_registry, diff_data)
     specs = build_specs(zones_registry)
     scenarios = build_scenarios(scenario_data)
@@ -440,13 +464,28 @@ def scaffold(pr_number: int, diff_data_path: str, zone_registry_path: str,
         "architecture": architecture,
         "specs": specs,
         "scenarios": scenarios,
-        "whatChanged": existing.get("whatChanged", semantic_defaults["whatChanged"]) if existing else semantic_defaults["whatChanged"],
-        "agenticReview": existing.get("agenticReview", semantic_defaults["agenticReview"]) if existing else semantic_defaults["agenticReview"],
+        "whatChanged": (
+            existing.get("whatChanged", semantic_defaults["whatChanged"])
+            if existing else semantic_defaults["whatChanged"]
+        ),
+        "agenticReview": (
+            existing.get("agenticReview", semantic_defaults["agenticReview"])
+            if existing else semantic_defaults["agenticReview"]
+        ),
         "ciPerformance": ci_perf,
-        "decisions": existing.get("decisions", semantic_defaults["decisions"]) if existing else semantic_defaults["decisions"],
+        "decisions": (
+            existing.get("decisions", semantic_defaults["decisions"])
+            if existing else semantic_defaults["decisions"]
+        ),
         "convergence": convergence,
-        "postMergeItems": existing.get("postMergeItems", semantic_defaults["postMergeItems"]) if existing else semantic_defaults["postMergeItems"],
-        "factoryHistory": existing.get("factoryHistory", semantic_defaults["factoryHistory"]) if existing else semantic_defaults["factoryHistory"],
+        "postMergeItems": (
+            existing.get("postMergeItems", semantic_defaults["postMergeItems"])
+            if existing else semantic_defaults["postMergeItems"]
+        ),
+        "factoryHistory": (
+            existing.get("factoryHistory", semantic_defaults["factoryHistory"])
+            if existing else semantic_defaults["factoryHistory"]
+        ),
     }
 
     # If existing has richer convergence gate details, merge them
@@ -477,22 +516,32 @@ def scaffold(pr_number: int, diff_data_path: str, zone_registry_path: str,
     print(f"  Deterministic: {', '.join(det_fields)}")
     print(f"  Convergence: gates computed, overall {'merged' if existing else 'computed'}")
     print(f"  Semantic ({sem_source}): {', '.join(sem_fields)}")
-    print(f"  Header: {header['filesChanged']} files, +{header['additions']}/-{header['deletions']}, {header['commits']} commits")
+    h = header
+    print(
+        f"  Header: {h['filesChanged']} files, "
+        f"+{h['additions']}/-{h['deletions']}, "
+        f"{h['commits']} commits"
+    )
     print(f"  Scenarios: {header['statusBadges'][1]['label']}")
     print(f"  CI: {header['statusBadges'][0]['label']}")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Scaffold ReviewPackData with deterministic fields")
-    parser.add_argument("--pr", type=int, required=True, help="PR number")
-    parser.add_argument("--diff-data", required=True, help="Path to diff data JSON (Pass 1 output)")
-    parser.add_argument("--zone-registry", default=".claude/zone-registry.yaml", help="Path to zone registry YAML")
-    parser.add_argument("--scenario-results", default="artifacts/factory/scenario_results.json",
-                        help="Path to scenario results JSON")
-    parser.add_argument("--gate0-results", default="artifacts/factory/gate0_results.json",
-                        help="Path to Gate 0 tier 1 results JSON")
-    parser.add_argument("--existing", default=None, help="Path to existing ReviewPackData JSON (preserves semantic fields)")
-    parser.add_argument("--output", required=True, help="Output path for scaffolded JSON")
+    parser = argparse.ArgumentParser(
+        description="Scaffold ReviewPackData with deterministic fields",
+    )
+    parser.add_argument("--pr", type=int, required=True)
+    parser.add_argument("--diff-data", required=True,
+                        help="Path to diff data JSON")
+    parser.add_argument("--zone-registry",
+                        default=".claude/zone-registry.yaml")
+    parser.add_argument("--scenario-results",
+                        default="artifacts/factory/scenario_results.json")
+    parser.add_argument("--gate0-results",
+                        default="artifacts/factory/gate0_results.json")
+    parser.add_argument("--existing", default=None,
+                        help="Existing JSON (preserves semantic fields)")
+    parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
     scaffold(
