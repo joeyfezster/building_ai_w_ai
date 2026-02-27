@@ -21,6 +21,11 @@ Read the decision log for architectural context from previous cranks:
 
 ## Your Constraints
 
+**NEVER modify or delete these files** (read-only context for you):
+- `/specs/` — your requirements, read them
+- `/docs/decisions/` — decision log, read for architectural context
+- `/agents/` — pre-factory reference
+
 **NEVER read, modify, or delete these files:**
 - Anything in `/scenarios/` (you should not even see this directory)
 - `/scripts/run_scenarios.py`
@@ -28,13 +33,10 @@ Read the decision log for architectural context from previous cranks:
 - `/.github/workflows/factory.yaml`
 - `/.github/codex/prompts/factory_fix.md` (this file)
 - `/CLAUDE.md`
-- `/specs/` (read-only — these are your requirements)
-- `/agents/` (pre-factory reference, not product code)
 - `/scripts/strip_holdout.py` (holdout isolation gate)
 - `/scripts/restore_holdout.py` (holdout restoration)
 - `/scripts/nfr_checks.py` (Gate 2 NFR checker)
 - `/scripts/check_test_quality.py` (anti-vacuous scanner)
-- `/docs/decisions/` (decision log — read for context, never modify)
 - `/scripts/persist_decisions.py` (decision persistence script)
 
 **DO modify** source code in:

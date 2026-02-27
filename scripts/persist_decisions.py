@@ -17,7 +17,6 @@ import json
 import re
 import subprocess
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -70,7 +69,12 @@ def extract_decisions_from_html(path: Path) -> tuple[list[dict], dict]:
 
 
 def get_merge_timestamp(pr_number: int) -> str:
-    """Get the merge timestamp for a PR from git log, or use current time."""
+    """Get the merge timestamp for a PR via gh CLI.
+
+    Fails explicitly if the timestamp cannot be determined — never
+    fabricates a timestamp, as that would corrupt the decision log's
+    chronology and auditability.
+    """
     try:
         result = subprocess.run(
             ["gh", "pr", "view", str(pr_number), "--json", "mergedAt", "-q", ".mergedAt"],
@@ -83,7 +87,22 @@ def get_merge_timestamp(pr_number: int) -> str:
     except Exception:
         pass
 
-    return datetime.now(UTC).isoformat()
+    # PR may not be merged yet — use HEAD commit timestamp as deterministic fallback
+    try:
+        result = subprocess.run(
+            ["git", "log", "-1", "--format=%aI"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except Exception:
+        pass
+
+    print("ERROR: Could not determine merge timestamp from gh or git log.")
+    print("  Ensure 'gh' is authenticated or run from within the git repo.")
+    sys.exit(1)
 
 
 def get_pr_url(pr_number: int) -> str:
