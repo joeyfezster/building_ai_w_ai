@@ -16,7 +16,16 @@ Read the component specifications in `/specs/` to understand what the system sho
 Read the feedback file for this iteration to understand what's broken:
 - `artifacts/factory/feedback_iter_*.md` — latest feedback with full error output
 
+Read the decision log for architectural context from previous cranks:
+- `docs/decisions/decision_log.json` — cumulative log of accepted architectural decisions
+- These decisions were reviewed and approved by the project lead. Follow them unless specs or feedback explicitly contradict them.
+
 ## Your Constraints
+
+**NEVER modify or delete these files** (read-only context for you):
+- `/specs/` — your requirements, read them
+- `/docs/decisions/` — decision log, read for architectural context
+- `/agents/` — pre-factory reference
 
 **NEVER read, modify, or delete these files:**
 - Anything in `/scenarios/` (you should not even see this directory)
@@ -25,12 +34,11 @@ Read the feedback file for this iteration to understand what's broken:
 - `/.github/workflows/factory.yaml`
 - `/.github/codex/prompts/factory_fix.md` (this file)
 - `/CLAUDE.md`
-- `/specs/` (read-only — these are your requirements)
-- `/agents/` (pre-factory reference, not product code)
 - `/scripts/strip_holdout.py` (holdout isolation gate)
 - `/scripts/restore_holdout.py` (holdout restoration)
 - `/scripts/nfr_checks.py` (Gate 2 NFR checker)
 - `/scripts/check_test_quality.py` (anti-vacuous scanner)
+- `/scripts/persist_decisions.py` (decision persistence script)
 
 **DO modify** source code in:
 - `src/` — all Python source

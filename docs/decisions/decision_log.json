@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "decisions": [
+    {
+      "id": "PR6-1",
+      "globalSeq": 1,
+      "prNumber": 6,
+      "title": "Wire existing record_video() rather than rewriting",
+      "rationale": "The video recording function was already implemented and tested — it just wasn't called from the training loop.",
+      "body": "Rather than creating a new video recording mechanism or modifying the evaluation flow, we simply imported the existing <code>record_video()</code> function and called it at the same point where checkpoints and metrics are already saved. This is the minimal change that fixes the scenario failure.",
+      "zones": [
+        "training"
+      ],
+      "files": [
+        {
+          "path": "src/train/train_dqn.py",
+          "change": "Added import and call to record_video() in eval block"
+        },
+        {
+          "path": "src/train/record_video.py",
+          "change": "Added frame_stack parameter for config compatibility"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-02-26T04:26:25Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/6",
+      "headSha": "bce032a",
+      "status": "active"
+    },
+    {
+      "id": "PR6-2",
+      "globalSeq": 2,
+      "prNumber": 6,
+      "title": "Parameterize frame_stack instead of hardcoding",
+      "rationale": "Hardcoded frame_stack=4 caused shape mismatches when training config used a different value.",
+      "body": "The original <code>record_video()</code> hardcoded <code>frame_stack=4</code>. When the test suite runs with <code>frame_stack=2</code>, loading a checkpoint into a model with mismatched input channels causes a RuntimeError. Adding the parameter with default=4 maintains backward compatibility while allowing the training loop to pass the correct value.",
+      "zones": [
+        "training"
+      ],
+      "files": [
+        {
+          "path": "src/train/record_video.py",
+          "change": "Added frame_stack parameter with default=4"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-02-26T04:26:25Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/6",
+      "headSha": "bce032a",
+      "status": "active"
+    },
+    {
+      "id": "PR10-1",
+      "globalSeq": 3,
+      "prNumber": 10,
+      "title": "Single append-only JSON file over individual ADR files",
+      "rationale": "Decisions are small machine-generated records, not long-form human prose. A single file enables O(1) loading for both the scaffold script and Codex prompt assembly.",
+      "body": "Considered three options: (1) single JSON log, (2) individual ADR-style markdown files, (3) GitHub issues. The single-file approach wins because: decisions are ~200 bytes each, so even 100 decisions is ~20KB. Individual files create filesystem noise (40+ files after 20 PRs, each under 1KB). GitHub issues live outside git, violating the trust hierarchy (git > external services). The append-only constraint ensures the log is a clean audit trail via <code>git log -- docs/decisions/decision_log.json</code>.",
+      "zones": [
+        "factory"
+      ],
+      "files": [
+        {
+          "path": "docs/decisions/decision_log.json",
+          "change": "Created initial log with version field and empty decisions array, then backfilled PR #6 decisions"
+        },
+        {
+          "path": "scripts/persist_decisions.py",
+          "change": "Script writes to this file with idempotent append logic"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-02-27T18:11:11Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/10",
+      "headSha": "babed4d",
+      "status": "active"
+    },
+    {
+      "id": "PR10-2",
+      "globalSeq": 4,
+      "prNumber": 10,
+      "title": "Codex reads the decision log (not stripped with holdout)",
+      "rationale": "Decisions describe why choices were made — architectural context, not evaluation criteria. Stripping them forces Codex to re-derive context, risking contradictory decisions across cranks.",
+      "body": "The holdout stripping mechanism (<code>strip_holdout.py</code>) exists to prevent Codex from seeing its evaluation criteria (scenarios). Decisions are categorically different — they're analogous to specs (which Codex reads). Hiding past architectural decisions means each crank starts from zero context on <em>why</em> the system is the way it is. This was a deliberate design choice discussed with the project lead during planning.",
+      "zones": [
+        "factory"
+      ],
+      "files": [
+        {
+          "path": ".github/codex/prompts/factory_fix.md",
+          "change": "Added decision log to Codex's context sources, restructured constraints to allow reading"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-02-27T18:11:11Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/10",
+      "headSha": "babed4d",
+      "status": "active"
+    },
+    {
+      "id": "PR10-3",
+      "globalSeq": 5,
+      "prNumber": 10,
+      "title": "Separate read-only context from prohibited files in Codex prompt",
+      "rationale": "The existing factory_fix.md had a pre-existing contradiction: /specs/ was listed under 'NEVER read' while also instructing Codex to read specs.",
+      "body": "Bot reviewer (codex-connector) flagged that adding <code>/docs/decisions/</code> to the 'NEVER read, modify, or delete' section while telling Codex to read it was contradictory. Investigation revealed the same bug already existed for <code>/specs/</code>. Fixed by splitting into two sections: 'NEVER modify or delete' (read-only context: specs, decisions, agents) and 'NEVER read, modify, or delete' (truly prohibited: scenarios, factory scripts).",
+      "zones": [
+        "factory"
+      ],
+      "files": [
+        {
+          "path": ".github/codex/prompts/factory_fix.md",
+          "change": "Restructured constraints section into read-only vs prohibited categories"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-02-27T18:11:11Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/10",
+      "headSha": "babed4d",
+      "status": "active"
+    }
+  ]
+}

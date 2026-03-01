@@ -42,6 +42,8 @@ The following files are **never touched by the Attractor (Codex)**. They are fac
 - `/scripts/check_test_quality.py` — Gate 0 test quality scanner
 - `/.claude/skills/factory-orchestrate/review-prompts/` — Gate 0 review agent paradigm docs
 - `/docs/code_quality_standards.md` — universal quality standards
+- `/docs/decisions/` — cumulative decision log (Codex reads but never modifies)
+- `/scripts/persist_decisions.py` — decision persistence script
 - `/CLAUDE.md` — this file
 
 ## Code Quality Standards
@@ -79,6 +81,7 @@ make compile-feedback      # compile validation results into feedback markdown
 make nfr-check             # run Gate 2 NFR checks (code quality, complexity, dead code, security)
 make factory-local         # run one factory iteration locally (Gate 1 → Gate 2 → Gate 3 → feedback)
 make factory-status        # show current iteration count and satisfaction score
+make persist-decisions PR=6  # persist PR decisions to cumulative log
 ```
 
 ## Human Decision Log

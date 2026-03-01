@@ -1,4 +1,4 @@
-.PHONY: deps install-hooks lint typecheck test docker-build docker-smoke whitepapers-acquire whitepapers-verify env-smoke train-smoke eval-smoke verify-learning dashboard play play-debug play-agent-vs-agent validate run-scenarios compile-feedback nfr-check factory-local factory-status
+.PHONY: deps install-hooks lint typecheck test docker-build docker-smoke whitepapers-acquire whitepapers-verify env-smoke train-smoke eval-smoke verify-learning dashboard play play-debug play-agent-vs-agent validate run-scenarios compile-feedback nfr-check factory-local factory-status persist-decisions
 
 deps:
 	pip-compile requirements.in
@@ -105,6 +105,9 @@ factory-local: ## Run one factory iteration locally (Gate 1 → Gate 2 → Gate 
 	@echo ""
 	@echo "=== Factory iteration complete ==="
 	@make factory-status
+
+persist-decisions: ## Persist PR decisions to cumulative log (usage: make persist-decisions PR=6)
+	python scripts/persist_decisions.py --pr $(PR)
 
 factory-status: ## Show current iteration count and satisfaction score
 	@echo "--- Factory Status ---"

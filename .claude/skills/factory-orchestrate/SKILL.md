@@ -270,6 +270,33 @@ The review pack gives the project lead:
 
 The review pack is the artifact that communicates factory status to the human. Without it, the accept/merge gate is a rubber stamp.
 
+### Step 13: Post-Merge Persistence
+
+After the project lead merges the PR:
+
+1. **Persist decisions** to the cumulative log:
+   ```bash
+   python scripts/persist_decisions.py --pr {PR_NUMBER}
+   ```
+   The script extracts decisions from the review pack HTML (or from the JSON intermediate if available via `--data`) and appends them to `docs/decisions/decision_log.json`. It is idempotent — safe to run multiple times.
+
+2. **Create post-merge issues** (if applicable):
+   ```bash
+   python scripts/create_postmerge_issues.py --pr {PR_NUMBER}
+   ```
+
+3. **Commit and push** the updated decision log:
+   ```bash
+   git add docs/decisions/decision_log.json
+   git commit -m "decisions: persist PR #{PR_NUMBER} decisions"
+   git push
+   ```
+
+4. **Delete Codex's remote branch** (cleanup):
+   ```bash
+   git push origin --delete codex-{branch}
+   ```
+
 ### Stall Protocol
 
 If after 3+ iterations:
@@ -286,6 +313,8 @@ If after 3+ iterations:
 - **NFR checks script**: `scripts/nfr_checks.py` (Gate 0 tier 1 static analysis + Gate 2 NFR framework)
 - **Test quality scanner**: `scripts/check_test_quality.py` (Gate 0 tier 1)
 - **PR review pack skill**: `.claude/skills/pr-review-pack/SKILL.md` (Step 12)
+- **Decision log**: `docs/decisions/decision_log.json` (Step 13, cumulative archive)
+- **Decision persistence**: `scripts/persist_decisions.py` (Step 13)
 - **Specs**: `specs/*.md`
 - **Factory docs**: `docs/dark_factory.md`
 - **Factory architecture**: `docs/factory_architecture.html`
