@@ -438,15 +438,14 @@ const C = {
     boundary: 'Codex works on the stripped branch \u2014 cannot access scenarios or adversarial findings by design.'
   },
   'step-gate0': {
-    title: 'Gate 0: Adversarial Review (Agent Team)',
-    desc: 'Runs as a parallel agent team before merge. Tool agents (ruff, radon, vulture, bandit, check_test_quality.py) run deterministic checks simultaneously. The semantic adversarial reviewer reads the diff against code_quality_standards.md, adversarial_review.md, and /specs/. All agents have full authority \u2014 any CRITICAL finding from any agent blocks the pipeline. No point sending to CI or later gates if Gate 0 finds issues.',
+    title: 'Gate 0: Two-Tier Code Review (Script + Agent Team)',
+    desc: 'Tier 1: scripts/run_gate0.py runs all 5 deterministic tool checks in parallel (ruff, radon, vulture, bandit, test-quality) and produces gate0_results.json. Tier 2: 4 LLM agents (code-health, security, test-integrity, adversarial) review the same paradigms at semantic depth, building on tier 1 output. Any CRITICAL finding from either tier blocks the pipeline.',
     files: [
-      { n: 'scripts/nfr_checks.py (tool agents)', c: 'factory' },
-      { n: 'scripts/check_test_quality.py (tool agent)', c: 'factory' },
-      { n: '.github/codex/prompts/adversarial_review.md', c: 'factory' },
+      { n: 'scripts/run_gate0.py (tier 1 runner)', c: 'factory' },
+      { n: '.claude/skills/factory-orchestrate/review-prompts/ (tier 2 agent docs)', c: 'factory' },
       { n: 'docs/code_quality_standards.md', c: 'factory' },
     ],
-    tags: [{ t: 'Gate 0', c: 'gate' }, { t: 'Agent Team', c: 'info' }, { t: 'Fail-Fast', c: 'boundary' }],
+    tags: [{ t: 'Gate 0', c: 'gate' }, { t: 'Two-Tier', c: 'info' }, { t: 'Fail-Fast', c: 'boundary' }],
     boundary: 'Layered defense: tool agents catch cheap/obvious violations fast, semantic reviewer catches subtle gaming and architectural dishonesty. Both run in parallel. Gate 3 holdout scenarios verify actual behavior as ground truth.'
   },
   'step-gate1': {

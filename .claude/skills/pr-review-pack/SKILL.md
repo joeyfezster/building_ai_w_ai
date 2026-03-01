@@ -60,7 +60,19 @@ gh api graphql -f query='
 
 If `unresolved > 0`: resolve or address every comment before proceeding. Both human and AI reviewer comments (Copilot, Codex bot) count.
 
-**Pass the comment counts to Pass 2** so they appear in the header status badges.
+**Handling unresolved comments:** For each comment, the orchestrator must evaluate and route:
+
+1. **Evaluate** the comment. Bot reviewers can be wrong. For each recommendation, reason about: Is it valid? Is it in scope? What severity does it actually warrant? Not every recommendation becomes action.
+2. **Route by who can fix it:**
+   - **Orchestrator's agent team territory** (non-product: infra, config, dependency compilation, docs, CI): Spawn an agent to fix it directly. Resolve the thread after the fix is pushed.
+   - **Attractor territory** (product code OR complex logic OR security issues OR code performance): Synthesize the comment into `artifacts/factory/post_merge_feedback.md` — preserving the file path, line number, what was flagged, and the orchestrator's assessment. Then loop back to the attractor (new factory iteration) with this feedback.
+   - **Invalid/false-positive**: Resolve the thread with a reply explaining why the recommendation was declined.
+
+**Every thread resolution MUST include a reply comment** explaining how it was resolved — what was done, by whom, and where (commit SHA or feedback file). Never resolve a thread silently. The comment is the audit trail.
+
+In both routing cases, the goal is to fix it now — not carry tech debt. The distinction is only about which actor handles the fix.
+
+**Comment counts are deterministic metadata.** They must be pulled via the GraphQL query above and injected directly into the review pack data — never passed through an LLM agent for counting. Pass 1 (deterministic) owns PR metadata extraction, not Pass 2 (semantic). The badge shows `X/Y comments resolved` where Y is the total thread count and X is the resolved count, both from the API.
 
 ### Gate 3: The review pack itself
 
@@ -91,27 +103,53 @@ Extract the raw diff and map every changed file to its architecture zone(s).
 
 **Trust level:** Deterministic. Zero hallucination risk. Code diffs are ground truth.
 
-### Pass 2: Semantic Analysis (Delegated Agent Team)
+### Pass 2: Scaffold + Semantic Analysis
 
-Spawn a dedicated agent team (not the main thread) to analyze the diff. The team reads the diff output from Pass 1 and the zone registry. It produces:
+Pass 2 has two stages: a deterministic scaffold, then LLM semantic enrichment.
 
-- **What Changed summaries** -- two-layer (Infrastructure / Product), plus per-zone detail blocks
-- **Key Decisions** -- each with title, rationale, zone associations, and affected file list
-- **Adversarial findings** -- per-file grade (A/B/C/F), zone tag, and finding detail
-- **Post-merge items** -- priority tag, code snippets with file/line references, failure and success scenarios
-- **Convergence result** -- gate-by-gate status, satisfaction score
-- **CI performance data** -- from `gh pr checks` output with timing
-- **Header status badges** -- the following badges are **mandatory** (the template enforces visual affordances):
-  - `CI X/Y` — type `pass` if all green, `fail` otherwise
-  - `X/Y Scenarios` — type `pass` if all pass, `warn` or `fail` otherwise
-  - `X/Y comments resolved` — type `pass` if all resolved (or 0 total), `warn` if unresolved exist. Comment counts come from the prerequisite Gate 2 check — the orchestrating agent must pass these to the Pass 2 team.
+#### Pass 2a: Deterministic Scaffold (No LLM)
+
+Run the scaffold script to populate ALL deterministic fields from git, GitHub API, and scenario data:
+
+```bash
+python3 .claude/skills/pr-review-pack/scripts/scaffold_review_pack_data.py \
+  --pr {N} --diff-data docs/pr{N}_diff_data.json \
+  --output /tmp/pr{N}_review_pack_data.json
+```
+
+The scaffold script populates:
+- **Header** — title, branch, SHA, additions/deletions, file count, commits (from `gh pr view`)
+- **Status badges** — Gate 0 (from `gate0_results.json`), CI pass/fail (from `gh pr checks`), scenario pass/fail (from `scenario_results.json`), comment resolution (from GraphQL)
+- **Architecture** — zone positions, modified flags, arrows (from zone registry + diff data)
+- **Specs** — list from zone registry
+- **Scenarios** — pass/fail per scenario (from `scenario_results.json`)
+- **CI Performance** — job names, timing, health tags (from `gh pr checks`)
+- **Convergence** — gate-by-gate status including Gate 0 tier 1 data (from `gate0_results.json`)
+
+If `--existing` is passed, semantic fields from a previous JSON are preserved (for re-scaffolding after new commits without losing LLM analysis).
+
+**Output:** `/tmp/pr{N}_review_pack_data.json` with all deterministic fields populated, semantic fields empty.
+
+**Trust level:** Deterministic. All data from git, GitHub API, and factory artifacts. Zero LLM involvement.
+
+#### Pass 2b: Semantic Enrichment (Delegated Agent Team)
+
+Spawn a dedicated agent team (not the main thread) to fill ONLY the semantic fields. The team reads the scaffold JSON + the diff data. It fills:
+
+- **What Changed summaries** — two-layer (Infrastructure / Product), plus per-zone detail blocks
+- **Key Decisions** — each with title, rationale, zone associations, and affected file list
+- **Agentic review findings** — per-file grade (A/B/C/F), zone tag, agent attribution, and finding detail
+- **Post-merge items** — priority tag, code snippets with file/line references, failure and success scenarios
+- **Factory history** — iteration timeline, gate findings
+
+The team does NOT touch deterministic fields (header, badges, architecture, specs, scenarios, CI, convergence). Those are already correct from the scaffold.
 
 Every claim the semantic team makes is verifiable:
 - Decision-to-zone claims must have at least one file in the diff touching that zone's paths. If not, flag as "unverified."
 - Code snippet line references must exist in the actual diff.
 - File paths must appear in the diff file list.
 
-**Output:** Structured JSON matching the `ReviewPackData` schema (see `references/data-schema.md`). Save to `/tmp/pr{N}_review_pack_data.json`.
+**Output:** Updated `/tmp/pr{N}_review_pack_data.json` with both deterministic and semantic fields populated.
 
 **Trust level:** LLM-produced but verifiable. Every claim checked against Pass 1 output.
 
@@ -130,8 +168,9 @@ The renderer:
 1. Reads the template (`assets/template.html`) and the ReviewPackData JSON.
 2. Generates HTML for every `<!-- INJECT: ... -->` marker (26 injection points across all sections).
 3. Injects the full JSON into `const DATA = {...}` for JS interactivity (zone filtering, file modal, etc.).
-4. **Embeds diff data inline** in a `<script>` block, making the pack truly self-contained. No companion JSON file needed, no CORS issues when opening via `file://` protocol.
-5. Validates that no unreplaced markers remain (warns on stderr if any do).
+4. **Embeds diff data inline** in a `<script>` block, making the pack truly self-contained. No companion JSON file needed, no CORS issues when opening via `file://` protocol. Embedded content is automatically escaped to prevent HTML parser conflicts.
+5. **Calculates the SVG viewBox dynamically** from architecture zone positions, preventing zones from being clipped.
+6. Validates that no unreplaced markers remain outside of embedded `<script>` blocks (markers inside diff data are false positives and are excluded).
 
 **Self-contained guarantee:** The `--diff-data` flag embeds the Pass 1 output directly in the HTML. The diff data is raw `git diff`/`git show` output — deterministic, zero LLM — byte-equivalent to what GitHub displays for the same commit SHA. Always use `--diff-data` to embed it.
 
@@ -148,13 +187,14 @@ After rendering, validate that the pack renders correctly:
 1. **Programmatic check (always run):**
    ```python
    python3 -c "
+   import re
    html = open('docs/pr{N}_review_pack.html').read()
+   outside_scripts = re.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=re.DOTALL)
    checks = [
-       ('No unreplaced markers', '<!-- INJECT:' not in html),
-       ('DATA injected', 'const DATA = {};' not in html),
+       ('No unreplaced markers (outside scripts)', '<!-- INJECT:' not in outside_scripts),
        ('PR title present', 'PR #{N}' in html),
        ('Scenario cards', html.count('scenario-card') >= 1),
-       ('Adversarial rows', 'adv-row' in html),
+       ('Agentic review rows', 'adv-row' in html),
        ('CI rows', 'expandable' in html),
        ('Decision cards', 'decision-card' in html),
        ('Convergence grid', 'conv-card' in html),
@@ -165,6 +205,8 @@ After rendering, validate that the pack renders correctly:
        ('Stat colors', 'stat green' in html and 'stat red' in html),
        ('Spec file links', html.count('file-path-link') >= 3),
        ('Comments badge', 'comments' in html.lower() and 'resolved' in html.lower()),
+       ('Script escaping', '<\\\\/script' in html),
+       ('Zoom controls', 'archZoom' in html),
    ]
    for name, ok in checks:
        print(f'  [{\"PASS\" if ok else \"FAIL\"}] {name}')
@@ -173,16 +215,46 @@ After rendering, validate that the pack renders correctly:
    "
    ```
 
-2. **Browser check (when possible):** Open the HTML file and verify:
+2. **Browser visual check (mandatory):**
+
+   The template includes a red **"This Pack Has NOT Been Visually Inspected"** banner. It is visible until you remove it. If you skip this step, the human reviewer sees the banner and knows.
+
+   **How to view from CLI (macOS):**
+   ```bash
+   # Open in Chrome
+   osascript -e 'tell application "Google Chrome" to tell window 1 to make new tab with properties {URL:"file:///path/to/docs/pr{N}_review_pack.html"}'
+
+   # Screenshot and view (Read tool is multimodal — it can see images)
+   screencapture -x /tmp/review_pack_check.png
+   # Then: Read /tmp/review_pack_check.png
+
+   # Scroll down (repeat to page through)
+   osascript -e 'tell application "System Events" to tell process "Google Chrome" to keystroke space'
+
+   # Scroll up
+   osascript -e 'tell application "System Events" to tell process "Google Chrome" to keystroke space using shift down'
+   ```
+
+   **What to verify** (screenshot after each scroll):
    - All 9 sections render with content (not empty)
-   - Architecture diagram shows zones with correct colors
+   - Architecture diagram shows zones with correct colors, not clipped, zoom controls present
    - Theme toggle works (light/dark/system)
    - Expandable sections toggle on click
    - File modal opens when clicking file paths (including spec file paths)
    - Stats show labeled additions (green) and deletions (red)
    - Factory History tab (if present) switches and shows content
+   - **Bottom of page**: clean footer, NO gibberish or raw JSON
 
-3. **If browser viewing is unavailable** (e.g., headless environment, agent cannot see browser output): The programmatic check is the minimum bar. State clearly in the delivery message: "Programmatic validation passed. Browser visual validation was not performed due to [reason]. Please verify rendering before sharing."
+   **After visual review passes:** Remove the banner from the rendered HTML:
+   ```python
+   python3 -c "
+   html = open('docs/pr{N}_review_pack.html').read()
+   html = html.replace('<div id=\"visual-inspection-banner\"' + html.split('<div id=\"visual-inspection-banner\"')[1].split('</div>')[0] + '</div>', '')
+   html = html.replace('<div id=\"visual-inspection-spacer\" style=\"height:48px\"></div>', '')
+   open('docs/pr{N}_review_pack.html', 'w').write(html)
+   print('Visual inspection banner removed.')
+   "
+   ```
 
 ## Zone Registry Setup
 

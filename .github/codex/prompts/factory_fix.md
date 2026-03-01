@@ -11,6 +11,7 @@ Read the component specifications in `/specs/` to understand what the system sho
 - `specs/training.md` — training pipeline requirements
 - `specs/dashboard.md` — dashboard requirements
 - `specs/proof.md` — learning proof and video proof requirements
+- `specs/pong_interfaces.md` — interactive play, two-player controls, agent takeover
 
 Read the feedback file for this iteration to understand what's broken:
 - `artifacts/factory/feedback_iter_*.md` — latest feedback with full error output

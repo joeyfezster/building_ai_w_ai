@@ -39,6 +39,16 @@ Via `MiniPongConfig` dataclass:
 - `ball_size`: 3
 - `max_steps`: 1200
 - `reward_shaping`: False
+- `score_limit`: 1 (default — terminates after 1 point, preserving existing RL training behavior; set higher for multi-rally interactive play, e.g., 11)
+
+## Multi-Rally Mode
+
+When `score_limit > 1`, a point does NOT end the episode. Instead:
+- The ball resets to center with a new random velocity (using the episode's RNG).
+- Cumulative scores (`agent_score`, `opponent_score`) are tracked across rallies within the episode.
+- The episode terminates when either side reaches `score_limit`.
+- `episode_reason` is set to `"score_limit"` when the game ends via score limit.
+- With `score_limit=1`, behavior is identical to the current single-point termination (backward compatible).
 
 ## Info Dict
 
@@ -48,7 +58,7 @@ Every step and reset returns an info dict containing:
 - `misses`: total misses this episode
 - `agent_score`: agent's cumulative score
 - `opponent_score`: opponent's cumulative score
-- `episode_reason`: why episode ended ("running", "max_steps", "score_limit")
+- `episode_reason`: why episode ended ("running", "max_steps", "score_limit", "agent_miss", "opponent_miss")
 
 ## Rendering
 

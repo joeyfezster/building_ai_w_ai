@@ -1,4 +1,4 @@
-.PHONY: deps install-hooks lint typecheck test docker-build docker-smoke whitepapers-acquire whitepapers-verify env-smoke train-smoke eval-smoke verify-learning dashboard validate run-scenarios compile-feedback nfr-check factory-local factory-status persist-decisions
+.PHONY: deps install-hooks lint typecheck test docker-build docker-smoke whitepapers-acquire whitepapers-verify env-smoke train-smoke eval-smoke verify-learning dashboard play play-debug play-agent-vs-agent validate run-scenarios compile-feedback nfr-check factory-local factory-status persist-decisions
 
 deps:
 	pip-compile requirements.in
@@ -52,6 +52,17 @@ verify-learning:
 # ── Dashboard ────────────────────────────────────────────
 dashboard:
 	streamlit run src/dashboard/app.py
+
+
+# ── Interactive Play ─────────────────────────────────────
+play:
+	python -m src.play.play_minipong
+
+play-debug:
+	python -m src.play.play_minipong --debug
+
+play-agent-vs-agent:
+	python -m src.play.play_minipong --left-agent --right-agent
 
 # ── Validation ───────────────────────────────────────────
 validate: lint typecheck test docker-build docker-smoke env-smoke whitepapers-verify

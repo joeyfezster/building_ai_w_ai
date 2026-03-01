@@ -16,6 +16,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import subprocess
 import sys
@@ -166,6 +167,12 @@ def main() -> None:
         default=None,
         help="Repository root path (default: auto-detect from cwd)",
     )
+    parser.add_argument(
+        "--exclude",
+        nargs="*",
+        default=[],
+        help="File paths to exclude from diff data (glob patterns)",
+    )
     args = parser.parse_args()
 
     repo = Path(args.repo) if args.repo else find_repo_root()
@@ -186,8 +193,11 @@ def main() -> None:
     print(f"Found {len(numstat)} changed files.")
 
     # Build per-file data
+    exclude_patterns = args.exclude or []
     files_data: dict[str, dict] = {}
     for adds, dels, filepath, is_binary in numstat:
+        if any(fnmatch.fnmatch(filepath, p) for p in exclude_patterns):
+            continue
         status = status_map.get(filepath, "modified")
 
         # Get unified diff (skip binary files)

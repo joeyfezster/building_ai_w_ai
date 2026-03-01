@@ -20,6 +20,7 @@ class MiniPongConfig:
     ball_size: int = 3
     max_steps: int = 1200
     reward_shaping: bool = False
+    score_limit: int = 1
 
 
 class MiniPongEnv(gym.Env[np.ndarray, int]):
@@ -45,6 +46,7 @@ class MiniPongEnv(gym.Env[np.ndarray, int]):
         self.misses = 0
         self.rally_length = 0
         self.episode_reason = "running"
+        self._manual_opponent_action: int | None = None
 
         self.agent_y = 0.0
         self.opponent_y = 0.0
@@ -63,14 +65,14 @@ class MiniPongEnv(gym.Env[np.ndarray, int]):
         self.hits = 0
         self.misses = 0
         self.rally_length = 0
+        self.agent_score = 0
+        self.opponent_score = 0
         self.episode_reason = "running"
+        self._manual_opponent_action = None
 
         self.agent_y = (self.config.height - self.config.paddle_height) / 2
         self.opponent_y = self.agent_y
-        self.ball_x = self.config.width / 2
-        self.ball_y = self.config.height / 2
-        self.ball_vx = float(self._rng.choice([-2, 2]))
-        self.ball_vy = float(self._rng.choice([-1, 1]))
+        self._reset_ball()
         return self._obs(), self._info()
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
@@ -100,8 +102,7 @@ class MiniPongEnv(gym.Env[np.ndarray, int]):
                 reward -= 1.0
                 self.opponent_score += 1
                 self.misses += 1
-                self.episode_reason = "agent_miss"
-                return self._obs(), reward, True, False, self._info()
+                return self._finish_point(reward=reward, scorer="opponent")
 
         if self.ball_vx > 0 and self.ball_x + self.config.ball_size >= right_x:
             if self.opponent_y <= self.ball_y <= self.opponent_y + self.config.paddle_height:
@@ -110,8 +111,7 @@ class MiniPongEnv(gym.Env[np.ndarray, int]):
             else:
                 reward += 1.0
                 self.agent_score += 1
-                self.episode_reason = "opponent_miss"
-                return self._obs(), reward, True, False, self._info()
+                return self._finish_point(reward=reward, scorer="agent")
 
         truncated = self.steps >= self.config.max_steps
         if truncated:
@@ -133,6 +133,16 @@ class MiniPongEnv(gym.Env[np.ndarray, int]):
         )
 
     def _move_opponent(self) -> None:
+        if self._manual_opponent_action is not None:
+            if self._manual_opponent_action == 0:
+                self.opponent_y -= self.config.paddle_speed
+            elif self._manual_opponent_action == 1:
+                self.opponent_y += self.config.paddle_speed
+            self.opponent_y = float(
+                np.clip(self.opponent_y, 0, self.config.height - self.config.paddle_height)
+            )
+            return
+
         center = self.opponent_y + self.config.paddle_height / 2
         target = self.ball_y + self.config.ball_size / 2
         if target > center:
@@ -142,6 +152,34 @@ class MiniPongEnv(gym.Env[np.ndarray, int]):
         self.opponent_y = float(
             np.clip(self.opponent_y, 0, self.config.height - self.config.paddle_height)
         )
+
+    def set_opponent_action(self, action: int | None) -> None:
+        self._manual_opponent_action = action
+
+    def _reset_ball(self) -> None:
+        self.ball_x = self.config.width / 2
+        self.ball_y = self.config.height / 2
+        self.ball_vx = float(self._rng.choice([-2, 2]))
+        self.ball_vy = float(self._rng.choice([-1, 1]))
+
+    def _finish_point(
+        self, reward: float, scorer: str
+    ) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
+        if self.config.score_limit <= 1:
+            self.episode_reason = "opponent_miss" if scorer == "agent" else "agent_miss"
+            return self._obs(), reward, True, False, self._info()
+
+        if (
+            self.agent_score >= self.config.score_limit
+            or self.opponent_score >= self.config.score_limit
+        ):
+            self.episode_reason = "score_limit"
+            return self._obs(), reward, True, False, self._info()
+
+        self.rally_length = 0
+        self.episode_reason = "running"
+        self._reset_ball()
+        return self._obs(), reward, False, False, self._info()
 
     def _obs(self) -> np.ndarray:
         frame = np.zeros((self.config.height, self.config.width), dtype=np.uint8)

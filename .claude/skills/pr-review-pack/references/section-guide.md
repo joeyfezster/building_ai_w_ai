@@ -25,7 +25,7 @@ Section-by-section reference for building the review pack. Each section document
 - `infra`: fill `#f3e8ff`, stroke `#8b5cf6`, label fill `#6d28d9`, count circle `#8b5cf6`
 
 **Interactive behaviors:**
-- **Zone click:** Highlights the clicked zone, dims all others, filters Adversarial Review, Scenarios, and What Changed sections to show only that zone's content. Click same zone again to reset.
+- **Zone click:** Highlights the clicked zone, dims all others, filters Agentic Review, Scenarios, and What Changed sections to show only that zone's content. Click same zone again to reset.
 - **Background click:** Resets all zone filtering.
 - **Baseline/Update toggle:** Baseline sets all zone boxes to opacity 0.25. Update restores full opacity.
 - **Floating diagram:** When the main architecture diagram scrolls out of view, a floating minimap appears at top-right. It has the same click behaviors. Dismissible via X button.
@@ -94,22 +94,29 @@ Section-by-section reference for building the review pack. Each section document
 
 ---
 
-## Section 5: Adversarial Review
+## Section 5: Agentic Review
 
-**What it shows:** Graded table of adversarial findings per file or file group.
+**What it shows:** Per-file grouped table of review findings from multiple specialized agents (code-health, security, test-integrity, adversarial), with compact grade badges per agent and expandable detail.
 
-**Data source:** Pass 2 (adversarial reviewer agent).
+**Data source:** Pass 2 (agent team — each agent reviews through its paradigm).
 
 **Required fields:**
-- `adversarialReview.overallGrade` -- aggregate grade for section header
-- `adversarialReview.findings[]` -- file, grade, zones, notable, detail, gradeSortOrder
+- `agenticReview.overallGrade` -- aggregate grade for section header
+- `agenticReview.reviewMethod` -- `"main-agent"` or `"agent-teams"` — rendered as a badge in the section header
+- `agenticReview.findings[]` -- file, grade, zones, notable, detail, gradeSortOrder, agent
 
 **HTML structure:**
-- `.section` with header showing "Adversarial Review -- Grade: {overallGrade}"
+- `.section` with header showing "Agentic Review -- Grade: {overallGrade}" + review method badge + agent legend
 - `.adv-scroll` wrapper (max-height 500px, overflow scroll)
-- `<table id="adv-table">` with thead (File | Grade | Zone | Notable)
-- Alternating `.adv-row` (clickable) and `.adv-detail-row` (hidden until clicked)
+- `<table id="adv-table">` with thead (File | Agents | Zone | Notable)
+- Per-file rows (`.adv-row`, clickable) with compact agent grade badges (e.g. CH:A SE:B TI:A AD:B+)
+- `.adv-detail-row` (hidden until clicked) containing per-agent detail entries
 - `#adv-no-match` message (shown when zone filter has no matches)
+- `.agent-legend` showing abbreviation→full-name mapping (CH=Code Health, SE=Security, TI=Test Integrity, AD=Adversarial)
+
+**Review method badge rendering:**
+- `main-agent`: `.review-method-badge.main-agent` (gray, indicates single-agent review)
+- `agent-teams`: `.review-method-badge.agent-teams` (blue, indicates parallel team review)
 
 **Grade rendering:**
 - A: `.grade.a` (green)
@@ -219,7 +226,7 @@ Section-by-section reference for building the review pack. Each section document
 
 **What it shows:** Prioritized list of items to address after merge.
 
-**Data source:** Pass 2 (adversarial reviewer + semantic analysis team).
+**Data source:** Pass 2 (agentic review team + semantic analysis team).
 
 **Required fields:**
 - `postMergeItems[]` -- priority, title, description, codeSnippet, failureScenario, successScenario, zones

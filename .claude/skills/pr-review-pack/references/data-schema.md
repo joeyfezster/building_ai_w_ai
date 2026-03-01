@@ -11,7 +11,7 @@ interface ReviewPackData {
   specs: Specification[];
   scenarios: Scenario[];
   whatChanged: WhatChanged;
-  adversarialReview: AdversarialReview;
+  agenticReview: AgenticReview;
   ciPerformance: CICheck[];
   decisions: Decision[];
   convergence: ConvergenceResult;
@@ -103,7 +103,7 @@ interface Specification {
 interface Scenario {
   name: string;                     // "Environment Initialization"
   category: ScenarioCategory;
-  status: "passing" | "failing" | "advisory";
+  status: "pass" | "passing" | "fail" | "failing" | "advisory";  // renderer accepts both short and long forms
   zone: string;                     // space-separated zone IDs for filtering
   detail: ScenarioDetail;
 }
@@ -137,21 +137,23 @@ interface WhatChangedZoneDetail {
 }
 ```
 
-## Adversarial Review
+## Agentic Review
 
 ```typescript
-interface AdversarialReview {
+interface AgenticReview {
   overallGrade: string;             // "B+" — aggregate grade
-  findings: AdversarialFinding[];
+  reviewMethod: "main-agent" | "agent-teams";  // how the review was performed
+  findings: AgenticFinding[];
 }
 
-interface AdversarialFinding {
+interface AgenticFinding {
   file: string;                     // file path or glob pattern (e.g. "src/*")
   grade: "A" | "B" | "B+" | "C" | "F" | "N/A";
   zones: string;                    // space-separated zone IDs
   notable: string;                  // one-line summary of finding
   detail: string;                   // full explanation (HTML-safe)
   gradeSortOrder: number;           // 0=N/A, 1=B, 2=B+, 3=A (for severity sort)
+  agent: string;                    // which agent produced this finding (e.g. "code-health", "security", "test-integrity", "adversarial")
 }
 ```
 

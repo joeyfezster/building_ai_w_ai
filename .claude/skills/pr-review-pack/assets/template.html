@@ -44,6 +44,10 @@
   [data-theme="dark"] .history-event { background: #1f2937; border-color: #374151; }
   [data-theme="dark"] tr.detail-row td,
   [data-theme="dark"] .adv-detail-row td { background: #1a2332; }
+  [data-theme="dark"] .agent-grade-badge { background: #2a3441; }
+  [data-theme="dark"] .agent-legend-item .agent-abbrev { background: #2a3441; }
+  [data-theme="dark"] .agent-detail-header .agent-abbrev { background: #2a3441; }
+  [data-theme="dark"] .agent-detail-entry { border-bottom-color: #2a3441; }
   [data-theme="dark"] .arch-legend { background: #1f2937; }
   [data-theme="dark"] .conv-card { border-color: #374151; }
   [data-theme="dark"] .decision-card { border-color: #374151; }
@@ -63,6 +67,9 @@
   [data-theme="dark"] .grade.c { background: #7c2d12; color: #fdba74; }
   [data-theme="dark"] .grade.f { background: #7f1d1d; color: #fca5a5; }
   [data-theme="dark"] .grade.na { background: #374151; color: #9ca3af; }
+  [data-theme="dark"] .review-method-badge.agent-teams { background: #1e3a5f; color: #93c5fd; }
+  [data-theme="dark"] .review-method-badge.main-agent { background: #374151; color: #9ca3af; }
+  [data-theme="dark"] .agent-tag { background: #374151; color: #9ca3af; }
   [data-theme="dark"] .priority.low { background: #1e3a5f; color: #93c5fd; }
   [data-theme="dark"] .priority.medium { background: #713f12; color: #fde047; }
   [data-theme="dark"] .priority.cosmetic { background: #374151; color: #9ca3af; }
@@ -205,6 +212,14 @@
   .grade.f { background: var(--red-bg); color: #991b1b; }
   .grade.na { background: var(--gray-bg); color: var(--gray); }
 
+  /* ── Review method badge ── */
+  .review-method-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; vertical-align: middle; margin-left: 8px; }
+  .review-method-badge.agent-teams { background: var(--blue-bg, #dbeafe); color: #1d4ed8; }
+  .review-method-badge.main-agent { background: var(--gray-bg); color: var(--gray); }
+
+  /* ── Agent badges in agentic review table ── */
+  .agent-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; background: var(--gray-bg); color: var(--gray); }
+
   /* ── Timing ── */
   .time-label { font-family: var(--mono); font-size: 15px; font-weight: 700; }
   .time-label.normal { color: #166534; }
@@ -331,7 +346,7 @@
   .wc-zone-detail.active { display: block; }
   .wc-zone-detail h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
 
-  /* ── Adversarial review enhancements ── */
+  /* ── Agentic review ── */
   .adv-scroll { max-height: 500px; overflow-y: auto; }
   .adv-row { cursor: pointer; transition: max-height 0.3s ease, opacity 0.3s ease; }
   .adv-row:hover { background: var(--gray-bg); }
@@ -341,6 +356,26 @@
   .adv-detail-row { display: none; }
   .adv-detail-row.open { display: table-row; }
   .adv-detail-row td { background: #fafbfc; padding: 12px 20px; font-size: 12px; border-bottom: 1px solid var(--border); }
+
+  /* Agent grade badges (compact per-file) */
+  .agent-badges-cell { white-space: nowrap; }
+  .agent-grade-badge { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; padding: 1px 4px; border-radius: 4px; background: var(--gray-bg); font-size: 11px; }
+  .agent-grade-badge .agent-abbrev { font-weight: 700; color: var(--text-muted); font-size: 10px; font-family: var(--mono); }
+  .agent-grade-badge .grade { font-size: 11px; padding: 0 2px; }
+
+  /* Agent legend */
+  .agent-legend { display: inline-flex; gap: 12px; margin-left: 12px; font-size: 11px; color: var(--text-muted); vertical-align: middle; }
+  .agent-legend-item { display: inline-flex; align-items: center; gap: 3px; cursor: help; }
+  .agent-legend-item .agent-abbrev { font-weight: 700; font-family: var(--mono); font-size: 10px; background: var(--gray-bg); padding: 1px 3px; border-radius: 3px; }
+
+  /* Per-agent detail breakdown (inside expanded row) */
+  .agent-detail-entry { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .agent-detail-entry:last-child { border-bottom: none; }
+  .agent-detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .agent-detail-header .agent-abbrev { font-weight: 700; font-family: var(--mono); font-size: 10px; background: var(--gray-bg); padding: 1px 4px; border-radius: 3px; }
+  .agent-detail-header .grade { font-size: 11px; }
+  .agent-detail-name { font-size: 11px; color: var(--text-muted); }
+  .agent-detail-body { font-size: 12px; line-height: 1.5; padding-left: 4px; }
 
   /* ── CI sub-check drill-down ── */
   .ci-check-item { padding: 6px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
@@ -438,6 +473,11 @@
 </style>
 </head>
 <body>
+<!-- Visual inspection watermark: visible until removed by the reviewing agent -->
+<div id="visual-inspection-banner" style="position:fixed;top:0;left:0;right:0;z-index:10000;background:#dc2626;color:white;text-align:center;padding:12px 20px;font-weight:700;font-size:15px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3);letter-spacing:0.3px">
+  This Pack Has NOT Been Visually Inspected
+</div>
+<div id="visual-inspection-spacer" style="height:48px"></div>
 <div class="container">
 
   <!-- ══ DATA INJECTION POINT ══ -->
@@ -484,6 +524,11 @@
         <div class="arch-controls">
           <button class="arch-toggle active" onclick="setArchView('update',this)">Update (this PR)</button>
           <button class="arch-toggle" onclick="setArchView('baseline',this)">Baseline (before merge)</button>
+          <span style="margin-left:auto;display:inline-flex;gap:4px;align-items:center">
+            <button class="arch-toggle" onclick="archZoom(-1)" title="Zoom out">&minus;</button>
+            <button class="arch-toggle" onclick="archZoom(0)" title="Fit to content">Fit</button>
+            <button class="arch-toggle" onclick="archZoom(1)" title="Zoom in">+</button>
+          </span>
           <span class="arch-hint">Click a zone to filter findings &bull; Click background to reset</span>
         </div>
         <svg id="arch-diagram" viewBox="0 0 780 360" style="width:100%;max-width:780px;background:#fafbfc;border-radius:8px;border:1px solid var(--border)">
@@ -544,20 +589,20 @@
       </div>
     </div>
 
-    <!-- Section: Adversarial Review -->
+    <!-- Section: Agentic Review -->
     <div class="section">
       <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
-        <h2 id="adv-header">Adversarial Review</h2>
+        <h2 id="adv-header">Agentic Review <!-- INJECT: adversarial review method badge --></h2>
         <span class="chevron">&#x25BC;</span>
       </div>
       <div class="section-body">
         <div class="adv-scroll">
-        <div id="adv-no-match" class="adv-no-match">No adversarial findings in this zone.</div>
+        <div id="adv-no-match" class="adv-no-match">No review findings in this zone.</div>
         <table id="adv-table">
-          <thead><tr><th>File</th><th>Grade</th><th>Zone</th><th>Notable</th></tr></thead>
+          <thead><tr><th>File</th><th>Agents</th><th>Zone</th><th>Notable</th></tr></thead>
           <tbody>
-            <!-- INJECT: adversarial finding rows from DATA.adversarialReview.findings -->
-            <!-- Each row: tr.adv-row[data-zones="..."][data-grade-sort="N"] + tr.adv-detail-row -->
+            <!-- INJECT: adversarial finding rows from DATA.agenticReview.findings -->
+            <!-- Each row: tr.adv-row (file-level, grouped) + tr.adv-detail-row (per-agent breakdown) -->
           </tbody>
         </table>
         </div>
@@ -900,6 +945,33 @@ function setArchView(view, btn) {
     });
     document.getElementById('zone-filter-info').style.display = 'none';
   }
+}
+
+// ═══════════════════════════════════════════
+// Architecture zoom
+// ═══════════════════════════════════════════
+let archZoomLevel = 1;
+const archOriginalViewBox = (function() {
+  const svg = document.getElementById('arch-diagram');
+  return svg ? svg.getAttribute('viewBox') : '0 0 780 400';
+})();
+
+function archZoom(direction) {
+  const svg = document.getElementById('arch-diagram');
+  if (!svg) return;
+  const parts = archOriginalViewBox.split(/\s+/).map(Number);
+  if (direction === 0) {
+    archZoomLevel = 1;
+  } else {
+    archZoomLevel = Math.max(0.5, Math.min(2.5, archZoomLevel + direction * 0.25));
+  }
+  const cx = parts[0] + parts[2] / 2;
+  const cy = parts[1] + parts[3] / 2;
+  const newW = parts[2] / archZoomLevel;
+  const newH = parts[3] / archZoomLevel;
+  svg.setAttribute('viewBox',
+    (cx - newW/2).toFixed(0) + ' ' + (cy - newH/2).toFixed(0) + ' ' +
+    newW.toFixed(0) + ' ' + newH.toFixed(0));
 }
 
 // ═══════════════════════════════════════════

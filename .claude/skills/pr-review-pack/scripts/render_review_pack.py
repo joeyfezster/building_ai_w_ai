@@ -31,6 +31,22 @@ LAYER_COLORS = {
 
 GRADE_CLASS = {"A": "a", "B+": "b", "B": "b", "C": "c", "F": "f", "N/A": "na"}
 
+# Agent abbreviations for compact badges
+AGENT_ABBREV = {
+    "code-health": "CH",
+    "security": "SE",
+    "test-integrity": "TI",
+    "adversarial": "AD",
+    "code-health-reviewer": "CH",
+    "security-reviewer": "SE",
+    "test-integrity-reviewer": "TI",
+    "adversarial-reviewer": "AD",
+    "main": "MA",
+    "main-agent": "MA",
+}
+
+GRADE_SORT = {"F": 0, "C": 1, "B": 2, "B+": 3, "A": 4, "N/A": 5}
+
 HEALTH_CLASS = {
     "normal": "normal",
     "acceptable": "acceptable",
@@ -47,7 +63,9 @@ CATEGORY_CLASS = {
 
 STATUS_STYLE = {
     "passing": ("var(--green)", "&#x2713;", "Passing"),
+    "pass": ("var(--green)", "&#x2713;", "Pass"),
     "failing": ("var(--red)", "&#x2717;", "Failing"),
+    "fail": ("var(--red)", "&#x2717;", "Fail"),
     "advisory": ("var(--yellow)", "&#x26A0;", "Advisory"),
 }
 
@@ -205,6 +223,17 @@ def render_scenario_cards(scenarios: list[dict]) -> str:
         cat_class = CATEGORY_CLASS.get(s.get("category", ""), "")
         zone = s.get("zone", "")
         d = s.get("detail", {})
+        # detail may be a dict {what, how, result} or a plain string
+        if isinstance(d, str):
+            detail_html = f'<p>{esc(d)}</p>' if d else ''
+        else:
+            detail_html = (
+                f'<dl>\n'
+                f'      <dt>What</dt><dd>{esc(d.get("what", ""))}</dd>\n'
+                f'      <dt>How</dt><dd>{esc(d.get("how", ""))}</dd>\n'
+                f'      <dt>Result</dt><dd>{esc(d.get("result", ""))}</dd>\n'
+                f'    </dl>'
+            )
         cards.append(
             f'<div class="scenario-card" data-zone="{esc(zone)}" '
             f'onclick="this.classList.toggle(\'open\')">\n'
@@ -214,11 +243,7 @@ def render_scenario_cards(scenarios: list[dict]) -> str:
             f'  </div>\n'
             f'  <div class="status" style="color:{color}">{icon} {text}</div>\n'
             f'  <div class="scenario-card-detail">\n'
-            f'    <dl>\n'
-            f'      <dt>What</dt><dd>{esc(d.get("what", ""))}</dd>\n'
-            f'      <dt>How</dt><dd>{esc(d.get("how", ""))}</dd>\n'
-            f'      <dt>Result</dt><dd>{esc(d.get("result", ""))}</dd>\n'
-            f'    </dl>\n'
+            f'    {detail_html}\n'
             f'  </div>\n'
             f'</div>'
         )
@@ -251,30 +276,117 @@ def render_what_changed_zones(wc: dict) -> str:
     return "\n        ".join(divs)
 
 
-def render_adversarial_rows(adv: dict) -> str:
+def render_agentic_method_badge(review: dict) -> str:
+    method = review.get("reviewMethod", "main-agent")
+    css = "agent-teams" if method == "agent-teams" else "main-agent"
+    label = "Agent Teams" if method == "agent-teams" else "Main Agent"
+    return f'<span class="review-method-badge {css}">{label}</span>'
+
+
+def render_agentic_legend() -> str:
+    """Render compact legend for agent abbreviations."""
+    entries = [
+        ("CH", "Code Health", "code quality + complexity + dead code"),
+        ("SE", "Security", "vulnerabilities beyond bandit"),
+        ("TI", "Test Integrity", "test quality beyond AST scanner"),
+        ("AD", "Adversarial", "gaming, spec violations, architecture"),
+    ]
+    items = []
+    for abbrev, name, desc in entries:
+        items.append(
+            f'<span class="agent-legend-item" title="{esc(desc)}">'
+            f'<span class="agent-abbrev">{abbrev}</span> {esc(name)}</span>'
+        )
+    return (
+        '<div class="agent-legend">'
+        + " ".join(items)
+        + "</div>"
+    )
+
+
+def render_agentic_rows(review: dict) -> str:
+    """Render agentic review rows grouped by file.
+
+    Each file gets one master row with compact agent grade badges.
+    Expanding shows per-agent detail.
+    """
+    from collections import OrderedDict
+
+    findings = review.get("findings", [])
+    if not findings:
+        return ""
+
+    # Group by file, preserving order of first appearance
+    by_file: OrderedDict[str, list[dict]] = OrderedDict()
+    for f in findings:
+        filepath = f.get("file", "unknown")
+        by_file.setdefault(filepath, []).append(f)
+
     rows = []
-    for f in adv.get("findings", []):
-        grade = f.get("grade", "N/A")
-        grade_css = GRADE_CLASS.get(grade, "na")
-        zones = f.get("zones", "")
-        sort_order = f.get("gradeSortOrder", 0)
-        # detail may contain HTML
+    for filepath, file_findings in by_file.items():
+        # Worst grade determines file sort order
+        worst_sort = min(f.get("gradeSortOrder", 99) for f in file_findings)
+        zones = file_findings[0].get("zones", "")
+
+        # Compact agent badges: CH:A  SE:B  TI:A  AD:B
+        badges = []
+        for f in file_findings:
+            agent_name = f.get("agent", "") or "main"
+            abbrev = AGENT_ABBREV.get(agent_name, agent_name[:2].upper() if agent_name else "?")
+            grade = f.get("grade", "N/A")
+            grade_css = GRADE_CLASS.get(grade, "na")
+            badges.append(
+                f'<span class="agent-grade-badge">'
+                f'<span class="agent-abbrev">{esc(abbrev)}</span>'
+                f'<span class="grade {grade_css}">{esc(grade)}</span>'
+                f'</span>'
+            )
+        badges_html = " ".join(badges)
+
+        # Most notable finding for the summary column
+        notable_finding = min(file_findings, key=lambda f: GRADE_SORT.get(f.get("grade", "N/A"), 5))
+        notable_text = notable_finding.get("notable", "")
+
+        # Master row (one per file)
         rows.append(
             f'<tr class="adv-row" data-zones="{esc(zones)}" '
-            f'data-grade-sort="{sort_order}" onclick="toggleAdvDetail(this)">\n'
+            f'data-grade-sort="{worst_sort}" onclick="toggleAdvDetail(this)">\n'
             f'  <td><code class="file-path-link" '
             f"onclick=\"event.stopPropagation();"
-            f"openFileModal('{esc(f['file'])}')\">"
-            f'{esc(f["file"])}</code></td>\n'
-            f'  <td><span class="grade {grade_css}">{esc(grade)}</span></td>\n'
+            f"openFileModal('{esc(filepath)}')\">"
+            f'{esc(filepath)}</code></td>\n'
+            f'  <td class="agent-badges-cell">{badges_html}</td>\n'
             f'  <td><span class="zone-tag {layer_tag_class("product")}">'
             f'{esc(zones)}</span></td>\n'
-            f'  <td>{esc(f.get("notable", ""))}</td>\n'
+            f'  <td>{esc(notable_text)}</td>\n'
             f'</tr>\n'
+        )
+
+        # Detail row: per-agent breakdown
+        detail_parts = []
+        for f in file_findings:
+            agent_name = f.get("agent", "") or "main"
+            abbrev = AGENT_ABBREV.get(agent_name, agent_name[:2].upper() if agent_name else "?")
+            grade = f.get("grade", "N/A")
+            grade_css = GRADE_CLASS.get(grade, "na")
+            detail_text = f.get("detail", "") or f.get("notable", "")
+            detail_parts.append(
+                f'<div class="agent-detail-entry">'
+                f'<span class="agent-detail-header">'
+                f'<span class="agent-abbrev">{esc(abbrev)}</span>'
+                f'<span class="grade {grade_css}">{esc(grade)}</span>'
+                f'<span class="agent-detail-name">{esc(agent_name)}</span>'
+                f'</span>'
+                f'<div class="agent-detail-body">{detail_text}</div>'
+                f'</div>'
+            )
+
+        rows.append(
             f'<tr class="adv-detail-row" data-zones="{esc(zones)}">\n'
-            f'  <td colspan="4">{f.get("detail", "")}</td>\n'
+            f'  <td colspan="4">{"".join(detail_parts)}</td>\n'
             f'</tr>'
         )
+
     return "\n            ".join(rows)
 
 
@@ -568,6 +680,60 @@ def render_gate_findings_rows(findings: list[dict]) -> str:
 # ── Main render pipeline ────────────────────────────────────────────
 
 
+def _escape_script_closing(text: str) -> str:
+    """Escape </script> sequences so embedded JSON doesn't break HTML parsing.
+
+    The HTML parser scans for </script> to close <script> blocks regardless
+    of JavaScript string context. If raw file content (e.g., template.html)
+    contains </script>, the browser closes the <script> tag prematurely,
+    corrupting the page. Replacing </script with <\\/script is safe — the
+    JS engine interprets \\/ as / but the HTML parser no longer sees a
+    closing tag.
+    """
+    return text.replace("</script", r"<\/script").replace("</Script", r"<\/Script")
+
+
+def _calculate_viewbox(arch: dict) -> str:
+    """Calculate SVG viewBox from architecture zone positions.
+
+    Returns a viewBox string that fits all zones, labels, and arrows
+    with padding. The left margin accounts for row labels rendered
+    with text-anchor='end'.
+    """
+    if not arch or not arch.get("zones"):
+        return "0 0 780 360"  # fallback default
+
+    min_x, min_y = float("inf"), float("inf")
+    max_x, max_y = float("-inf"), float("-inf")
+
+    for zone in arch.get("zones", []):
+        pos = zone.get("position", {})
+        x, y = pos.get("x", 0), pos.get("y", 0)
+        w, h = pos.get("width", 120), pos.get("height", 70)
+        min_x = min(min_x, x)
+        min_y = min(min_y, y)
+        max_x = max(max_x, x + w)
+        max_y = max(max_y, y + h)
+
+    for arrow in arch.get("arrows", []):
+        for endpoint in ("from", "to"):
+            pt = arrow.get(endpoint, {})
+            max_x = max(max_x, pt.get("x", 0))
+            max_y = max(max_y, pt.get("y", 0))
+
+    # Row labels sit at small x with text-anchor="end", extending left.
+    # Reserve ~120px to the left of min_x for label text.
+    label_margin = 120
+    pad = 20  # general padding
+
+    vb_x = min(min_x - label_margin, 0) - pad
+    vb_y = min(min_y, 0) - pad
+    vb_w = max_x - vb_x + pad
+    vb_h = max_y - vb_y + pad
+
+    return f"{vb_x:.0f} {vb_y:.0f} {vb_w:.0f} {vb_h:.0f}"
+
+
 def render(
     data_path: str | Path,
     output_path: str | Path,
@@ -641,8 +807,12 @@ def render(
         "<!-- INJECT: wc-zone-detail divs for each zone -->": (
             render_what_changed_zones(data.get("whatChanged", {}))
         ),
-        "<!-- INJECT: adversarial finding rows from DATA.adversarialReview.findings -->": (
-            render_adversarial_rows(data.get("adversarialReview", {}))
+        "<!-- INJECT: adversarial review method badge -->": (
+            render_agentic_method_badge(data.get("agenticReview", {}))
+            + render_agentic_legend()
+        ),
+        "<!-- INJECT: adversarial finding rows from DATA.agenticReview.findings -->": (
+            render_agentic_rows(data.get("agenticReview", {}))
         ),
         "<!-- INJECT: CI check rows from DATA.ciPerformance -->": render_ci_rows(
             data.get("ciPerformance", [])
@@ -688,6 +858,20 @@ def render(
     ):
         template = template.replace(hint, "")
 
+    # ── Dynamic SVG viewBox from architecture data ──
+    arch_data = data.get("architecture", {})
+    viewbox = _calculate_viewbox(arch_data)
+    template = template.replace(
+        'viewBox="0 0 780 360"',
+        f'viewBox="{viewbox}"',
+    )
+    vb_parts = viewbox.split()
+    vb_width = float(vb_parts[2])
+    template = template.replace(
+        "max-width:780px",
+        f"max-width:{max(780, int(vb_width))}px",
+    )
+
     # ── Inject DATA JSON for JS interactivity ──
     data_json = json.dumps(data, indent=2)
     template = template.replace("const DATA = {};", f"const DATA = {data_json};")
@@ -710,11 +894,12 @@ def render(
             if full.exists():
                 ref_files[spec_path] = full.read_text(encoding="utf-8")
     if ref_files:
+        safe_ref_json = _escape_script_closing(json.dumps(ref_files))
         ref_inject = (
             "<script>\n"
             "// Reference file content embedded by render_review_pack.py\n"
             "// These files are not in the diff but are viewable in raw mode.\n"
-            f"const REFERENCE_FILES = {json.dumps(ref_files)};\n"
+            f"const REFERENCE_FILES = {safe_ref_json};\n"
             "</script>\n"
         )
         template = template.replace(
@@ -733,15 +918,22 @@ def render(
     # Trust chain: generate_diff_data.py runs `git diff` and `git show`
     # — deterministic git CLI output, zero LLM, byte-equivalent to
     # what GitHub displays for the same commit SHA.
+    #
+    # CRITICAL: The diff data may contain raw file content (e.g.,
+    # template.html) with literal </script> tags. The HTML parser
+    # does not understand JS string context — it would close the
+    # <script> block prematurely, rendering the rest as visible text.
+    # _escape_script_closing() prevents this.
     if diff_data_json is not None:
+        safe_diff_json = _escape_script_closing(diff_data_json)
         # Inject diff data as a global variable
         diff_inject = (
-            f"<script>\n"
-            f"// Diff data embedded inline by render_review_pack.py\n"
-            f"// Source: generate_diff_data.py (Pass 1, deterministic)\n"
-            f"// Trust: raw git diff/show output, zero LLM involvement\n"
-            f"const DIFF_DATA_INLINE = {diff_data_json};\n"
-            f"</script>\n"
+            "<script>\n"
+            "// Diff data embedded inline by render_review_pack.py\n"
+            "// Source: generate_diff_data.py (Pass 1, deterministic)\n"
+            "// Trust: raw git diff/show output, zero LLM involvement\n"
+            f"const DIFF_DATA_INLINE = {safe_diff_json};\n"
+            "</script>\n"
         )
         # Insert before the main <script> block
         template = template.replace(
@@ -765,12 +957,26 @@ def render(
     print(f"Rendered: {out} ({size_kb:.0f} KB)")
 
     # ── Quick sanity check: any unreplaced markers? ──
+    # Count markers OUTSIDE of embedded content (diff data, reference files)
+    # to avoid false positives from SKILL.md/template.html diffs.
     remaining = template.count("<!-- INJECT:")
     if remaining > 0:
-        print(
-            f"WARNING: {remaining} unreplaced <!-- INJECT: --> markers remain!",
-            file=sys.stderr,
+        # Check if all remaining markers are inside <script> blocks (embedded data)
+        import re
+
+        outside_script = re.sub(
+            r"<script\b[^>]*>.*?</script>",
+            "",
+            template,
+            flags=re.DOTALL,
         )
+        real_remaining = outside_script.count("<!-- INJECT:")
+        if real_remaining > 0:
+            print(
+                f"WARNING: {real_remaining} unreplaced <!-- INJECT: --> "
+                f"markers remain in HTML content!",
+                file=sys.stderr,
+            )
 
 
 def main() -> None:

@@ -53,7 +53,7 @@ interface ReviewPackData {
   specifications: Specification[];
   scenarios: Scenario[];
   whatChanged: WhatChanged;
-  adversarialFindings: AdversarialFinding[];
+  agenticReview: AgenticReview;
   ciChecks: CICheck[];
   decisions: Decision[];
   convergence: ConvergenceResult;
@@ -147,17 +147,24 @@ interface WhatChangedZoneDetail {
 }
 ```
 
-### AdversarialFinding
+### AgenticReview / AgenticFinding
 
 ```typescript
-interface AdversarialFinding {
+interface AgenticReview {
+  overallGrade: string;             // "B+" — aggregate grade
+  reviewMethod: "main-agent" | "agent-teams";
+  findings: AgenticFinding[];
+}
+
+interface AgenticFinding {
   file: string;                     // File path or glob: "src/* (product code)", "check_test_quality.py"
   grade: "A" | "B+" | "B" | "C" | "F" | "N/A";
   gradeSortOrder: number;           // 0=N/A, 1=B, 2=B+, 3=A (lower = worse, sorted worst-first)
   zones: string;                    // Space-separated zone IDs: "product-rl product-dashboard"
   zoneLayer: "factory" | "product" | "infra";  // Determines zone-tag color class
-  finding: string;                  // One-line summary: "Stub detection false positive risk"
+  notable: string;                  // One-line summary: "Stub detection false positive risk"
   detail: string;                   // Expanded explanation (HTML allowed)
+  agent: string;                    // Which agent produced this finding (e.g. "code-health", "security", "test-integrity", "adversarial")
 }
 ```
 
@@ -411,7 +418,7 @@ Each zone specifies `x`, `y`, `width`, `height` for its `<rect>` element.
 **Required data fields**: `ArchitectureZone[]` — every field.
 
 **Interactive behaviors**:
-- **Zone click**: Click a zone box to filter adversarial review, scenarios, and "What Changed" to that zone. Click again (or click SVG background) to reset.
+- **Zone click**: Click a zone box to filter agentic review, scenarios, and "What Changed" to that zone. Click again (or click SVG background) to reset.
 - **Baseline/Update toggle**: Toggle buttons switch between views. Baseline sets all zone boxes to `opacity: 0.25`. Update resets to full opacity.
 - **Floating minimap**: When the inline diagram scrolls out of the viewport (IntersectionObserver, threshold 0.1), a floating copy appears fixed at `top: 16px; right: 16px; width: 40%; max-width: 480px`. The floating diagram has the same zone-click behavior. A dismiss button (X) hides the floating diagram permanently for the session (`floatingDismissed = true`).
 
@@ -509,46 +516,52 @@ Each zone specifies `x`, `y`, `width`, `height` for its `<rect>` element.
 - Zone detail blocks exist for every zone that has files in the diff.
 - Summary content is consistent with the actual diff — no files or changes mentioned that don't exist.
 
-### Section 5: Adversarial Review
+### Section 5: Agentic Review
 
-**What it shows**: A scrollable table of graded findings. Columns: File, Grade, Zone, Notable. Rows sorted by severity (worst first). Each row is expandable to show detailed findings.
+**What it shows**: Per-file grouped table of review findings from multiple specialized agents (code-health, security, test-integrity, adversarial). Each file row shows compact agent grade badges and expands to show per-agent detail.
 
-**Data source**: Pass 2 (adversarial review agent grades each file/group).
+**Data source**: Pass 2 (agent team — each agent reviews through its paradigm).
 
-**Required data fields**: `AdversarialFinding[]`.
+**Required data fields**: `AgenticReview` — `overallGrade`, `reviewMethod`, `findings[]`.
 
 **Interactive behaviors**:
-- Click a row to toggle its detail row (`.adv-detail-row`).
-- Zone filtering: When a zone is active, non-matching rows get `.collapsed-row` class (24px max-height, 0.5 opacity, truncated text, grade/zone badges hidden). A "No adversarial findings in this zone" message appears if zero rows match.
+- Click a file row to toggle its detail section (per-agent findings with grade, agent name, and detail text).
+- Zone filtering: When a zone is active, non-matching rows get `.collapsed-row` class (24px max-height, 0.5 opacity, truncated text, badges hidden). A "No review findings in this zone" message appears if zero rows match.
 - Scrollable container: `.adv-scroll` with `max-height: 500px; overflow-y: auto`.
 
 **Visual design**:
-- Grade pills: `.grade` class (28x28px, 6px border-radius, centered text) with modifiers:
-  - `.a`: green background/text
-  - `.b`: yellow background/text
-  - `.c`: orange background/text
-  - `.f`: red background/text
-  - `.na`: gray background/text (not reviewed)
+- Agent grade badges: `.agent-grade-badge` — compact inline badges showing `ABBREV:GRADE` (e.g. "CH:A", "SE:B"). Color-coded by grade (green=A, yellow=B/B+, orange=C, red=F, gray=N/A).
+- Agent legend: `.agent-legend` below section header — shows CH=Code Health, SE=Security, TI=Test Integrity, AD=Adversarial.
 - Zone tags: `.zone-tag` with layer-specific modifiers: `.factory` (blue), `.product` (green), `.infra` (purple).
-- Detail rows: `.adv-detail-row td` with `#fafbfc` background, 12px font, `colspan="4"`.
+- Detail entries: `.agent-detail-entry` with agent name header and finding body text.
 
 ```html
 <tr class="adv-row" data-zones="gate-2-nfr" data-grade-sort="1" onclick="toggleAdvDetail(this)">
   <td><code>check_test_quality.py</code></td>
-  <td><span class="grade b">B</span></td>
+  <td class="agent-badges-cell">
+    <span class="agent-grade-badge grade-b">CH:B</span>
+    <span class="agent-grade-badge grade-a">SE:A</span>
+    <span class="agent-grade-badge grade-a">TI:A</span>
+  </td>
   <td><span class="zone-tag factory">gate-2-nfr</span></td>
   <td>Stub detection false positive risk</td>
 </tr>
 <tr class="adv-detail-row" data-zones="gate-2-nfr">
-  <td colspan="4">{finding.detail}</td>
+  <td colspan="4">
+    <div class="agent-detail-entry">
+      <div class="agent-detail-header"><span class="agent-grade-badge grade-b">CH:B</span> Code Health</div>
+      <div class="agent-detail-body">{finding.detail}</div>
+    </div>
+  </td>
 </tr>
 ```
 
 **Validation checks**:
-- Every file in the diff appears in the adversarial review (individually or grouped).
+- Every file in the diff appears in the agentic review (individually or grouped).
 - Grade values are one of the defined set: A, B+, B, C, F, N/A.
 - Zone tags on each row match the file's actual zone membership from Pass 1.
 - Rows are sorted by `gradeSortOrder` ascending (worst first).
+- Every finding has a valid `agent` field.
 
 ### Section 6: CI Performance
 
@@ -659,7 +672,7 @@ Each zone specifies `x`, `y`, `width`, `height` for its `<rect>` element.
 
 **What it shows**: A list of expandable items ordered by priority. Each item: priority badge + title (collapsed), with code snippet + failure scenario + success/resolution scenario (expanded).
 
-**Data source**: Pass 2 (adversarial reviewer identifies post-merge risks).
+**Data source**: Pass 2 (agentic review team identifies post-merge risks).
 
 **Required data fields**: `PostMergeItem[]`.
 
@@ -782,7 +795,7 @@ Three-button toggle in the header: sun (light), moon (dark), gear (system).
 When a zone is clicked, `highlightZones([zoneId])` is called. This function updates four sections simultaneously:
 
 1. **Architecture diagram**: Matching zones get `.highlighted` (stroke-width: 3, brightness 0.92). Non-matching zones get `.dimmed` (opacity 0.12). Both inline and floating diagrams update.
-2. **Adversarial review**: Non-matching rows get `.collapsed-row` (24px, 0.5 opacity, truncated). Matching rows display normally. If zero rows match, show `#adv-no-match` message.
+2. **Agentic review**: Non-matching rows get `.collapsed-row` (24px, 0.5 opacity, truncated). Matching rows display normally. If zero rows match, show `#adv-no-match` message.
 3. **Scenario cards**: Non-matching cards get `.zone-dimmed` (opacity 0.35). Matching cards get `.zone-glow` (2px blue box-shadow).
 4. **What Changed**: Default view hides. Zone-specific detail blocks matching the active zone become visible.
 
@@ -899,7 +912,7 @@ gh api repos/{owner}/{repo}/pulls/{pr}/reviews --jq '[.[] | select(.state == "CH
 
 **What the agent produces**:
 1. `WhatChanged` — infrastructure and product summaries + per-zone detail blocks
-2. `AdversarialFinding[]` — graded review of every file or file group
+2. `AgenticReview` — graded review of every file or file group, with per-agent findings
 3. `Decision[]` — architectural decisions identified from the diff
 4. `PostMergeItem[]` — risks and follow-ups with code snippets
 5. `Scenario[]` status — if scenarios exist, run them and report results
@@ -925,7 +938,7 @@ Summarize what changed in two layers: infrastructure and product.
 For each zone with files in the diff, produce a zone detail block.
 Ground truth: the diff. Do not invent changes not in the diff.
 
-### adversarialFindings
+### agenticReview
 Grade every file or logical file group. Use grades:
 - A: Clean, no issues
 - B+: Minor non-blocking concerns
@@ -1178,7 +1191,7 @@ Every check that must pass before the review pack is delivered to the reviewer.
 - [ ] Every decision-zone claim is verified (file in zone's paths exists in diff). Unverified claims are flagged.
 - [ ] Every code snippet in post-merge items references a real file and valid line range in the diff.
 - [ ] Every file path link in decisions and findings references a file that exists in the diff.
-- [ ] Adversarial grades are from the defined set: A, B+, B, C, F, N/A.
+- [ ] Agentic review grades are from the defined set: A, B+, B, C, F, N/A.
 - [ ] Priority values are from the defined set: low, medium, high, cosmetic.
 - [ ] CI health classifications match timing thresholds (<1m=normal, 1-5m=acceptable, 5-10m=watch, >10m=refactor).
 
@@ -1197,7 +1210,7 @@ Every check that must pass before the review pack is delivered to the reviewer.
 
 ### Content Completeness
 
-- [ ] Every file in the diff appears in the adversarial review (individually or grouped).
+- [ ] Every file in the diff appears in the agentic review (individually or grouped).
 - [ ] Every CI check on HEAD SHA is listed.
 - [ ] Every zone with files in the diff has a "What Changed" zone detail block.
 - [ ] Scenario count and status match actual evaluation results.

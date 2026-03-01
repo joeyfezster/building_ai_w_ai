@@ -10,7 +10,7 @@ How we validate the factory's own components and their integration.
 | Feedback compiler | Script | `scripts/compile_feedback.py` | `tests/test_factory_compile_feedback.py` + lint + typecheck |
 | Factory orchestrator | Workflow | `.github/workflows/factory.yaml` | CI dry-run + manual trigger |
 | Attractor prompt | Markdown | `.github/codex/prompts/factory_fix.md` | Human review + adversarial review |
-| Adversarial review | Markdown | `.github/codex/prompts/adversarial_review.md` | Human review |
+| Adversarial review | Markdown | `.claude/skills/factory-orchestrate/review-prompts/adversarial_review.md` | Human review |
 | Satisfaction dashboard | Streamlit | `src/dashboard/pages/factory.py` | lint + manual verification |
 | Scenario files | Markdown | `scenarios/*.md` | Format validator in CI |
 | Factory CI | Workflow | `.github/workflows/ci.yaml` (factory-self-test job) | Self-referential (runs on itself) |
@@ -38,7 +38,7 @@ How we validate the factory's own components and their integration.
   - End-to-end integration (1 test)
 
 ### Layer 3: Adversarial Review (Manual, Per PR)
-- Review guidelines at `.github/codex/prompts/adversarial_review.md`
+- Review guidelines at `.claude/skills/factory-orchestrate/review-prompts/adversarial_review.md`
 - Checks for: vacuous tests, gaming, architectural dishonesty, spec violations
 - Applied to attractor output (product code), not to factory infrastructure
 

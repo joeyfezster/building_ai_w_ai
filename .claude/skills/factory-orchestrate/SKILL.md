@@ -8,13 +8,23 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Edit
 
 You are the factory orchestrator. You run the convergence loop that turns specs into working software through iterative AI coding + validation.
 
+## Crank Lifecycle
+
+A factory crank progresses through three states:
+- **IN PROGRESS** — iterating (Codex coding, gates running, feedback looping)
+- **CONVERGED** — ALL scenarios passing, PR created with review pack, pending human merge decision
+- **COMPLETE** — factory branch merged to main
+
+A crank is NOT complete until the factory branch is merged to main. Convergence is necessary but not sufficient — the human accept/merge gate is what completes a crank.
+
 ## Prerequisites
 
 - Chrome is logged into Codex (ChatGPT Plus account)
 - Repository: `joeyfezster/building_ai_w_ai`
 - Branch to base work on: confirm with user or default to `factory/v1`
-- Satisfaction threshold: confirm with user or default to 80%
 - Max iterations: confirm with user or default to 5
+
+**Convergence requires ALL scenarios passing.** There is no percentage threshold — a single failing scenario blocks convergence, regardless of cause (regression, merge conflict, transient issue, or new failure). The factory owns its output quality end-to-end. Never declare convergence with a failing scenario, and never excuse a failure by attributing it to a previous iteration or the base branch.
 
 ## The Loop
 
@@ -49,41 +59,83 @@ Open the Codex UI in Chrome. Provide:
 
 Codex will create its own branch (named `codex-...`). Wait for it to finish.
 
-### Step 4: Gate 0 — Adversarial Code Review (Agent Team)
+### Step 4: Gate 0 — Two-Tier Code Review (Script + Agent Team)
 
-Before merging Codex's changes, run a **full adversarial review via agent teams**. This is the first line of defense — there is no point sending code to CI or later gates if Gate 0 finds critical issues.
+Before merging Codex's changes, run a **full two-tier review**. This is the first line of defense — there is no point sending code to CI or later gates if Gate 0 finds critical issues.
 
 1. Fetch Codex's branch: `git fetch origin`
 2. Get the diff: `git diff df-crank-vXX...origin/codex-{branch}`
 
-3. **Spawn the Gate 0 agent team.** Create a team and launch these agents in parallel:
+#### Tier 1: Deterministic Tool Checks
 
-   **Tool agents** (deterministic, Bash-capable — run ALL simultaneously):
-   | Agent | What It Runs | What It Catches |
-   |-------|-------------|-----------------|
-   | `ruff-agent` | `python scripts/nfr_checks.py --check code_quality` | Lint violations, style, import issues |
-   | `radon-agent` | `python scripts/nfr_checks.py --check complexity` | Cyclomatic complexity > threshold |
-   | `vulture-agent` | `python scripts/nfr_checks.py --check dead_code` | Unreachable code, unused functions |
-   | `bandit-agent` | `python scripts/nfr_checks.py --check security` | Security vulnerabilities |
-   | `test-quality-agent` | `python scripts/check_test_quality.py` | Vacuous tests, stub assertions, mock abuse |
+Run the Gate 0 deterministic runner. This executes all 5 tool checks in parallel and produces a JSON artifact:
 
-   **Semantic reviewer** (LLM-based, runs in parallel with tool agents):
-   | Agent | What It Reads | What It Catches |
-   |-------|--------------|-----------------|
-   | `adversarial-reviewer` | The diff + `.github/codex/prompts/adversarial_review.md` + `docs/code_quality_standards.md` + `/specs/*.md` | Gaming, architectural dishonesty, spec violations, integration gaps, subtle patterns the tools miss |
+```bash
+python scripts/run_gate0.py
+# Produces: artifacts/factory/gate0_results.json
+```
 
-4. **Aggregate findings.** Collect all agent outputs. Each finding has a severity: CRITICAL, WARNING, or NIT.
+| Check | Tool | What It Catches |
+|-------|------|-----------------|
+| `code_quality` | ruff (extended) | Lint violations, style, import issues |
+| `complexity` | radon | Cyclomatic complexity > threshold |
+| `dead_code` | vulture | Unreachable code, unused functions |
+| `security` | bandit | Security vulnerability patterns |
+| `test_quality` | check_test_quality.py | Vacuous tests, stub assertions, mock abuse |
 
-5. **Fail-fast rule:** If **any agent** reports a CRITICAL finding, Gate 0 fails. Do NOT merge. Compile all findings (from all agents) as feedback and loop back to Step 3 with specific remediation instructions.
+**Tier 1 is necessary but insufficient.** These tools operate at the AST/regex level. They catch the obvious stuff fast — but a sophisticated agent can game them. Tier 2 builds on tier 1 output.
 
-**If clean or WARNING-only across all agents**: Proceed to Step 5. WARNING findings are tracked — they feed into the LLM-as-judge evaluation in Step 10.
+#### Tier 2: LLM Semantic Review Agents
 
-**Why agent teams, not a single reviewer:** The tool agents catch cheap, obvious violations in seconds (dead code, complexity, security). The semantic reviewer catches subtle gaming and architectural dishonesty. Running them in parallel means Gate 0 is both fast AND thorough. A single reviewer doing everything sequentially is slower and more likely to miss things.
+3. **Spawn the Tier 2 agent team.** Use `TeamCreate` and launch these 4 agents in parallel via the `Task` tool. Each agent receives: the diff, the tier 1 results (`gate0_results.json`), and its paradigm-specific review prompt from `.claude/skills/factory-orchestrate/review-prompts/`.
+
+   | Agent | Paradigm Review Prompt | Paradigm |
+   |-------|----------------------|----------|
+   | `code-health-reviewer` | `code_health_review.md` | Code quality + complexity + dead code |
+   | `security-reviewer` | `security_review.md` | Security vulnerabilities |
+   | `test-integrity-reviewer` | `test_integrity_review.md` | Test quality and integrity |
+   | `adversarial-reviewer` | `adversarial_review.md` | Holistic: gaming, spec violations, architectural dishonesty |
+
+   Each agent also receives: `gate0_results.json` (tier 1 findings) + `docs/code_quality_standards.md` + the diff. The adversarial reviewer additionally receives `/specs/*.md`.
+
+4. **Aggregate findings.** Collect all tier 2 agent outputs + tier 1 results. Each finding has a severity: CRITICAL, WARNING, or NIT.
+
+5. **Fail-fast rule:** If **any tier** (1 or 2) reports a CRITICAL finding, Gate 0 fails. Do NOT proceed to later gates (1-3). However, **DO merge Codex's changes onto the factory branch** so that iteration N+1 is incremental — Codex iterates on its own code with feedback, rather than rebuilding from scratch. Compile all findings (from both tiers) as feedback and loop back to Step 3 with specific remediation instructions.
+
+   **Gate 0 failure workflow:**
+   ```bash
+   # 1. Merge Codex's code (keep it for incremental iteration)
+   git merge origin/codex-{branch} --no-ff -m "factory: merge codex iteration N (Gate 0 blocked — iterating)"
+   # 2. Delete Codex's remote branch (consumed by merge, prevent branch pollution)
+   git push origin --delete codex-{branch}
+   # 3. Commit feedback file
+   git add artifacts/factory/feedback_iter_N.md
+   git commit -m "factory: Gate 0 feedback for iteration N"
+   # 4. Push — Codex's next run sees its own code + feedback
+   git push
+   # 5. Loop back to Step 3 (invoke Codex again)
+   ```
+
+   **NEVER revert Codex's merge on Gate 0 failure.** Reverting forces Codex to rebuild from zero, wasting an iteration. The feedback is specific enough to guide incremental fixes. The code is "wrong but close" — keep it and steer.
+
+**If clean or WARNING-only across both tiers**: Proceed to Step 5. WARNING findings are tracked — they feed into the LLM-as-judge evaluation in Step 10.
+
+**Why two tiers, not just tools or just LLMs:** Tools are fast, cheap, and deterministic — they catch the obvious stuff in seconds. But they operate at the AST/regex level and can be gamed by a sophisticated agent. LLM agents review through the same paradigms at a higher caliber — they catch semantic dead code, meaningful test gaps, and subtle gaming that tools miss. Running both tiers means Gate 0 is fast AND deep. Neither tier alone is sufficient.
 
 ### Step 5: Merge Codex Changes
 ```bash
 git merge origin/codex-{branch} --no-ff -m "factory: merge codex iteration N"
 ```
+
+### Step 5a: Delete Codex's Remote Branch
+
+**Immediately after merging**, delete Codex's branch from origin. The factory is branch-heavy — stale Codex branches pollute the namespace and create confusion about which branch is current. The code is preserved in the merge commit on the factory branch.
+
+```bash
+git push origin --delete codex-{branch}
+```
+
+This applies to EVERY merge — whether Gate 0 passes or fails. The Codex branch is consumed by the merge; it has no further purpose.
 
 ### Step 5b: Check CI Results
 
@@ -140,9 +192,11 @@ python scripts/run_scenarios.py --timeout 180
 
 Produces `artifacts/factory/scenario_results.json` with satisfaction score.
 
+**Hard gate: if ANY scenario fails, the crank has NOT converged.** Do not proceed to Step 10. Compile feedback and loop back to Step 3. The satisfaction score is a trajectory metric (is progress being made?) — it is NOT the convergence criterion. Convergence = zero failures.
+
 ### Step 10: LLM-as-Judge — Holistic Evaluation
 
-You ARE the judge. Don't just check `satisfaction_score >= threshold`. Reason through:
+You ARE the judge. All scenarios passed — but passing is necessary, not sufficient. Reason through:
 
 1. **Satisfaction trajectory**: Is the score improving across iterations? Plateaued? Regressing?
 2. **Failure patterns**: Are the same scenarios failing repeatedly? Different ones each time?
@@ -153,6 +207,22 @@ You ARE the judge. Don't just check `satisfaction_score >= threshold`. Reason th
 
 **If satisfied**: Proceed to Step 11.
 **If not satisfied**: Compile feedback with your holistic assessment, loop to Step 3.
+
+### Step 10b: Resolve Bot Reviewer Comments
+
+After the PR is created, bot reviewers (Copilot, Codex connector) post comments recommending changes. The orchestrator evaluates and routes each one — the goal is to fix everything now, not carry tech debt.
+
+**Workflow:**
+1. Read all unresolved PR review threads (after CI completes — bots post after CI).
+2. **Evaluate each comment.** Bot reviewers can be wrong. For each recommendation, reason about: Is it valid? Is it in scope? What severity does it actually warrant?
+3. **Route by who can fix it:**
+   - **Orchestrator's agent team** (non-product: infra, config, dependency compilation, docs, CI): Spawn an agent to fix it directly. Push the fix, resolve the thread.
+   - **Attractor** (product code OR complex logic OR security issues OR code performance): Synthesize into `artifacts/factory/post_merge_feedback.md` — preserving the file path, line number, what was flagged, and the orchestrator's assessment. Then loop back to the attractor (new factory iteration via Step 3) with this feedback included.
+   - **Invalid/false-positive**: Resolve the thread with a reply explaining why.
+
+**Every thread resolution MUST include a reply comment** explaining how it was resolved — what action was taken, by whom (orchestrator vs attractor), and where the evidence lives (commit SHA, feedback file path). Never resolve a thread silently.
+
+**Continuity across cranks:** When starting a new factory crank, check `artifacts/factory/post_merge_feedback.md` for items synthesized from the previous iteration's review comments. These must be included in the attractor's seed feedback so they are not dropped.
 
 ### Step 11: Create PR (Accept/Merge Gate)
 ```bash
@@ -237,10 +307,11 @@ If after 3+ iterations:
 ## Reference Files
 
 - **Attractor prompt**: `.github/codex/prompts/factory_fix.md`
-- **Adversarial review**: `.github/codex/prompts/adversarial_review.md`
+- **Gate 0 tier 1 runner**: `scripts/run_gate0.py` (deterministic tool checks → `gate0_results.json`)
+- **Gate 0 tier 2 review prompts**: `.claude/skills/factory-orchestrate/review-prompts/` (all paradigm docs in this directory)
 - **Code quality standards**: `docs/code_quality_standards.md`
-- **NFR checks script**: `scripts/nfr_checks.py` (Gate 0 tool agents + Gate 2)
-- **Test quality scanner**: `scripts/check_test_quality.py` (Gate 0 tool agent)
+- **NFR checks script**: `scripts/nfr_checks.py` (Gate 0 tier 1 static analysis + Gate 2 NFR framework)
+- **Test quality scanner**: `scripts/check_test_quality.py` (Gate 0 tier 1)
 - **PR review pack skill**: `.claude/skills/pr-review-pack/SKILL.md` (Step 12)
 - **Decision log**: `docs/decisions/decision_log.json` (Step 13, cumulative archive)
 - **Decision persistence**: `scripts/persist_decisions.py` (Step 13)
@@ -252,11 +323,11 @@ If after 3+ iterations:
 
 ### Layered Defense Against Gaming
 The factory's quality defense is layered — no single gate is sufficient:
-1. **Gate 0 tool agents** (agent team, parallel) — deterministic checks via vulture, radon, bandit, ruff, and `check_test_quality.py`. Catches dead code, complexity, security issues, lint violations, and obvious vacuous test patterns. Fast, cheap, runs in seconds. Risk: regex/AST-level analysis can be fooled by sophisticated gaming.
-2. **Gate 0 adversarial reviewer** (agent team, parallel with tool agents) — LLM-based judgment catches subtle gaming, architectural dishonesty, spec violations, and patterns the static tools miss. Reads the full diff against code quality standards and specs.
+1. **Gate 0 tier 1** (deterministic, `run_gate0.py`) — all 5 tool checks in parallel (ruff, radon, vulture, bandit, test-quality). Catches dead code, complexity, security issues, lint violations, and obvious vacuous test patterns. Fast, cheap, runs in seconds. Risk: AST/regex-level analysis can be fooled by sophisticated gaming.
+2. **Gate 0 tier 2** (LLM agent team, parallel) — 4 specialized agents review through the same paradigms at semantic depth. The code-health, security, and test-integrity reviewers build on tier 1 output. The adversarial reviewer reads the full diff holistically against specs and quality standards. Catches what tools miss: semantic dead code, auth bypasses, tests that prove nothing, gaming, architectural dishonesty.
 3. **Gate 3 holdout scenarios** — behavioral evaluation against criteria the attractor never sees (ground truth). If the code actually works, gaming doesn't matter.
 
-The tool agents and semantic reviewer run in parallel at Gate 0 as an agent team. Any CRITICAL finding from any agent stops the pipeline before merge. No single layer is sufficient. Tool agents catch the cheap stuff fast, the adversarial reviewer catches the clever stuff, and holdout scenarios verify actual behavior.
+Tier 1 and tier 2 run at Gate 0 before merge. Any CRITICAL finding from either tier stops the pipeline. No single layer is sufficient — tools catch the cheap stuff fast, LLM agents catch the clever stuff, and holdout scenarios verify actual behavior.
 
 ### Iteration → Commit Model
 Each factory iteration produces ONE commit from Codex (via merge). This provides a clean diff for adversarial review and clear rollback boundaries. The commit message must include the iteration number for traceability.

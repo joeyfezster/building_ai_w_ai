@@ -40,7 +40,7 @@ The following files are **never touched by the Attractor (Codex)**. They are fac
 - `/scripts/restore_holdout.py` — holdout restoration script
 - `/scripts/nfr_checks.py` — Gate 2 NFR checker
 - `/scripts/check_test_quality.py` — Gate 0 test quality scanner
-- `/.github/codex/prompts/adversarial_review.md` — Gate 0 adversarial review checklist
+- `/.claude/skills/factory-orchestrate/review-prompts/` — Gate 0 review agent paradigm docs
 - `/docs/code_quality_standards.md` — universal quality standards
 - `/docs/decisions/` — cumulative decision log (Codex reads but never modifies)
 - `/scripts/persist_decisions.py` — decision persistence script
@@ -55,6 +55,21 @@ All code written in this repository — by Codex, Claude Code, or humans — mus
 - Test hygiene and quality gates
 
 These standards are enforced by Gate 0 (adversarial review), Gate 1 (lint/typecheck/test), Gate 2 (NFR checks), and the LLM-as-judge.
+
+## Factory Orchestration Rules (Non-Negotiable)
+
+When running `/factory-orchestrate`, these rules are hard constraints — not suggestions:
+
+1. **Gate 0 MUST use agent teams.** Use `TeamCreate` to spawn all 6 Gate 0 agents (5 tool agents + 1 adversarial reviewer) in parallel via the `Task` tool. Running tool checks as bare `Bash` calls or skipping the adversarial reviewer is a protocol violation. Every iteration gets a full team review — no exceptions, no "the diff is small enough to eyeball."
+2. **Gate 0 failure: keep Codex's code.** Merge onto the factory branch so iteration N+1 is incremental. NEVER revert.
+3. **Delete Codex's remote branch immediately after merge.** Every merge, pass or fail. Stale branches pollute the namespace.
+4. **Convergence requires ALL scenarios passing.** A single failing scenario blocks convergence — no exceptions, no percentage thresholds. The factory owns its output quality end-to-end. Never excuse a failure by attributing it to a previous iteration or the base branch. If a scenario fails, fix it and re-run, regardless of cause.
+
+## Fix-Forward Principle
+
+When a process mistake happens — a skipped step, a wrong routing decision, a protocol violation — the fix is never just correcting the immediate error. The fix must update the durable instructions (skill files, CLAUDE.md, memory, docs) so that the next session, agent, or context window doesn't repeat it. A verbal "I'll remember" is worthless — context compacts, sessions end, agents rotate. Only written-down fixes persist.
+
+This applies to every actor: orchestrator, attractor feedback, review pack generation, agent teams. If you make a mistake, ask: "what file do I change so this can't happen again?"
 
 ## Quick Commands
 

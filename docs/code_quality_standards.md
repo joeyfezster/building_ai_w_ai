@@ -2,7 +2,7 @@
 
 Universal standards for all code written in this repository — whether by Codex (attractor), Claude Code (orchestrator), or humans. These are not guidelines; they are gates.
 
-This file is the canonical source for quality rules. Referenced by `factory_fix.md`, `adversarial_review.md`, and `factory-orchestrate/SKILL.md`. Enforcement mechanism (which gates run what): see `factory-orchestrate/SKILL.md`.
+This file is the canonical source for quality rules. Referenced by `factory_fix.md`, Gate 0 review agent prompts (`.claude/skills/factory-orchestrate/review-prompts/`), and `factory-orchestrate/SKILL.md`. Enforcement mechanism (which gates run what): see `factory-orchestrate/SKILL.md`.
 
 ## Anti-Vacuous Test Rules
 
