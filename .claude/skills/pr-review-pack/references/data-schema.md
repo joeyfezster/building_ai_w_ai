@@ -103,7 +103,7 @@ interface Specification {
 interface Scenario {
   name: string;                     // "Environment Initialization"
   category: ScenarioCategory;
-  status: "passing" | "failing" | "advisory";
+  status: "pass" | "passing" | "fail" | "failing" | "advisory";  // renderer accepts both short and long forms
   zone: string;                     // space-separated zone IDs for filtering
   detail: ScenarioDetail;
 }

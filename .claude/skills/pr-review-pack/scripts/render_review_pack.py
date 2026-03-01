@@ -63,7 +63,9 @@ CATEGORY_CLASS = {
 
 STATUS_STYLE = {
     "passing": ("var(--green)", "&#x2713;", "Passing"),
+    "pass": ("var(--green)", "&#x2713;", "Pass"),
     "failing": ("var(--red)", "&#x2717;", "Failing"),
+    "fail": ("var(--red)", "&#x2717;", "Fail"),
     "advisory": ("var(--yellow)", "&#x26A0;", "Advisory"),
 }
 
