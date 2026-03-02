@@ -15,7 +15,10 @@ def _load_eval_metrics(run_dir: Path) -> list[dict]:
     if not eval_dir.is_dir():
         return []
     metrics = []
-    for f in sorted(eval_dir.glob("metrics_step_*.json")):
+    for f in sorted(
+        eval_dir.glob("metrics_step_*.json"),
+        key=lambda p: int(p.stem.replace("metrics_step_", "")),
+    ):
         step_str = f.stem.replace("metrics_step_", "")
         data = json.loads(f.read_text(encoding="utf-8"))
         data["step"] = int(step_str)

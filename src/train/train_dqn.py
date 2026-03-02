@@ -226,6 +226,15 @@ def train(config: dict, device: torch.device | None = None) -> str:
             if eval_at_this_step and last_ckpt_path is not None:
                 print(f"  \u21b3 Checkpoint saved: {last_ckpt_path}")
 
+    # Final progress sample (ensures short runs have at least one entry)
+    if total_steps % log_every != 0:
+        elapsed = time.monotonic() - start_time
+        speed = total_steps / elapsed if elapsed > 0 else 0.0
+        logger.log_metrics(
+            total_steps,
+            {"progress/speed_steps_per_s": speed, "progress/elapsed_s": elapsed},
+        )
+
     logger.close()
 
     # Training completion summary
