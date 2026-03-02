@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -11,6 +13,7 @@ import numpy as np
 import torch
 
 from src.envs.minipong import MiniPongConfig, MiniPongEnv
+from src.envs.wrappers import wrap_env
 from src.rl.networks import create_q_network
 
 Side = Literal["left", "right"]
@@ -107,14 +110,17 @@ def _pressed_key_names(pygame: Any) -> set[str]:
     return pressed
 
 
-def run_game(debug: bool, checkpoint: str, left_agent: bool, right_agent: bool) -> None:
+def run_game(
+    debug: bool, checkpoint: str, left_agent: bool, right_agent: bool, frame_stack: int = 4
+) -> None:
     import pygame
 
     scale = 6
     header_height = 80
     fps = 30
 
-    env = MiniPongEnv(render_mode="rgb_array", config=MiniPongConfig(score_limit=11))
+    raw_env = MiniPongEnv(render_mode="rgb_array", config=MiniPongConfig(score_limit=11))
+    env = wrap_env(raw_env, frame_stack=frame_stack) if checkpoint else raw_env
     obs, info = env.reset(seed=0)
 
     controller = GameController(
@@ -126,7 +132,7 @@ def run_game(debug: bool, checkpoint: str, left_agent: bool, right_agent: bool) 
     policy = AgentPolicy(obs.shape, checkpoint)
 
     pygame.init()
-    window_size = (env.config.width * scale, env.config.height * scale + header_height)
+    window_size = (raw_env.config.width * scale, raw_env.config.height * scale + header_height)
     screen = pygame.display.set_mode(window_size)
     pygame.display.set_caption("MiniPong")
     clock = pygame.time.Clock()
@@ -158,16 +164,16 @@ def run_game(debug: bool, checkpoint: str, left_agent: bool, right_agent: bool) 
         if controller.get_controller("right") == "agent":
             right_action = int(policy.act(prepare_agent_obs(obs, "right")))
 
-        env.set_opponent_action(right_action)
+        raw_env.set_opponent_action(right_action)
         obs, _, terminated, truncated, info = env.step(left_action)
         if terminated or truncated:
             controller.restart()
             obs, info = env.reset(seed=0)
 
-        frame = env.render()
+        frame = raw_env.render()
         surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
         surface = pygame.transform.scale(
-            surface, (env.config.width * scale, env.config.height * scale)
+            surface, (raw_env.config.width * scale, raw_env.config.height * scale)
         )
 
         screen.fill((0, 0, 0))
@@ -188,17 +194,40 @@ def run_game(debug: bool, checkpoint: str, left_agent: bool, right_agent: bool) 
     pygame.quit()
 
 
+def _resolve_run_id(run_id: str) -> str:
+    """Resolve a run ID to the latest checkpoint path."""
+    checkpoint_dir = Path("artifacts") / run_id / "checkpoints"
+    if not checkpoint_dir.is_dir():
+        print(f"Error: run directory not found: {checkpoint_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    checkpoints = sorted(
+        checkpoint_dir.glob("step_*.pt"),
+        key=lambda p: int(m.group(1)) if (m := re.search(r"step_(\d+)", p.stem)) else -1,
+    )
+    if not checkpoints:
+        print(f"Error: no checkpoints found in {checkpoint_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    return str(checkpoints[-1])
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Play MiniPong interactively")
     parser.add_argument("--checkpoint", default="", help="Path to trained checkpoint (.pt)")
+    parser.add_argument("--run-id", default="", help="Run ID to load latest checkpoint from")
     parser.add_argument("--debug", action="store_true", help="Show policy names in status tags")
     parser.add_argument("--left-agent", action="store_true", help="Start with left side on agent")
     parser.add_argument("--right-agent", action="store_true", help="Start with right side on agent")
     args = parser.parse_args()
 
+    checkpoint: str = args.checkpoint
+    if not checkpoint and args.run_id:
+        checkpoint = _resolve_run_id(args.run_id)
+
     run_game(
         debug=args.debug,
-        checkpoint=args.checkpoint,
+        checkpoint=checkpoint,
         left_agent=args.left_agent,
         right_agent=args.right_agent,
     )

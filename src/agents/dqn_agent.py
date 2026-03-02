@@ -27,11 +27,15 @@ class DQNAgent:
         num_actions: int,
         replay: ReplayBuffer,
         config: DQNConfig,
+        device: torch.device | None = None,
     ) -> None:
         self.num_actions = num_actions
         self.replay = replay
         self.config = config
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if device is not None:
+            self.device = device
+        else:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.online = create_q_network(obs_shape, num_actions).to(self.device)
         self.target = create_q_network(obs_shape, num_actions).to(self.device)
         self.target.load_state_dict(self.online.state_dict())

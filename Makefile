@@ -1,4 +1,4 @@
-.PHONY: deps install-hooks lint typecheck test docker-build docker-smoke whitepapers-acquire whitepapers-verify env-smoke train-smoke eval-smoke verify-learning dashboard play play-debug play-agent-vs-agent validate run-scenarios compile-feedback nfr-check factory-local factory-status persist-decisions
+.PHONY: deps install-hooks lint typecheck test docker-build docker-smoke whitepapers-acquire whitepapers-verify env-smoke train-smoke eval-smoke verify-learning dashboard play play-debug play-agent-vs-agent validate run-scenarios compile-feedback nfr-check factory-local factory-status persist-decisions train-full train-full-cpu train-full-mps play-trained verify-learning-strict train-1m train-1m-mps train-1m-cpu plot-training
 
 deps:
 	pip-compile requirements.in
@@ -48,6 +48,36 @@ eval-smoke:
 
 verify-learning:
 	python -m src.train.verify_learning --run-id smoke_run --min-return-gain -0.1 --min-hits-gain -0.1
+
+# ── Full Training ───────────────────────────────────────
+train-full:          ## Full 100k-step training (auto device)
+	python -m src.train.train_dqn --config configs/dqn_minipong_full.yaml --run-id full_train
+
+train-full-cpu:      ## Full training, force CPU
+	python -m src.train.train_dqn --config configs/dqn_minipong_full.yaml --run-id full_train_cpu --device cpu
+
+train-full-mps:      ## Full training, force Apple GPU
+	python -m src.train.train_dqn --config configs/dqn_minipong_full.yaml --run-id full_train_mps --device mps
+
+play-trained:        ## Play against the latest full-train agent
+	python -m src.play.play_minipong --run-id full_train --debug
+
+verify-learning-strict:  ## Verify learning with real thresholds
+	python -m src.train.verify_learning --run-id full_train --min-return-gain 0.05 --min-hits-gain 2.0
+
+# ── 1M Training ────────────────────────────────────────
+train-1m:               ## 1M-step training (auto device)
+	python -m src.train.train_dqn --config configs/dqn_minipong_1m.yaml --run-id train_1m
+
+train-1m-mps:           ## 1M-step training, force Apple GPU
+	python -m src.train.train_dqn --config configs/dqn_minipong_1m.yaml --run-id train_1m_mps --device mps
+
+train-1m-cpu:           ## 1M-step training, force CPU
+	python -m src.train.train_dqn --config configs/dqn_minipong_1m.yaml --run-id train_1m_cpu --device cpu
+
+# ── Charts ─────────────────────────────────────────────
+plot-training:          ## Generate training charts from run data
+	python -m src.train.plot_training --output artifacts/charts/
 
 # ── Dashboard ────────────────────────────────────────────
 dashboard:

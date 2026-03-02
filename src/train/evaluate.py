@@ -25,6 +25,8 @@ def evaluate_policy(
 ) -> dict[str, Any]:
     all_returns: list[float] = []
     all_hits: list[float] = []
+    all_misses: list[float] = []
+    all_rally_lengths: list[float] = []
     for seed in seeds:
         env = wrap_env(MiniPongEnv(), frame_stack=frame_stack)
         obs, _ = env.reset(seed=seed)
@@ -48,10 +50,18 @@ def evaluate_policy(
                 steps += 1
             all_returns.append(ep_ret)
             all_hits.append(float(info.get("hits", 0)))
+            all_misses.append(float(info.get("misses", 0)))
+            all_rally_lengths.append(float(info.get("rally_length", 0)))
+    total_hits = float(np.sum(all_hits)) if all_hits else 0.0
+    total_misses = float(np.sum(all_misses)) if all_misses else 0.0
+    hit_ratio = total_hits / (total_hits + total_misses) if (total_hits + total_misses) > 0 else 0.0
     return {
         "mean_return": float(np.mean(all_returns)) if all_returns else 0.0,
         "std_return": float(np.std(all_returns)) if all_returns else 0.0,
         "mean_hits": float(np.mean(all_hits)) if all_hits else 0.0,
+        "mean_misses": float(np.mean(all_misses)) if all_misses else 0.0,
+        "mean_rally_length": float(np.mean(all_rally_lengths)) if all_rally_lengths else 0.0,
+        "hit_ratio": hit_ratio,
         "episodes": len(all_returns),
         "seeds": seeds,
     }

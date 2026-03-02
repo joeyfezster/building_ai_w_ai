@@ -1,0 +1,17 @@
+run_id: full_train
+seed: 42
+frame_stack: 4
+total_steps: 100000
+max_episode_steps: 800
+replay_capacity: 50000
+replay_warmup_steps: 1000
+batch_size: 32
+gamma: 0.99
+lr: 0.001
+epsilon_start: 1.0
+epsilon_end: 0.05
+epsilon_decay_steps: 80000
+target_update_period: 500
+eval_every_steps: 10000
+eval_episodes: 10
+eval_seeds: [11, 22, 33, 44, 55]
