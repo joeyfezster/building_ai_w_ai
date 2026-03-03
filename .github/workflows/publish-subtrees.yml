@@ -1,0 +1,88 @@
+name: Publish Subtrees
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/**"
+
+jobs:
+  publish-pr-review-pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve review-prompts symlink and commit
+        run: |
+          # Replace the symlink with real files so the standalone repo is self-contained
+          # subtree split operates on committed history, so we must commit the resolved files
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          rm packages/pr-review-pack/review-prompts
+          cp -r packages/review-prompts/ packages/pr-review-pack/review-prompts/
+          git add packages/pr-review-pack/review-prompts/
+          git commit -m "temp: resolve review-prompts symlink for subtree split"
+
+      - name: Split subtree
+        run: git subtree split --prefix packages/pr-review-pack -b subtree-pr-review-pack
+
+      - name: Configure SSH deploy key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          echo "${{ secrets.PR_REVIEW_PACK_DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      - name: Push to standalone repo
+        env:
+          GIT_SSH_COMMAND: "ssh -i ~/.ssh/deploy_key"
+        run: |
+          git remote add pr-review-pack git@github.com:joeyfezster/pr-review-pack.git || true
+          git push pr-review-pack subtree-pr-review-pack:main --force-with-lease
+
+      - name: Clean up
+        if: always()
+        run: |
+          rm -f ~/.ssh/deploy_key
+          git branch -D subtree-pr-review-pack || true
+
+  publish-dark-factory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve review-prompts symlink and commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          rm packages/dark-factory/review-prompts
+          cp -r packages/review-prompts/ packages/dark-factory/review-prompts/
+          git add packages/dark-factory/review-prompts/
+          git commit -m "temp: resolve review-prompts symlink for subtree split"
+
+      - name: Split subtree
+        run: git subtree split --prefix packages/dark-factory -b subtree-dark-factory
+
+      - name: Configure SSH deploy key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          echo "${{ secrets.DARK_FACTORY_DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      - name: Push to standalone repo
+        env:
+          GIT_SSH_COMMAND: "ssh -i ~/.ssh/deploy_key"
+        run: |
+          git remote add dark-factory git@github.com:joeyfezster/dark-factory.git || true
+          git push dark-factory subtree-dark-factory:main --force-with-lease
+
+      - name: Clean up
+        if: always()
+        run: |
+          rm -f ~/.ssh/deploy_key
+          git branch -D subtree-dark-factory || true
