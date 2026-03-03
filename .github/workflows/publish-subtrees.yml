@@ -40,6 +40,7 @@ jobs:
           GIT_SSH_COMMAND: "ssh -i ~/.ssh/deploy_key"
         run: |
           git remote add pr-review-pack git@github.com:joeyfezster/pr-review-pack.git || true
+          git fetch pr-review-pack main || true
           git push pr-review-pack subtree-pr-review-pack:main --force-with-lease
 
       - name: Clean up
@@ -79,6 +80,7 @@ jobs:
           GIT_SSH_COMMAND: "ssh -i ~/.ssh/deploy_key"
         run: |
           git remote add dark-factory git@github.com:joeyfezster/dark-factory.git || true
+          git fetch dark-factory main || true
           git push dark-factory subtree-dark-factory:main --force-with-lease
 
       - name: Clean up
