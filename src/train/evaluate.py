@@ -22,6 +22,7 @@ def evaluate_policy(
     seeds: list[int],
     frame_stack: int,
     max_steps: int,
+    flip_augment: bool = False,
 ) -> dict[str, Any]:
     all_returns: list[float] = []
     all_hits: list[float] = []
@@ -31,7 +32,10 @@ def evaluate_policy(
         env = wrap_env(MiniPongEnv(), frame_stack=frame_stack)
         obs, _ = env.reset(seed=seed)
         replay = ReplayBuffer(capacity=10)
-        agent = DQNAgent(obs.shape, env.action_space.n, replay, DQNConfig())
+        agent = DQNAgent(
+            obs.shape, env.action_space.n, replay,
+            DQNConfig(flip_augment=flip_augment),
+        )
         if checkpoint is not None:
             data = torch.load(checkpoint, map_location=agent.device)
             agent.online.load_state_dict(data["model"])

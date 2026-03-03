@@ -1,0 +1,19 @@
+run_id: symmetric_1m_mps
+seed: 42
+frame_stack: 4
+total_steps: 1000000
+max_episode_steps: 800
+replay_capacity: 100000
+replay_warmup_steps: 5000
+batch_size: 32
+gamma: 0.99
+lr: 0.0005
+epsilon_start: 1.0
+epsilon_end: 0.02
+epsilon_decay_steps: 500000
+target_update_period: 1000
+eval_every_steps: 100000
+eval_episodes: 5
+eval_seeds: [11, 22, 33]
+log_every_steps: 10000
+flip_augment: true
