@@ -100,18 +100,18 @@ validate: lint typecheck test docker-build docker-smoke env-smoke whitepapers-ve
 # ── Dark Factory ─────────────────────────────────────────
 # [factory:holdout-stripped] — stripped by strip_holdout.py
 # run-scenarios: ## Run holdout scenario evaluation
-# 	python scripts/run_scenarios.py
+# 	python packages/dark-factory/scripts/run_scenarios.py
 # end [factory:holdout-stripped]
 
 # [factory:holdout-stripped] — stripped by strip_holdout.py
 # compile-feedback: ## Compile validation results into feedback markdown
-# 	python scripts/compile_feedback.py
+# 	python packages/dark-factory/scripts/compile_feedback.py
 # end [factory:holdout-stripped]
 
 nfr-check: ## Run Gate 2 NFR checks (non-blocking quality analysis)
 	@mkdir -p artifacts/factory
-	python scripts/nfr_checks.py --output artifacts/factory/nfr_results.json
-	python scripts/nfr_checks.py
+	python packages/dark-factory/scripts/nfr_checks.py --output artifacts/factory/nfr_results.json
+	python packages/dark-factory/scripts/nfr_checks.py
 
 factory-local: ## Run one factory iteration locally (Gate 1 → Gate 2 → Gate 3 → feedback)
 	@mkdir -p artifacts/factory
@@ -131,17 +131,17 @@ factory-local: ## Run one factory iteration locally (Gate 1 → Gate 2 → Gate 
 		make nfr-check 2>&1 | tee -a artifacts/factory/ci_output.log || true; \
 		echo ""; \
 		echo "=== Gate 3: Behavioral scenarios ==="; \
-		python scripts/run_scenarios.py --timeout 180 || true; \
+		python packages/dark-factory/scripts/run_scenarios.py --timeout 180 || true; \
 	fi
 	@echo ""
 	@echo "=== Compiling feedback ==="
-	@python scripts/compile_feedback.py
+	@python packages/dark-factory/scripts/compile_feedback.py
 	@echo ""
 	@echo "=== Factory iteration complete ==="
 	@make factory-status
 
 persist-decisions: ## Persist PR decisions to cumulative log (usage: make persist-decisions PR=6)
-	python scripts/persist_decisions.py --pr $(PR)
+	python packages/dark-factory/scripts/persist_decisions.py --pr $(PR)
 
 factory-status: ## Show current iteration count and satisfaction score
 	@echo "--- Factory Status ---"

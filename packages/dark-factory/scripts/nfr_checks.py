@@ -11,9 +11,9 @@ Adding a new NFR check:
     3. The factory loop will pick it up automatically
 
 Usage:
-    python scripts/nfr_checks.py                    # run all checks
-    python scripts/nfr_checks.py --check complexity  # run one check
-    python scripts/nfr_checks.py --json              # JSON output for automation
+    python packages/dark-factory/scripts/nfr_checks.py
+    python packages/dark-factory/scripts/nfr_checks.py --check complexity
+    python packages/dark-factory/scripts/nfr_checks.py --json
 """
 
 from __future__ import annotations
@@ -24,6 +24,18 @@ import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+
+def _get_repo_root() -> Path:
+    """Walk up from this file to find the git repo root."""
+    current = Path(__file__).resolve().parent
+    for parent in [current, *current.parents]:
+        if (parent / ".git").is_dir():
+            return parent
+    raise RuntimeError("Repo root not found -- no .git directory in any parent")
+
+
+REPO_ROOT = _get_repo_root()
 
 
 @dataclass
@@ -407,7 +419,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = REPO_ROOT
     results = run_checks(repo_root, selected=args.check)
 
     if args.json or args.output:

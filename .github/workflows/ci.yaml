@@ -38,13 +38,13 @@ jobs:
       - name: Lint factory scripts
         run: |
           pip install ruff
-          ruff check scripts/run_scenarios.py scripts/compile_feedback.py
+          ruff check packages/dark-factory/scripts/run_scenarios.py packages/dark-factory/scripts/compile_feedback.py
 
       # Type-check factory scripts
       - name: Type-check factory scripts
         run: |
           pip install mypy
-          mypy scripts/run_scenarios.py scripts/compile_feedback.py --ignore-missing-imports
+          mypy packages/dark-factory/scripts/run_scenarios.py packages/dark-factory/scripts/compile_feedback.py --ignore-missing-imports
 
       # Run factory component tests
       - name: Test scenario runner
@@ -97,7 +97,7 @@ jobs:
           protected_dirs = ['scenarios', 'scripts', 'agents', 'specs']
           protected_files = [
               '.github/workflows/factory.yaml',
-              '.github/codex/prompts/factory_fix.md',
+              'packages/dark-factory/prompts/factory_fix.md',
               'CLAUDE.md',
           ]
 
@@ -127,4 +127,4 @@ jobs:
 
       # Anti-gaming test quality check
       - name: Check test quality (anti-vacuous, anti-gaming)
-        run: python scripts/check_test_quality.py
+        run: python packages/dark-factory/scripts/check_test_quality.py

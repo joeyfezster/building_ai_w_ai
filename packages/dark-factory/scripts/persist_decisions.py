@@ -5,9 +5,9 @@ Extracts decisions from ReviewPackData JSON (or from rendered HTML as fallback)
 and appends them to docs/decisions/decision_log.json.
 
 Usage:
-    python scripts/persist_decisions.py --pr 6                           # persist from HTML
-    python scripts/persist_decisions.py --pr 6 --data /tmp/pr6_data.json # persist from JSON
-    python scripts/persist_decisions.py --pr 6 --dry-run                 # preview only
+    python packages/dark-factory/scripts/persist_decisions.py --pr 6
+    python packages/dark-factory/scripts/persist_decisions.py --pr 6 --data /tmp/pr6_data.json
+    python packages/dark-factory/scripts/persist_decisions.py --pr 6 --dry-run
 """
 
 from __future__ import annotations
@@ -19,7 +19,17 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+
+def _get_repo_root() -> Path:
+    """Walk up from this file to find the git repo root."""
+    current = Path(__file__).resolve().parent
+    for parent in [current, *current.parents]:
+        if (parent / ".git").is_dir():
+            return parent
+    raise RuntimeError("Repo root not found -- no .git directory in any parent")
+
+
+REPO_ROOT = _get_repo_root()
 DEFAULT_LOG = REPO_ROOT / "docs" / "decisions" / "decision_log.json"
 REPO_SLUG = "joeyfezster/building_ai_w_ai"
 
@@ -182,14 +192,21 @@ def main() -> int:
             return 1
         decisions, header = extract_decisions_from_json(data_path)
     else:
-        # Fall back to rendered HTML
-        html_path = REPO_ROOT / "docs" / f"pr{args.pr}_review_pack.html"
-        if not html_path.exists():
-            print(f"ERROR: No data file provided and no HTML found at {html_path}")
-            print(f"  Provide --data /path/to/pr{args.pr}_review_pack_data.json")
-            return 1
-        print(f"No --data provided, extracting from HTML: {html_path}")
-        decisions, header = extract_decisions_from_html(html_path)
+        auto_json_path = Path(f"/tmp/pr{args.pr}_review_pack_data.json")
+        if auto_json_path.exists():
+            print(f"No --data provided, auto-detected JSON: {auto_json_path}")
+            decisions, header = extract_decisions_from_json(auto_json_path)
+        else:
+            html_path = REPO_ROOT / "docs" / f"pr{args.pr}_review_pack.html"
+            if not html_path.exists():
+                print(
+                    "ERROR: No data file provided and defaults not found: "
+                    f"{auto_json_path} or {html_path}"
+                )
+                print(f"  Provide --data /path/to/pr{args.pr}_review_pack_data.json")
+                return 1
+            print(f"No --data provided, extracting from HTML fallback: {html_path}")
+            decisions, header = extract_decisions_from_html(html_path)
 
     if not decisions:
         print(f"No decisions found for PR #{args.pr}. Nothing to persist.")
