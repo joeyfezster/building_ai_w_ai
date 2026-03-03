@@ -39,13 +39,13 @@ jobs:
       - name: Lint factory scripts
         run: |
           pip install ruff
-          ruff check packages/dark-factory/scripts/run_scenarios.py packages/dark-factory/scripts/compile_feedback.py
+          ruff check ./packages/dark-factory/scripts/run_scenarios.py ./packages/dark-factory/scripts/compile_feedback.py
 
       # Type-check factory scripts
       - name: Type-check factory scripts
         run: |
           pip install mypy
-          mypy packages/dark-factory/scripts/run_scenarios.py packages/dark-factory/scripts/compile_feedback.py --ignore-missing-imports
+          mypy ./packages/dark-factory/scripts/run_scenarios.py ./packages/dark-factory/scripts/compile_feedback.py --ignore-missing-imports
 
       # Run factory component tests
       - name: Test scenario runner

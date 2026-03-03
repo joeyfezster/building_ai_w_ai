@@ -30,20 +30,14 @@ The loop: **Seed → Agent → Validate → Feedback → Repeat until satisfied.
 The following files are **never touched by the Attractor (Codex)**. They are factory infrastructure, not product code. The Codex-facing version of this list lives in `packages/dark-factory/prompts/factory_fix.md` — keep both in sync when adding protected files.
 
 - `/scenarios/` — holdout evaluation criteria
-- `/packages/dark-factory/scripts/run_scenarios.py` — scenario evaluation runner
-- `/packages/dark-factory/scripts/compile_feedback.py` — feedback compiler
-- `/.github/workflows/factory.yaml` — factory orchestrator
+- `/packages/dark-factory/scripts/` — all factory scripts (scenario runner, feedback compiler, holdout strip/restore, Gate 0 runner, NFR checker, test quality scanner, decision persistence)
+- `/.github/workflows/factory.yaml` — factory CI workflow (symlink to packages/dark-factory)
 - `/packages/dark-factory/prompts/factory_fix.md` — Codex prompt template
 - `/specs/` — component specifications (read-only for Codex)
 - `/agents/` — pre-factory agent definitions (reference only)
-- `/packages/dark-factory/scripts/strip_holdout.py` — holdout stripping script (isolation gate)
-- `/packages/dark-factory/scripts/restore_holdout.py` — holdout restoration script
-- `/packages/dark-factory/scripts/nfr_checks.py` — Gate 2 NFR checker
-- `/packages/dark-factory/scripts/check_test_quality.py` — Gate 0 test quality scanner
 - `/packages/review-prompts/` — Gate 0 review agent paradigm docs
 - `/packages/dark-factory/docs/code_quality_standards.md` — universal quality standards
 - `/docs/decisions/` — cumulative decision log (Codex reads but never modifies)
-- `/packages/dark-factory/scripts/persist_decisions.py` — decision persistence script
 - `/CLAUDE.md` — this file
 
 ## Code Quality Standards
