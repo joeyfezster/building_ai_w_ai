@@ -33,7 +33,7 @@ def load_postmerge_items(filepath: Path | None, pr_number: int) -> list[dict]:
                 "priority": "low|medium|high",
                 "zones": ["factory-orchestration", "holdout-isolation"],
                 "body": "Detailed description of what needs to happen",
-                "code_refs": ["packages/dark-factory/scripts/nfr_checks.py:187"]
+                "code_refs": ["src/example_module.py:42"]
             }
         ]
     }
