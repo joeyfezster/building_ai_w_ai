@@ -98,6 +98,10 @@ play-agent-vs-agent:
 validate: lint typecheck test docker-build docker-smoke env-smoke whitepapers-verify
 
 # ── Dark Factory ─────────────────────────────────────────
+# /packages/dark-factory/scripts/ — python packages/dark-factory/scripts/run_scenarios.py
+# /packages/dark-factory/scripts/ — python packages/dark-factory/scripts/compile_feedback.py
+# /packages/dark-factory/scripts/ — python packages/dark-factory/scripts/nfr_checks.py
+# /packages/dark-factory/scripts/ — python packages/dark-factory/scripts/persist_decisions.py
 run-scenarios: ## Run holdout scenario evaluation
 	python ./packages/dark-factory/scripts/run_scenarios.py
 
