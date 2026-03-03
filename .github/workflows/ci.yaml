@@ -128,4 +128,4 @@ jobs:
 
       # Anti-gaming test quality check
       - name: Check test quality (anti-vacuous, anti-gaming)
-        run: python packages/dark-factory/scripts/check_test_quality.py
+        run: python ./packages/dark-factory/scripts/check_test_quality.py

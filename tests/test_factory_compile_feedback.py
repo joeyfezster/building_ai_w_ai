@@ -1,6 +1,6 @@
 """Tests for the factory's own feedback compiler.
 
-Target: packages/dark-factory/scripts/compile_feedback.py
+Target: ./packages/dark-factory/scripts/compile_feedback.py
 Every test exercises real code paths — no mocking of compile_feedback internals.
 """
 

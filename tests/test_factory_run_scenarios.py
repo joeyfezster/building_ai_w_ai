@@ -1,4 +1,4 @@
-"""Tests for the factory's own scenario runner (packages/dark-factory/scripts/run_scenarios.py).
+"""Tests for the factory's own scenario runner (./packages/dark-factory/scripts/run_scenarios.py).
 
 These test the factory's infrastructure, not the product code.
 Every test exercises real code paths — no mocking of run_scenarios internals.

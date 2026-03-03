@@ -6,8 +6,8 @@ How we validate the factory's own components and their integration.
 
 | Component | Type | Location | Validated By |
 |-----------|------|----------|-------------|
-| Scenario runner | Script | `packages/dark-factory/scripts/run_scenarios.py` | `tests/test_factory_run_scenarios.py` + lint + typecheck |
-| Feedback compiler | Script | `packages/dark-factory/scripts/compile_feedback.py` | `tests/test_factory_compile_feedback.py` + lint + typecheck |
+| Scenario runner | Script | `./packages/dark-factory/scripts/run_scenarios.py` | `tests/test_factory_run_scenarios.py` + lint + typecheck |
+| Feedback compiler | Script | `./packages/dark-factory/scripts/compile_feedback.py` | `tests/test_factory_compile_feedback.py` + lint + typecheck |
 | Factory orchestrator | Workflow | `.github/workflows/factory.yaml` | CI dry-run + manual trigger |
 | Attractor prompt | Markdown | `packages/dark-factory/prompts/factory_fix.md` | Human review + adversarial review |
 | Adversarial review | Markdown | `packages/review-prompts/adversarial_review.md` | Human review |
@@ -76,8 +76,8 @@ How we validate the factory's own components and their integration.
 
 ```bash
 # Full factory self-test
-ruff check packages/dark-factory/scripts/run_scenarios.py packages/dark-factory/scripts/compile_feedback.py
-mypy packages/dark-factory/scripts/run_scenarios.py packages/dark-factory/scripts/compile_feedback.py --ignore-missing-imports
+ruff check ./packages/dark-factory/scripts/run_scenarios.py ./packages/dark-factory/scripts/compile_feedback.py
+mypy ./packages/dark-factory/scripts/run_scenarios.py ./packages/dark-factory/scripts/compile_feedback.py --ignore-missing-imports
 pytest tests/test_factory_run_scenarios.py tests/test_factory_compile_feedback.py -v
 
 # Integration test (no Codex)
