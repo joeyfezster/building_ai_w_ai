@@ -13,9 +13,9 @@ Checks:
     5. test_quality  — AST-based vacuous test / gaming detection
 
 Usage:
-    python scripts/run_gate0.py                    # run all, human output
-    python scripts/run_gate0.py --json             # JSON to stdout
-    python scripts/run_gate0.py --output path.json # write to file
+    python packages/dark-factory/scripts/run_gate0.py
+    python packages/dark-factory/scripts/run_gate0.py --json
+    python packages/dark-factory/scripts/run_gate0.py --output path.json
 
 Exit codes:
     0 — no CRITICAL findings
@@ -30,37 +30,72 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+
+def _get_repo_root() -> Path:
+    """Walk up from this file to find the git repo root."""
+    current = Path(__file__).resolve().parent
+    for parent in [current, *current.parents]:
+        if (parent / ".git").is_dir():
+            return parent
+    raise RuntimeError("Repo root not found -- no .git directory in any parent")
+
+
+REPO_ROOT = _get_repo_root()
 DEFAULT_OUTPUT = REPO_ROOT / "artifacts" / "factory" / "gate0_results.json"
+SCRIPT_DIR = Path(__file__).resolve().parent
 
 # Each check: (name, command, description)
 CHECKS: list[tuple[str, list[str], str]] = [
     (
         "code_quality",
-        [sys.executable, "scripts/nfr_checks.py", "--check", "code_quality", "--json"],
+        [
+            sys.executable,
+            str(SCRIPT_DIR / "nfr_checks.py"),
+            "--check",
+            "code_quality",
+            "--json",
+        ],
         "Extended ruff rules (complexity, security, simplification)",
     ),
     (
         "complexity",
-        [sys.executable, "scripts/nfr_checks.py", "--check", "complexity", "--json"],
+        [
+            sys.executable,
+            str(SCRIPT_DIR / "nfr_checks.py"),
+            "--check",
+            "complexity",
+            "--json",
+        ],
         "Radon cyclomatic complexity (grade C+ flagged)",
     ),
     (
         "dead_code",
-        [sys.executable, "scripts/nfr_checks.py", "--check", "dead_code", "--json"],
+        [
+            sys.executable,
+            str(SCRIPT_DIR / "nfr_checks.py"),
+            "--check",
+            "dead_code",
+            "--json",
+        ],
         "Vulture unused code detection (80%+ confidence)",
     ),
     (
         "security",
-        [sys.executable, "scripts/nfr_checks.py", "--check", "security", "--json"],
+        [
+            sys.executable,
+            str(SCRIPT_DIR / "nfr_checks.py"),
+            "--check",
+            "security",
+            "--json",
+        ],
         "Bandit security vulnerability patterns",
     ),
     (
         "test_quality",
-        [sys.executable, "scripts/check_test_quality.py", "--json"],
+        [sys.executable, str(SCRIPT_DIR / "check_test_quality.py"), "--json"],
         "AST-based vacuous test and gaming pattern detection",
     ),
 ]
@@ -197,7 +232,7 @@ def run_all() -> dict:
     )
 
     return {
-        "timestamp": datetime.now(UTC).isoformat(),
+        "timestamp": datetime.now().astimezone().isoformat(),
         "tier": "deterministic",
         "total_elapsed_s": round(total_elapsed, 2),
         "checks": checks,

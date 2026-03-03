@@ -80,7 +80,7 @@ NFR findings are non-blocking but tracked. They feed into the feedback loop and 
 
 These standards are enforced at multiple levels:
 
-1. **`scripts/check_test_quality.py`** — AST-based scanner detecting tautological asserts, zero-assertion tests, excessive mocking, stub implementations, hardcoded returns, lookup tables.
+1. **`packages/dark-factory/scripts/check_test_quality.py`** — AST-based scanner detecting tautological asserts, zero-assertion tests, excessive mocking, stub implementations, hardcoded returns, lookup tables.
 2. **Gate 0: Adversarial Review (Agent Team)** — Parallel agent team catches vacuous tests, gaming, architectural dishonesty, spec violations before merge. Any CRITICAL finding blocks. See `.claude/skills/factory-orchestrate/SKILL.md` Step 4 for agent team composition.
 3. **Gate 1: Deterministic CI** — `make lint && make typecheck && make test` must all pass.
 4. **Gate 2: NFR checks** — pluggable non-functional requirement validators.

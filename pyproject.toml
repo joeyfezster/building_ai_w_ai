@@ -14,8 +14,8 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 # Factory scripts get stricter rules — the validation system must be trustworthy
-"scripts/run_scenarios.py" = []
-"scripts/compile_feedback.py" = []
+"packages/dark-factory/scripts/run_scenarios.py" = []
+"packages/dark-factory/scripts/compile_feedback.py" = []
 # Test files can use assert statements and longer lines
 "tests/test_factory_*.py" = ["S101"]
 

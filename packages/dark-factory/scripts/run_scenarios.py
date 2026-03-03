@@ -6,9 +6,9 @@ evaluation methods, and produces a JSON report at
 artifacts/factory/scenario_results.json.
 
 Usage:
-    python scripts/run_scenarios.py
-    python scripts/run_scenarios.py --category environment
-    python scripts/run_scenarios.py --timeout 120
+    python packages/dark-factory/scripts/run_scenarios.py
+    python packages/dark-factory/scripts/run_scenarios.py --category environment
+    python packages/dark-factory/scripts/run_scenarios.py --timeout 120
 """
 
 from __future__ import annotations
@@ -22,6 +22,18 @@ import sys
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+
+
+def _get_repo_root() -> Path:
+    """Walk up from this file to find the git repo root."""
+    current = Path(__file__).resolve().parent
+    for parent in [current, *current.parents]:
+        if (parent / ".git").is_dir():
+            return parent
+    raise RuntimeError("Repo root not found -- no .git directory in any parent")
+
+
+REPO_ROOT = _get_repo_root()
 
 
 @dataclass
@@ -234,7 +246,7 @@ def main() -> int:
     args = parser.parse_args()
 
     # Find repo root (where this script lives in scripts/)
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = REPO_ROOT
     if args.scenarios_dir:
         scenarios_dir = Path(args.scenarios_dir)
     else:

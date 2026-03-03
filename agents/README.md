@@ -7,7 +7,7 @@ These agent role definitions were created before the dark factory pattern was ad
 - `workflows/` — Collaboration and PR templates from the team-based approach
 
 ## How They're Used Now
-The useful content from these files — validation guidelines, Definition of Done, hard constraints, PR checklists — has been consolidated into the Attractor's prompt template at `.github/codex/prompts/factory_fix.md`.
+The useful content from these files — validation guidelines, Definition of Done, hard constraints, PR checklists — has been consolidated into the Attractor's prompt template at `packages/dark-factory/prompts/factory_fix.md`.
 
 These files are kept as reference for the factory's design evolution. They are **not read by Codex** during factory iterations.
 

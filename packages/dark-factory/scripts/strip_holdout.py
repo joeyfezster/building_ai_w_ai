@@ -8,9 +8,9 @@ This is a factory gate — non-circumventable. The attractor literally
 cannot see evaluation criteria because they don't exist on its branch.
 
 Usage:
-    python scripts/strip_holdout.py              # strip and commit
-    python scripts/strip_holdout.py --dry-run    # show what would be removed
-    python scripts/strip_holdout.py --no-commit  # strip but don't commit
+    python packages/dark-factory/scripts/strip_holdout.py              # strip and commit
+    python packages/dark-factory/scripts/strip_holdout.py --dry-run    # show what would be removed
+    python packages/dark-factory/scripts/strip_holdout.py --no-commit  # strip but don't commit
 """
 
 from __future__ import annotations
@@ -22,6 +22,18 @@ import subprocess
 import sys
 from pathlib import Path
 
+
+def _get_repo_root() -> Path:
+    """Walk up from this file to find the git repo root."""
+    current = Path(__file__).resolve().parent
+    for parent in [current, *current.parents]:
+        if (parent / ".git").is_dir():
+            return parent
+    raise RuntimeError("Repo root not found -- no .git directory in any parent")
+
+
+REPO_ROOT = _get_repo_root()
+
 MARKER = "[factory:holdout-stripped]"
 
 # Makefile targets that reference scenarios (removed during stripping)
@@ -31,9 +43,10 @@ SCENARIO_TARGETS = [
 ]
 
 # Review pack artifacts (stripped to prevent attractor from seeing review findings)
-REVIEW_PACK_FILES = [
-    "docs/pr_review_pack.html",
-    "docs/pr_diff_data.json",
+REVIEW_PACK_PATTERNS = [
+    "docs/pr*_review_pack.html",
+    "docs/pr*_diff_data.json",
+    "docs/pr*_review_pack.approval.json",
 ]
 
 
@@ -67,9 +80,9 @@ def strip_review_pack(repo_root: Path, dry_run: bool = False) -> list[str]:
     Returns list of removed file paths.
     """
     removed: list[str] = []
-    for rel_path in REVIEW_PACK_FILES:
-        full_path = repo_root / rel_path
-        if full_path.exists():
+    for pattern in REVIEW_PACK_PATTERNS:
+        for full_path in repo_root.glob(pattern):
+            rel_path = str(full_path.relative_to(repo_root))
             removed.append(rel_path)
             if not dry_run:
                 full_path.unlink()
@@ -136,8 +149,9 @@ def verify_stripped(repo_root: Path) -> list[str]:
             )
 
     # Verify review pack artifacts are removed
-    for rel_path in REVIEW_PACK_FILES:
-        if (repo_root / rel_path).exists():
+    for pattern in REVIEW_PACK_PATTERNS:
+        for full_path in repo_root.glob(pattern):
+            rel_path = str(full_path.relative_to(repo_root))
             failures.append(f"Review pack artifact still exists: {rel_path}")
 
     return failures
@@ -173,7 +187,7 @@ def git_commit_strip(repo_root: Path) -> bool:
             f"{MARKER} Strip holdout scenarios before attractor\n\n"
             "Deterministic removal of /scenarios/ and related Makefile targets.\n"
             "Attractor (Codex) cannot see evaluation criteria on this branch.\n"
-            "Restore with: python scripts/restore_holdout.py",
+            "Restore with: python packages/dark-factory/scripts/restore_holdout.py",
         ],
         cwd=str(repo_root),
         check=True,
@@ -198,7 +212,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = REPO_ROOT
 
     print(f"{'DRY RUN — ' if args.dry_run else ''}Stripping holdout scenarios...")
 
