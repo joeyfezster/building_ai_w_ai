@@ -57,7 +57,7 @@ The factory has multiple dimensions requiring centralized control:
 3. ✅ agents/dev_team collected as factory-side reference assets
 4. ✅ Holdout isolation via branch stripping (`./packages/dark-factory/scripts/strip_holdout.py`, `./packages/dark-factory/scripts/restore_holdout.py`)
 5. ✅ Gate 2 NFR framework implemented (`./packages/dark-factory/scripts/nfr_checks.py` — code quality, complexity, dead code, security)
-6. ✅ Factory orchestration skill created (`.claude/skills/factory-orchestrate/SKILL.md`)
+6. ✅ Factory orchestration skill created (`./packages/dark-factory/SKILL.md`)
 7. ✅ Code quality standards codified (`docs/code_quality_standards.md`, linked from CLAUDE.md)
 8. ✅ Claude Code as orchestrator — replaces CI-only loop, browser automation for Codex
 9. 🔧 Satisfaction dashboard — visibility into scenario pass rates and convergence trajectory
