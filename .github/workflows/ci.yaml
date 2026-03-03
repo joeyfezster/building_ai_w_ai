@@ -95,7 +95,7 @@ jobs:
 
           # These files must exist and be referenced in both
           # CLAUDE.md and factory_fix.md as protected
-          protected_dirs = ['scenarios', 'scripts', 'agents', 'specs']
+          protected_dirs = ['scenarios', 'packages/dark-factory/scripts', 'agents', 'specs']
           protected_files = [
               '.github/workflows/factory.yaml',
               'packages/dark-factory/prompts/factory_fix.md',
