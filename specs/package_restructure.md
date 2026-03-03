@@ -17,7 +17,7 @@ All other constraints remain in effect: anti-gaming rules, quality checklist, `m
 
 **Primary task:** Execute this entire spec. Read it top to bottom. Every section is actionable.
 
-**IMPORTANT:** The other specs in `/specs/` (`system.md`, `env.md`, `rl.md`, `training.md`, `dashboard.md`, `proof.md`, `pong_interfaces.md`, `full_training.md`) are BACKLOG product specs — they describe the MiniPong RL product, NOT this restructuring task. Do NOT modify product code (`src/`, `tests/`, `configs/`) unless a path reference update from this spec requires it. Your ONLY task is the infrastructure restructuring described in THIS spec.
+**IMPORTANT:** The other specs in `/specs/` (`system.md`, `env.md`, `rl.md`, `training.md`, `dashboard.md`, `proof.md`, `pong_interfaces.md`, `full_training.md`) describe the MiniPong RL product and are NOT relevant to this crank. Do NOT modify product code (`src/`, `tests/`, `configs/`) unless a path reference update from this spec requires it. Your ONLY task is the infrastructure restructuring described in THIS spec.
 
 ---
 
