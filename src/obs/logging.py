@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -16,9 +17,11 @@ class MetricsLogger:
         self.log_path = run_dir / "logs.jsonl"
         self.tb_dir = run_dir / "tensorboard"
         self.tb = SummaryWriter(str(self.tb_dir))
+        self._start_time = time.time()
 
     def log_metrics(self, step: int, metrics: dict[str, Any]) -> None:
-        line = {"step": step, **metrics}
+        now = time.time()
+        line = {"step": step, "wall_time": now, "elapsed_s": now - self._start_time, **metrics}
         with self.log_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(line) + "\n")
         for k, v in metrics.items():
