@@ -25,6 +25,57 @@ jobs:
           git add packages/pr-review-pack/review-prompts/
           git commit -m "temp: resolve review-prompts symlink for subtree split"
 
+      - name: Rewrite paths for standalone context
+        run: |
+          cd packages/pr-review-pack
+
+          # Rule 1: Strip self-referencing monorepo prefix (handles all current and future paths)
+          find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.yaml" -o -name "*.yml" \) \
+            -not -path './.git/*' -exec \
+            sed -i 's|packages/pr-review-pack/||g' {} +
+
+          # Rule 2: Cross-references to sibling packages → standalone repo URLs
+          find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.yaml" -o -name "*.yml" \) \
+            -not -path './.git/*' -exec \
+            sed -i \
+              -e 's|packages/dark-factory/|https://github.com/joeyfezster/dark-factory/tree/main/|g' \
+              -e 's|packages/review-prompts/|review-prompts/|g' {} +
+
+          # Rule 2b: Skill install paths → local root
+          find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.yaml" -o -name "*.yml" \) \
+            -not -path './.git/*' -exec \
+            sed -i 's|\.claude/skills/pr-review-pack/||g' {} +
+
+          # Special cases: remove monorepo-only context lines
+          [ -f SKILL.md ] && sed -i '/From the monorepo root, these resolve to/d' SKILL.md
+          [ -f SKILL.md ] && sed -i 's|Repository: `joeyfezster/building_ai_w_ai`|Repository: your project repository|g' SKILL.md
+
+          cd ../..
+
+      - name: Verify no stale monorepo paths
+        run: |
+          cd packages/pr-review-pack
+          STALE=$(grep -rn \
+            -e "packages/dark-factory" \
+            -e "packages/pr-review-pack" \
+            -e "packages/review-prompts" \
+            -e "\.claude/skills/" \
+            --include="*.md" --include="*.py" --include="*.yaml" --include="*.yml" \
+            . 2>/dev/null | grep -v "CONTRIBUTING.md" || true)
+          if [ -n "$STALE" ]; then
+            echo "ERROR: Stale monorepo paths found after rewrite:"
+            echo "$STALE"
+            echo ""
+            echo "Fix: add a rewrite rule in publish-subtrees.yml or update the source file."
+            exit 1
+          fi
+          echo "OK: no stale monorepo paths found."
+
+      - name: Commit publish transforms
+        run: |
+          git add packages/pr-review-pack/
+          git diff --staged --quiet || git commit --amend --no-edit
+
       - name: Split subtree
         run: git subtree split --prefix packages/pr-review-pack -b subtree-pr-review-pack
 
@@ -64,6 +115,57 @@ jobs:
           cp -r packages/review-prompts/ packages/dark-factory/review-prompts/
           git add packages/dark-factory/review-prompts/
           git commit -m "temp: resolve review-prompts symlink for subtree split"
+
+      - name: Rewrite paths for standalone context
+        run: |
+          cd packages/dark-factory
+
+          # Rule 1: Strip self-referencing monorepo prefix (handles all current and future paths)
+          find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.yaml" -o -name "*.yml" \) \
+            -not -path './.git/*' -exec \
+            sed -i 's|packages/dark-factory/||g' {} +
+
+          # Rule 2: Cross-references to sibling packages → standalone repo URLs
+          find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.yaml" -o -name "*.yml" \) \
+            -not -path './.git/*' -exec \
+            sed -i \
+              -e 's|packages/pr-review-pack/|https://github.com/joeyfezster/pr-review-pack/tree/main/|g' \
+              -e 's|packages/review-prompts/|review-prompts/|g' {} +
+
+          # Rule 2b: Skill install paths → local root
+          find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.yaml" -o -name "*.yml" \) \
+            -not -path './.git/*' -exec \
+            sed -i 's|\.claude/skills/factory-orchestrate/||g' {} +
+
+          # Special cases: remove monorepo-only context lines
+          [ -f SKILL.md ] && sed -i '/From the monorepo root, these resolve to/d' SKILL.md
+          [ -f SKILL.md ] && sed -i 's|Repository: `joeyfezster/building_ai_w_ai`|Repository: your project repository|g' SKILL.md
+
+          cd ../..
+
+      - name: Verify no stale monorepo paths
+        run: |
+          cd packages/dark-factory
+          STALE=$(grep -rn \
+            -e "packages/dark-factory" \
+            -e "packages/pr-review-pack" \
+            -e "packages/review-prompts" \
+            -e "\.claude/skills/" \
+            --include="*.md" --include="*.py" --include="*.yaml" --include="*.yml" \
+            . 2>/dev/null | grep -v "CONTRIBUTING.md" || true)
+          if [ -n "$STALE" ]; then
+            echo "ERROR: Stale monorepo paths found after rewrite:"
+            echo "$STALE"
+            echo ""
+            echo "Fix: add a rewrite rule in publish-subtrees.yml or update the source file."
+            exit 1
+          fi
+          echo "OK: no stale monorepo paths found."
+
+      - name: Commit publish transforms
+        run: |
+          git add packages/dark-factory/
+          git diff --staged --quiet || git commit --amend --no-edit
 
       - name: Split subtree
         run: git subtree split --prefix packages/dark-factory -b subtree-dark-factory
