@@ -165,9 +165,9 @@ def train_ppo_selfplay(config: dict, device: torch.device | None = None) -> str:
                 obs, _ = env.reset(seed=int(config["seed"]) + global_step)
                 opponent.reset(raw_env._obs())
 
-        # Compute GAE
-        last_value = agent.get_value(obs)
-        last_done = False  # We're mid-episode at rollout boundary
+        # Compute GAE — track whether the last collected step was terminal
+        last_done = bool(rollout.dones[rollout.pos - 1])
+        last_value = 0.0 if last_done else agent.get_value(obs)
         rollout.compute_advantages(
             last_value,
             last_done,
