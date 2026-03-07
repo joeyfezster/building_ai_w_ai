@@ -55,11 +55,13 @@ jobs:
       - name: Verify no stale monorepo paths
         run: |
           cd packages/pr-review-pack
+          # Match skill paths WITH trailing slash (monorepo internal refs).
+          # Clone targets like ".claude/skills/pr-review-pack" (no slash) are valid.
           STALE=$(grep -rn \
             -e "packages/dark-factory" \
             -e "packages/pr-review-pack" \
             -e "packages/review-prompts" \
-            -e "\.claude/skills/" \
+            -e "\.claude/skills/pr-review-pack/" \
             --include="*.md" --include="*.py" --include="*.yaml" --include="*.yml" \
             . 2>/dev/null | grep -v "CONTRIBUTING.md" || true)
           if [ -n "$STALE" ]; then
@@ -146,11 +148,13 @@ jobs:
       - name: Verify no stale monorepo paths
         run: |
           cd packages/dark-factory
+          # Match skill paths WITH trailing slash (monorepo internal refs).
+          # Clone targets like ".claude/skills/factory-orchestrate" (no slash) are valid.
           STALE=$(grep -rn \
             -e "packages/dark-factory" \
             -e "packages/pr-review-pack" \
             -e "packages/review-prompts" \
-            -e "\.claude/skills/" \
+            -e "\.claude/skills/factory-orchestrate/" \
             --include="*.md" --include="*.py" --include="*.yaml" --include="*.yml" \
             . 2>/dev/null | grep -v "CONTRIBUTING.md" || true)
           if [ -n "$STALE" ]; then

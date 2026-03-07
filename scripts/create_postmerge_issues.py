@@ -26,7 +26,8 @@ def _get_repo_slug(override: str | None = None) -> str:
     url = subprocess.check_output(
         ["git", "remote", "get-url", "origin"], text=True
     ).strip()
-    if ":" in url and "@" in url:
+    # SCP-style (git@host:owner/repo.git) has no scheme prefix
+    if ":" in url and not url.startswith(("https://", "http://", "ssh://")):
         slug = url.split(":")[-1]
     else:
         slug = "/".join(url.split("/")[-2:])
