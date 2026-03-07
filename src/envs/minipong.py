@@ -21,6 +21,8 @@ class MiniPongConfig:
     max_steps: int = 1200
     reward_shaping: bool = False
     score_limit: int = 1
+    hit_reward: float = 0.1
+    rally_bonus_per_step: float = 0.02
 
 
 class MiniPongEnv(gym.Env[np.ndarray, int]):
@@ -97,7 +99,7 @@ class MiniPongEnv(gym.Env[np.ndarray, int]):
                 self.hits += 1
                 self.rally_length += 1
                 if self.config.reward_shaping:
-                    reward += 0.01
+                    reward += self.config.hit_reward
             else:
                 reward -= 1.0
                 self.opponent_score += 1
@@ -112,6 +114,9 @@ class MiniPongEnv(gym.Env[np.ndarray, int]):
                 reward += 1.0
                 self.agent_score += 1
                 return self._finish_point(reward=reward, scorer="agent")
+
+        if self.config.reward_shaping:
+            reward += self.config.rally_bonus_per_step
 
         truncated = self.steps >= self.config.max_steps
         if truncated:
