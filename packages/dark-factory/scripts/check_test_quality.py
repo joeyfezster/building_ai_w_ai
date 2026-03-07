@@ -5,8 +5,8 @@ Scans test files for anti-patterns that indicate tests pass by
 construction rather than exercising real behavior.
 
 Usage:
-    python scripts/check_test_quality.py
-    python scripts/check_test_quality.py --strict
+    python packages/dark-factory/scripts/check_test_quality.py
+    python packages/dark-factory/scripts/check_test_quality.py --strict
 """
 
 from __future__ import annotations
@@ -17,6 +17,18 @@ import json
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+
+def _get_repo_root() -> Path:
+    """Walk up from this file to find the git repo root."""
+    current = Path(__file__).resolve().parent
+    for parent in [current, *current.parents]:
+        if (parent / ".git").exists():
+            return parent
+    raise RuntimeError("Repo root not found -- no .git directory in any parent")
+
+
+REPO_ROOT = _get_repo_root()
 
 
 @dataclass
@@ -212,7 +224,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = REPO_ROOT
     if args.path:
         paths = list(Path(args.path).rglob("*.py"))
     else:

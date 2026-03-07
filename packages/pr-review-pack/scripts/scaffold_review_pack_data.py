@@ -321,7 +321,10 @@ def build_convergence(scenario_data: dict | None, ci_checks: list,
     else:
         gate0_pass = False
         g0_status_text = "NOT RUN"
-        g0_detail = "gate0_results.json not found. Run: python scripts/run_gate0.py"
+        g0_detail = (
+            "gate0_results.json not found. "
+            "Run: python packages/dark-factory/scripts/run_gate0.py"
+        )
 
     # Gate 1 — we can only say pass/fail based on CI validate job
     validate_jobs = [c for c in ci_checks if c.get("name") == "validate"]

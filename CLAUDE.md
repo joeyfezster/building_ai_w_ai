@@ -23,32 +23,26 @@ The loop: **Seed → Agent → Validate → Feedback → Repeat until satisfied.
 
 - `/specs/` — Component specifications. This is what the coding agent reads. The specs define what the system should do.
 - `/scenarios/` — Behavioral holdout evaluation criteria. These are what the system is evaluated against. **Scenarios must NEVER be modified by the coding agent (Codex).** They are the holdout set — the agent never sees its own evaluation criteria.
-- `/docs/dark_factory.md` — Full factory documentation: how the loop works, how to trigger it, how to write scenarios, when to escalate.
+- `/packages/dark-factory/docs/dark_factory.md` — Full factory documentation: how the loop works, how to trigger it, how to write scenarios, when to escalate.
 
 ## Factory-Protected Files
 
-The following files are **never touched by the Attractor (Codex)**. They are factory infrastructure, not product code. The Codex-facing version of this list lives in `.github/codex/prompts/factory_fix.md` — keep both in sync when adding protected files.
+The following files are **never touched by the Attractor (Codex)**. They are factory infrastructure, not product code. The Codex-facing version of this list lives in `packages/dark-factory/prompts/factory_fix.md` — keep both in sync when adding protected files.
 
 - `/scenarios/` — holdout evaluation criteria
-- `/scripts/run_scenarios.py` — scenario evaluation runner
-- `/scripts/compile_feedback.py` — feedback compiler
-- `/.github/workflows/factory.yaml` — factory orchestrator
-- `/.github/codex/prompts/factory_fix.md` — Codex prompt template
+- `/packages/dark-factory/scripts/` — all factory scripts (scenario runner, feedback compiler, holdout strip/restore, Gate 0 runner, NFR checker, test quality scanner, decision persistence)
+- `/.github/workflows/factory.yaml` — factory CI workflow (symlink to packages/dark-factory)
+- `/packages/dark-factory/prompts/factory_fix.md` — Codex prompt template
 - `/specs/` — component specifications (read-only for Codex)
 - `/agents/` — pre-factory agent definitions (reference only)
-- `/scripts/strip_holdout.py` — holdout stripping script (isolation gate)
-- `/scripts/restore_holdout.py` — holdout restoration script
-- `/scripts/nfr_checks.py` — Gate 2 NFR checker
-- `/scripts/check_test_quality.py` — Gate 0 test quality scanner
-- `/.claude/skills/factory-orchestrate/review-prompts/` — Gate 0 review agent paradigm docs
-- `/docs/code_quality_standards.md` — universal quality standards
+- `/packages/review-prompts/` — Gate 0 review agent paradigm docs
+- `/packages/dark-factory/docs/code_quality_standards.md` — universal quality standards
 - `/docs/decisions/` — cumulative decision log (Codex reads but never modifies)
-- `/scripts/persist_decisions.py` — decision persistence script
 - `/CLAUDE.md` — this file
 
 ## Code Quality Standards
 
-All code written in this repository — by Codex, Claude Code, or humans — must follow the standards in `docs/code_quality_standards.md`. This includes:
+All code written in this repository — by Codex, Claude Code, or humans — must follow the standards in `packages/dark-factory/docs/code_quality_standards.md`. This includes:
 - Anti-vacuous test rules (no mocking the system under test, no stub assertions)
 - Anti-gaming rules (no hardcoded lookup tables, no overfitting)
 - Implementation honesty (real imports, real configs, real dependencies)
@@ -60,7 +54,7 @@ These standards are enforced by Gate 0 (adversarial review), Gate 1 (lint/typech
 
 When running `/factory-orchestrate`, these rules are hard constraints — not suggestions:
 
-1. **Gate 0 MUST use agent teams.** Use `TeamCreate` to spawn all 6 Gate 0 agents (5 tool agents + 1 adversarial reviewer) in parallel via the `Task` tool. Running tool checks as bare `Bash` calls or skipping the adversarial reviewer is a protocol violation. Every iteration gets a full team review — no exceptions, no "the diff is small enough to eyeball."
+1. **Gate 0 has two tiers.** Tier 1: run `./packages/dark-factory/scripts/run_gate0.py` (5 deterministic tool checks in parallel). Tier 2: spawn 4 LLM review agents via Agent Teams (Code Health, Security, Test Integrity, Adversarial) -- each runs in its own context window.
 2. **Gate 0 failure: keep Codex's code.** Merge onto the factory branch so iteration N+1 is incremental. NEVER revert.
 3. **Delete Codex's remote branch immediately after merge.** Every merge, pass or fail. Stale branches pollute the namespace.
 4. **Convergence requires ALL scenarios passing.** A single failing scenario blocks convergence — no exceptions, no percentage thresholds. The factory owns its output quality end-to-end. Never excuse a failure by attributing it to a previous iteration or the base branch. If a scenario fails, fix it and re-run, regardless of cause.
@@ -96,4 +90,4 @@ make persist-decisions PR=6  # persist PR decisions to cumulative log
 - GitHub Actions for CI and validation
 - OpenAI Codex as the non-interactive coding agent (attractor)
 - Claude Code as factory orchestrator (skill: `/factory-orchestrate`)
-- PR review pack generator (skill: `/pr-review-pack`) — `.claude/skills/pr-review-pack/` contains the review pack generation skill with template, scripts, and reference docs
+- PR review pack generator (skill: `/pr-review-pack`) — `packages/pr-review-pack/` contains the review pack generation skill with template, scripts, and reference docs

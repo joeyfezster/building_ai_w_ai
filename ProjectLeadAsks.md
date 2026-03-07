@@ -55,9 +55,9 @@ The factory has multiple dimensions requiring centralized control:
 1. ✅ factory/v1 branch created and pushed (factory infra + Codex code merged)
 2. ✅ Validation guidelines consolidated into attractor prompt
 3. ✅ agents/dev_team collected as factory-side reference assets
-4. ✅ Holdout isolation via branch stripping (`scripts/strip_holdout.py`, `scripts/restore_holdout.py`)
-5. ✅ Gate 2 NFR framework implemented (`scripts/nfr_checks.py` — code quality, complexity, dead code, security)
-6. ✅ Factory orchestration skill created (`.claude/skills/factory-orchestrate/SKILL.md`)
+4. ✅ Holdout isolation via branch stripping (`./packages/dark-factory/scripts/strip_holdout.py`, `./packages/dark-factory/scripts/restore_holdout.py`)
+5. ✅ Gate 2 NFR framework implemented (`./packages/dark-factory/scripts/nfr_checks.py` — code quality, complexity, dead code, security)
+6. ✅ Factory orchestration skill created (`./packages/dark-factory/SKILL.md`)
 7. ✅ Code quality standards codified (`docs/code_quality_standards.md`, linked from CLAUDE.md)
 8. ✅ Claude Code as orchestrator — replaces CI-only loop, browser automation for Codex
 9. 🔧 Satisfaction dashboard — visibility into scenario pass rates and convergence trajectory
@@ -71,17 +71,17 @@ The factory has multiple dimensions requiring centralized control:
 4. Additional NFR checks — duplication, import hygiene, coverage, maintainability, reliability
 5. Factory control plane — see #3 above
 
-### Phase 2: Factory Extraction
+### Resolved: Phase 2: Factory Extraction
 **Status:** Planned after first successful convergence run
 
 The factory infrastructure is designed for extraction into its own repo (and eventually a reusable package). The separation is already native:
 
 **Factory-generic code** (extractable as-is):
-- `scripts/run_scenarios.py` — reads any `/scenarios/*.md`, zero project-specific logic
-- `scripts/compile_feedback.py` — reads any `scenario_results.json`, zero project-specific logic
+- `./packages/dark-factory/scripts/run_scenarios.py` — reads any `/scenarios/*.md`, zero project-specific logic
+- `./packages/dark-factory/scripts/compile_feedback.py` — reads any `scenario_results.json`, zero project-specific logic
 - `.github/workflows/factory.yaml` — parameterized via `workflow_dispatch` inputs
-- `.github/codex/prompts/factory_fix.md` — generic fix template, refs `/specs/` and `/scenarios/`
-- `docs/dark_factory.md` — generic operating manual
+- `packages/dark-factory/prompts/factory_fix.md` — generic fix template, refs `/specs/` and `/scenarios/`
+- `packages/dark-factory/docs/dark_factory.md` — generic operating manual
 
 **Project-specific content** (stays in product repo):
 - `/specs/*.md` — MiniPong-specific requirements
@@ -91,7 +91,7 @@ The factory infrastructure is designed for extraction into its own repo (and eve
 
 **Extraction path (when ready):**
 1. **Fork mode:** Move factory scripts + workflow to `joeyfezster/dark-factory`. Product repo's workflow calls factory repo via [reusable workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows) or checks it out as a step.
-2. **Package mode:** Publish factory as a pip-installable CLI (`pip install dark-factory`). Product repo runs `dark-factory run-scenarios` instead of `python scripts/run_scenarios.py`. Workflow becomes a thin shell.
+2. **Package mode:** Publish factory as a pip-installable CLI (`pip install dark-factory`). Product repo runs `dark-factory run-scenarios` instead of `python ./packages/dark-factory/scripts/run_scenarios.py`. Workflow becomes a thin shell.
 
 **Decision point:** After the first successful convergence, evaluate whether to extract immediately or after a second project validates the pattern.
 
@@ -104,7 +104,7 @@ The factory infrastructure is designed for extraction into its own repo (and eve
 **Resolved:** No separate API key needed. Claude Code orchestrates via browser automation using Joey's existing ChatGPT Plus login (Chrome already authenticated). The billing "hack" is isolated in the orchestration skill's Codex invocation step — all other factory infrastructure (stripping, validation, feedback, PR creation) works identically regardless of how Codex is invoked. If/when an API key becomes available, only that one step changes.
 
 ### ✅ Scenario Isolation Architecture
-**Resolved:** Branch stripping replaces the `/tmp/` filesystem shuffle. Deterministic scripts (`scripts/strip_holdout.py` and `scripts/restore_holdout.py`) remove and restore `/scenarios/` from the branch Codex works on. Scenarios literally don't exist on the attractor's branch — not hidden, not shuffled, physically absent. The strip script commits with marker `[factory:holdout-stripped]` and verifies no scenario files remain.
+**Resolved:** Branch stripping replaces the `/tmp/` filesystem shuffle. Deterministic scripts (`./packages/dark-factory/scripts/strip_holdout.py` and `./packages/dark-factory/scripts/restore_holdout.py`) remove and restore `/scenarios/` from the branch Codex works on. Scenarios literally don't exist on the attractor's branch — not hidden, not shuffled, physically absent. The strip script commits with marker `[factory:holdout-stripped]` and verifies no scenario files remain.
 
 ### ✅ Validation Guidelines in Attractor
-**Resolved:** DoD, hard constraints, and quality checklist from agents/dev_team consolidated into `.github/codex/prompts/factory_fix.md`. Reduces iterations by giving Codex upfront quality expectations.
+**Resolved:** DoD, hard constraints, and quality checklist from agents/dev_team consolidated into `packages/dark-factory/prompts/factory_fix.md`. Reduces iterations by giving Codex upfront quality expectations.

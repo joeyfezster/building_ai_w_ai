@@ -8,6 +8,13 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Edit
 
 You are the factory orchestrator. You run the convergence loop that turns specs into working software through iterative AI coding + validation.
 
+## Script Discovery
+
+All scripts referenced in this skill are in the `scripts/` directory adjacent to this SKILL.md.
+From the monorepo root, these resolve to `packages/dark-factory/scripts/`.
+
+Review prompts are in the `review-prompts/` directory adjacent to this SKILL.md (symlink to shared prompts).
+
 ## Crank Lifecycle
 
 A factory crank progresses through three states:
@@ -41,7 +48,7 @@ Branch naming: `df-crank-vXX-{descriptor}` where XX is the crank version.
 
 ### Step 2: Strip Holdout
 ```bash
-python scripts/strip_holdout.py
+python packages/dark-factory/scripts/strip_holdout.py
 git push
 ```
 
@@ -54,7 +61,7 @@ Verify: `ls scenarios/` should fail (directory gone).
 Open the Codex UI in Chrome. Provide:
 - **Repository**: `joeyfezster/building_ai_w_ai`
 - **Base branch**: `df-crank-vXX-{descriptor}` (the stripped branch)
-- **Prompt**: Contents of `.github/codex/prompts/factory_fix.md` + the latest feedback file (`artifacts/factory/feedback_iter_N.md`)
+- **Prompt**: Contents of `prompts/factory_fix.md` + the latest feedback file (`artifacts/factory/feedback_iter_N.md`)
 - **Versions**: 1
 
 Codex will create its own branch (named `codex-...`). Wait for it to finish.
@@ -71,7 +78,7 @@ Before merging Codex's changes, run a **full two-tier review**. This is the firs
 Run the Gate 0 deterministic runner. This executes all 5 tool checks in parallel and produces a JSON artifact:
 
 ```bash
-python scripts/run_gate0.py
+python packages/dark-factory/scripts/run_gate0.py
 # Produces: artifacts/factory/gate0_results.json
 ```
 
@@ -87,7 +94,7 @@ python scripts/run_gate0.py
 
 #### Tier 2: LLM Semantic Review Agents
 
-3. **Spawn the Tier 2 agent team.** Use `TeamCreate` and launch these 4 agents in parallel via the `Task` tool. Each agent receives: the diff, the tier 1 results (`gate0_results.json`), and its paradigm-specific review prompt from `.claude/skills/factory-orchestrate/review-prompts/`.
+3. **Spawn the Tier 2 agent team.** Use `TeamCreate` and launch these 4 agents in parallel via the `Task` tool. Each agent receives: the diff, the tier 1 results (`gate0_results.json`), and its paradigm-specific review prompt from `review-prompts/`.
 
    | Agent | Paradigm Review Prompt | Paradigm |
    |-------|----------------------|----------|
@@ -98,7 +105,11 @@ python scripts/run_gate0.py
 
    Each agent also receives: `gate0_results.json` (tier 1 findings) + `docs/code_quality_standards.md` + the diff. The adversarial reviewer additionally receives `/specs/*.md`.
 
-4. **Aggregate findings.** Collect all tier 2 agent outputs + tier 1 results. Each finding has a severity: CRITICAL, WARNING, or NIT.
+   **File persistence (non-negotiable):** Each agent MUST write its findings to `artifacts/factory/gate0_tier2_{paradigm}.md` (e.g., `gate0_tier2_code_health.md`, `gate0_tier2_security.md`, `gate0_tier2_test_integrity.md`, `gate0_tier2_adversarial.md`). This is in ADDITION to sending a message to the team lead. Findings survive context compaction only if they are on disk. SendMessage alone is not durable.
+
+   **Stuck agent recovery:** If an agent becomes unresponsive (e.g., after context compaction or session restart), the orchestrator checks for its output file. If the file exists and is complete, the agent's work is recovered. If not, the orchestrator stops the stuck agent and re-spawns a replacement for that paradigm only — no need to re-run the entire team.
+
+4. **Aggregate findings.** Collect all tier 2 agent outputs from `artifacts/factory/gate0_tier2_*.md` + tier 1 results from `gate0_results.json`. Each finding has a severity: CRITICAL, WARNING, or NIT. File artifacts are the source of truth — not messages, which may be lost to compaction.
 
 5. **Fail-fast rule:** If **any tier** (1 or 2) reports a CRITICAL finding, Gate 0 fails. Do NOT proceed to later gates (1-3). However, **DO merge Codex's changes onto the factory branch** so that iteration N+1 is incremental — Codex iterates on its own code with feedback, rather than rebuilding from scratch. Compile all findings (from both tiers) as feedback and loop back to Step 3 with specific remediation instructions.
 
@@ -160,7 +171,7 @@ gh pr checks <PR_NUMBER>
 
 ### Step 6: Restore Holdout
 ```bash
-python scripts/restore_holdout.py
+python packages/dark-factory/scripts/restore_holdout.py
 git add scenarios/ Makefile
 git commit -m "factory: restore holdout scenarios for evaluation"
 ```
@@ -172,7 +183,7 @@ make lint && make typecheck && make test
 
 "test" = *should be* the FULL pytest suite, including any tests Codex wrote (already reviewed in Gate 0).
 
-**If fail**: Compile feedback (use this script as aid, but make sure you intervene if the feedback doesn't make sense: `python scripts/compile_feedback.py --iteration N`), loop to Step 3.
+**If fail**: Compile feedback (use this script as aid, but make sure you intervene if the feedback doesn't make sense: `python packages/dark-factory/scripts/compile_feedback.py --iteration N`), loop to Step 3.
 
 ### Step 8: Gate 2 — Non-Functional Requirements
 ```bash
@@ -187,7 +198,7 @@ Gate 2 is **non-blocking** but findings are tracked and feed into:
 
 ### Step 9: Gate 3 — Behavioral Scenarios
 ```bash
-python scripts/run_scenarios.py --timeout 180
+python packages/dark-factory/scripts/run_scenarios.py --timeout 180
 ```
 
 Produces `artifacts/factory/scenario_results.json` with satisfaction score.
@@ -276,7 +287,7 @@ After the project lead merges the PR:
 
 1. **Persist decisions** to the cumulative log:
    ```bash
-   python scripts/persist_decisions.py --pr {PR_NUMBER}
+   python packages/dark-factory/scripts/persist_decisions.py --pr {PR_NUMBER}
    ```
    The script extracts decisions from the review pack HTML (or from the JSON intermediate if available via `--data`) and appends them to `docs/decisions/decision_log.json`. It is idempotent — safe to run multiple times.
 
@@ -306,13 +317,13 @@ If after 3+ iterations:
 
 ## Reference Files
 
-- **Attractor prompt**: `.github/codex/prompts/factory_fix.md`
+- **Attractor prompt**: `prompts/factory_fix.md`
 - **Gate 0 tier 1 runner**: `scripts/run_gate0.py` (deterministic tool checks → `gate0_results.json`)
-- **Gate 0 tier 2 review prompts**: `.claude/skills/factory-orchestrate/review-prompts/` (all paradigm docs in this directory)
+- **Gate 0 tier 2 review prompts**: `review-prompts/` (all paradigm docs in this directory)
 - **Code quality standards**: `docs/code_quality_standards.md`
 - **NFR checks script**: `scripts/nfr_checks.py` (Gate 0 tier 1 static analysis + Gate 2 NFR framework)
 - **Test quality scanner**: `scripts/check_test_quality.py` (Gate 0 tier 1)
-- **PR review pack skill**: `.claude/skills/pr-review-pack/SKILL.md` (Step 12)
+- **PR review pack skill**: `packages/pr-review-pack/SKILL.md` (Step 12)
 - **Decision log**: `docs/decisions/decision_log.json` (Step 13, cumulative archive)
 - **Decision persistence**: `scripts/persist_decisions.py` (Step 13)
 - **Specs**: `specs/*.md`

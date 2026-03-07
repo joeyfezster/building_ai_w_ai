@@ -5,8 +5,8 @@ Reads scenario results, CI logs, and previous iteration feedback
 to produce structured feedback markdown that Codex can act on.
 
 Usage:
-    python scripts/compile_feedback.py
-    python scripts/compile_feedback.py --iteration 3
+    python packages/dark-factory/scripts/compile_feedback.py
+    python packages/dark-factory/scripts/compile_feedback.py --iteration 3
 """
 
 from __future__ import annotations
@@ -16,6 +16,18 @@ import glob
 import json
 import time
 from pathlib import Path
+
+
+def _get_repo_root() -> Path:
+    """Walk up from this file to find the git repo root."""
+    current = Path(__file__).resolve().parent
+    for parent in [current, *current.parents]:
+        if (parent / ".git").exists():
+            return parent
+    raise RuntimeError("Repo root not found -- no .git directory in any parent")
+
+
+REPO_ROOT = _get_repo_root()
 
 
 def load_scenario_results(
@@ -264,8 +276,8 @@ def compile_feedback(
     out.append("")
     out.append("Constraints:")
     out.append(
-        "- Do NOT modify /scenarios/, /scripts/, "
-        "or /.github/workflows/factory.yaml"
+        "- Do NOT modify /scenarios/, /packages/dark-factory/scripts/, "
+        "or /packages/dark-factory/workflows/factory.yaml"
     )
     out.append(
         "- Do NOT modify /specs/ — read them as requirements"
@@ -297,7 +309,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = REPO_ROOT
     if args.factory_dir:
         factory_dir = Path(args.factory_dir)
     else:

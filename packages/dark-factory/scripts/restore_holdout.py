@@ -7,9 +7,9 @@ and Makefile targets from a clean source (default: origin/main).
 This script does NOT commit — the caller decides when to commit.
 
 Usage:
-    python scripts/restore_holdout.py                    # restore from origin/main
-    python scripts/restore_holdout.py --ref origin/main  # explicit ref
-    python scripts/restore_holdout.py --dry-run          # show what would be restored
+    python packages/dark-factory/scripts/restore_holdout.py
+    python packages/dark-factory/scripts/restore_holdout.py --ref origin/main
+    python packages/dark-factory/scripts/restore_holdout.py --dry-run
 """
 
 from __future__ import annotations
@@ -19,6 +19,18 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+
+def _get_repo_root() -> Path:
+    """Walk up from this file to find the git repo root."""
+    current = Path(__file__).resolve().parent
+    for parent in [current, *current.parents]:
+        if (parent / ".git").exists():
+            return parent
+    raise RuntimeError("Repo root not found -- no .git directory in any parent")
+
+
+REPO_ROOT = _get_repo_root()
 
 # NOTE: strip_holdout.py also removes review pack artifacts (docs/pr_review_pack.html,
 # docs/pr_diff_data.json). These are NOT restored — they are generated artifacts that
@@ -174,7 +186,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = REPO_ROOT
 
     # Fetch latest from remote (so origin/main is current)
     print("Fetching latest from remote...")

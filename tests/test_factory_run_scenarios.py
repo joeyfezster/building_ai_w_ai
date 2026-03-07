@@ -1,4 +1,4 @@
-"""Tests for the factory's own scenario runner (scripts/run_scenarios.py).
+"""Tests for the factory's own scenario runner (./packages/dark-factory/scripts/run_scenarios.py).
 
 These test the factory's infrastructure, not the product code.
 Every test exercises real code paths — no mocking of run_scenarios internals.
@@ -14,7 +14,9 @@ from pathlib import Path
 import pytest
 
 # Insert scripts/ into path so we can import the non-package modules.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS_DIR = ROOT / "packages" / "dark-factory" / "scripts"
+sys.path.insert(0, str(SCRIPTS_DIR))
 from run_scenarios import (  # noqa: E402, I001
     Scenario,
     ScenarioReport,

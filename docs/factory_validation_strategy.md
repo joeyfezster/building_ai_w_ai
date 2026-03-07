@@ -6,11 +6,11 @@ How we validate the factory's own components and their integration.
 
 | Component | Type | Location | Validated By |
 |-----------|------|----------|-------------|
-| Scenario runner | Script | `scripts/run_scenarios.py` | `tests/test_factory_run_scenarios.py` + lint + typecheck |
-| Feedback compiler | Script | `scripts/compile_feedback.py` | `tests/test_factory_compile_feedback.py` + lint + typecheck |
+| Scenario runner | Script | `./packages/dark-factory/scripts/run_scenarios.py` | `tests/test_factory_run_scenarios.py` + lint + typecheck |
+| Feedback compiler | Script | `./packages/dark-factory/scripts/compile_feedback.py` | `tests/test_factory_compile_feedback.py` + lint + typecheck |
 | Factory orchestrator | Workflow | `.github/workflows/factory.yaml` | CI dry-run + manual trigger |
-| Attractor prompt | Markdown | `.github/codex/prompts/factory_fix.md` | Human review + adversarial review |
-| Adversarial review | Markdown | `.claude/skills/factory-orchestrate/review-prompts/adversarial_review.md` | Human review |
+| Attractor prompt | Markdown | `packages/dark-factory/prompts/factory_fix.md` | Human review + adversarial review |
+| Adversarial review | Markdown | `packages/review-prompts/adversarial_review.md` | Human review |
 | Satisfaction dashboard | Streamlit | `src/dashboard/pages/factory.py` | lint + manual verification |
 | Scenario files | Markdown | `scenarios/*.md` | Format validator in CI |
 | Factory CI | Workflow | `.github/workflows/ci.yaml` (factory-self-test job) | Self-referential (runs on itself) |
@@ -38,7 +38,7 @@ How we validate the factory's own components and their integration.
   - End-to-end integration (1 test)
 
 ### Layer 3: Adversarial Review (Manual, Per PR)
-- Review guidelines at `.claude/skills/factory-orchestrate/review-prompts/adversarial_review.md`
+- Review guidelines at `packages/review-prompts/adversarial_review.md`
 - Checks for: vacuous tests, gaming, architectural dishonesty, spec violations
 - Applied to attractor output (product code), not to factory infrastructure
 
@@ -76,8 +76,8 @@ How we validate the factory's own components and their integration.
 
 ```bash
 # Full factory self-test
-ruff check scripts/run_scenarios.py scripts/compile_feedback.py
-mypy scripts/run_scenarios.py scripts/compile_feedback.py --ignore-missing-imports
+ruff check ./packages/dark-factory/scripts/run_scenarios.py ./packages/dark-factory/scripts/compile_feedback.py
+mypy ./packages/dark-factory/scripts/run_scenarios.py ./packages/dark-factory/scripts/compile_feedback.py --ignore-missing-imports
 pytest tests/test_factory_run_scenarios.py tests/test_factory_compile_feedback.py -v
 
 # Integration test (no Codex)
