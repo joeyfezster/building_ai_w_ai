@@ -118,6 +118,206 @@
       "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/10",
       "headSha": "babed4d",
       "status": "active"
+    },
+    {
+      "id": "PR15-1",
+      "globalSeq": 6,
+      "prNumber": 15,
+      "title": "Three-package directory structure: dark-factory, pr-review-pack, review-prompts",
+      "rationale": "Factory scripts and PR review pack are logically independent extractable units. Review prompts are s...",
+      "body": "Factory scripts and PR review pack are logically independent extractable units. Review prompts are shared between both (used by Gate 0 and by review pack rendering), so they get their own shared package with symlinks into both consumers. This structure enables independent git subtree extraction while maintaining a monorepo development experience.",
+      "zones": [
+        "factory"
+      ],
+      "files": [
+        {
+          "path": "packages/dark-factory/",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/pr-review-pack/",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/review-prompts/",
+          "change": "Modified"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-03-07T12:46:18Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/15",
+      "headSha": "0d1c583",
+      "status": "active"
+    },
+    {
+      "id": "PR15-2",
+      "globalSeq": 7,
+      "prNumber": 15,
+      "title": "Symlink backward compatibility (5 symlinks)",
+      "rationale": "Existing Claude Code skill resolution depends on .claude/skills/{name}/SKILL.md paths. Rather than b...",
+      "body": "Existing Claude Code skill resolution depends on .claude/skills/{name}/SKILL.md paths. Rather than breaking all existing skill references, 5 symlinks were created: .claude/skills/factory-orchestrate -> packages/dark-factory, .claude/skills/pr-review-pack -> packages/pr-review-pack, packages/dark-factory/review-prompts -> packages/review-prompts, packages/pr-review-pack/review-prompts -> packages/review-prompts, and the factory workflow. This preserves backward compatibility while making packages/ the canonical source of truth.",
+      "zones": [
+        "factory"
+      ],
+      "files": [
+        {
+          "path": ".claude/skills/factory-orchestrate",
+          "change": "Modified"
+        },
+        {
+          "path": ".claude/skills/pr-review-pack",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/dark-factory/review-prompts",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/pr-review-pack/review-prompts",
+          "change": "Modified"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-03-07T12:46:18Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/15",
+      "headSha": "0d1c583",
+      "status": "active"
+    },
+    {
+      "id": "PR15-3",
+      "globalSeq": 8,
+      "prNumber": 15,
+      "title": "License change from MIT to Apache 2.0",
+      "rationale": "Apache 2.0 provides explicit patent grants and contribution terms that MIT lacks, making it more app...",
+      "body": "Apache 2.0 provides explicit patent grants and contribution terms that MIT lacks, making it more appropriate for packages intended for standalone extraction and potential external consumption. NOTICE files added at repo root and in both packages per Apache 2.0 requirements.",
+      "zones": [
+        "factory"
+      ],
+      "files": [
+        {
+          "path": "LICENSE",
+          "change": "Modified"
+        },
+        {
+          "path": "NOTICE",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/dark-factory/LICENSE",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/dark-factory/NOTICE",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/pr-review-pack/LICENSE",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/pr-review-pack/NOTICE",
+          "change": "Modified"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-03-07T12:46:18Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/15",
+      "headSha": "0d1c583",
+      "status": "active"
+    },
+    {
+      "id": "PR15-4",
+      "globalSeq": 9,
+      "prNumber": 15,
+      "title": "_get_repo_root() sentinel function replaces hardcoded parent traversal",
+      "rationale": "Previously, scripts used Path(__file__).resolve().parent.parent to find the repo root, which broke w...",
+      "body": "Previously, scripts used Path(__file__).resolve().parent.parent to find the repo root, which broke when scripts moved deeper into packages/dark-factory/scripts/ (3 levels deep instead of 2). The new _get_repo_root() walks up the directory tree looking for .git, which is robust to any nesting depth. Initially used .is_dir() which broke in worktrees; fixed to .exists() during Gate 0 remediation.",
+      "zones": [
+        "factory"
+      ],
+      "files": [
+        {
+          "path": "packages/dark-factory/scripts/run_gate0.py",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/dark-factory/scripts/run_scenarios.py",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/dark-factory/scripts/compile_feedback.py",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/dark-factory/scripts/nfr_checks.py",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/dark-factory/scripts/check_test_quality.py",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/dark-factory/scripts/strip_holdout.py",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/dark-factory/scripts/restore_holdout.py",
+          "change": "Modified"
+        },
+        {
+          "path": "packages/dark-factory/scripts/persist_decisions.py",
+          "change": "Modified"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-03-07T12:46:18Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/15",
+      "headSha": "0d1c583",
+      "status": "active"
+    },
+    {
+      "id": "PR15-5",
+      "globalSeq": 10,
+      "prNumber": 15,
+      "title": "publish-subtrees.yml workflow for auto-publishing to standalone repos",
+      "rationale": "Undeclared addition beyond spec scope, but aligned with the extraction goal. On push to main, the wo...",
+      "body": "Undeclared addition beyond spec scope, but aligned with the extraction goal. On push to main, the workflow uses git subtree split to extract packages/dark-factory and packages/pr-review-pack into separate branches and force-push them to standalone GitHub repos via SSH deploy keys. This automates the extraction path so package consumers always get the latest version.",
+      "zones": [
+        "factory"
+      ],
+      "files": [
+        {
+          "path": ".github/workflows/publish-subtrees.yml",
+          "change": "Modified"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-03-07T12:46:18Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/15",
+      "headSha": "0d1c583",
+      "status": "active"
+    },
+    {
+      "id": "PR15-6",
+      "globalSeq": 11,
+      "prNumber": 15,
+      "title": "ci.yaml push trigger restricted to [main] only",
+      "rationale": "Undeclared change by the attractor. Previously CI ran on push to any branch; now only on push to mai...",
+      "body": "Undeclared change by the attractor. Previously CI ran on push to any branch; now only on push to main (PRs still trigger via pull_request event). This reduces CI noise from factory branches that have their own workflow triggers, but was not specified in the restructuring spec. Accepted as reasonable given factory branches have dedicated CI via factory.yaml.",
+      "zones": [
+        "factory"
+      ],
+      "files": [
+        {
+          "path": ".github/workflows/ci.yaml",
+          "change": "Modified"
+        }
+      ],
+      "verified": true,
+      "mergedAt": "2026-03-07T12:46:18Z",
+      "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/15",
+      "headSha": "0d1c583",
+      "status": "active"
     }
   ]
 }
