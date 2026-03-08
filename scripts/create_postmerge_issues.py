@@ -18,6 +18,21 @@ import subprocess
 import sys
 from pathlib import Path
 
+
+def _get_repo_slug(override: str | None = None) -> str:
+    """Return owner/repo from CLI flag or git remote origin."""
+    if override:
+        return override
+    url = subprocess.check_output(
+        ["git", "remote", "get-url", "origin"], text=True
+    ).strip()
+    # SCP-style (git@host:owner/repo.git) has no scheme prefix
+    if ":" in url and not url.startswith(("https://", "http://", "ssh://")):
+        slug = url.split(":")[-1]
+    else:
+        slug = "/".join(url.split("/")[-2:])
+    return slug.removesuffix(".git")
+
 # Post-merge items — hardcoded for now, will be read from review pack data when available
 # Each item: {title, priority, zones, body}
 # This structure matches what the PR review pack generates
@@ -148,8 +163,8 @@ def main() -> int:
     parser.add_argument(
         "--repo",
         type=str,
-        default="joeyfezster/building_ai_w_ai",
-        help="GitHub repo (owner/name)",
+        default=None,
+        help="GitHub repo (owner/name). Auto-detected from git remote if omitted.",
     )
     parser.add_argument(
         "--dry-run",
@@ -180,7 +195,8 @@ def main() -> int:
 
     created = 0
     for item in items:
-        url = create_issue(item, args.pr, args.repo, dry_run=args.dry_run)
+        repo_slug = _get_repo_slug(args.repo)
+        url = create_issue(item, args.pr, repo_slug, dry_run=args.dry_run)
         if url:
             created += 1
 

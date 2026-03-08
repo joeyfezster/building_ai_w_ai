@@ -6,13 +6,18 @@ The project lead reviews the report, not the code. The review pack is the artifa
 
 ## Prerequisites
 
+- **Python 3.12+** with `pyyaml` installed (`pip install -r requirements.txt`)
+- **git**
+- **gh CLI** (authenticated -- run `gh auth login`) -- used for PR metadata, CI checks, and comment resolution
 - **Claude Code** with Agent Teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`)
-- **Python 3.12+**
-- **git** and **gh CLI** (authenticated)
 
 ## Quick Start
 
-1. Copy `packages/pr-review-pack/` into your repo's `.claude/skills/pr-review-pack/` directory.
+1. Clone into your repo's Claude Code skills directory:
+   ```bash
+   git clone https://github.com/joeyfezster/pr-review-pack.git .claude/skills/pr-review-pack
+   pip install -r .claude/skills/pr-review-pack/requirements.txt
+   ```
 2. Create a zone registry from the example:
    ```bash
    cp .claude/skills/pr-review-pack/examples/zone-registry.example.yaml .claude/zone-registry.yaml
@@ -87,6 +92,37 @@ If your repo has component specifications in `specs/`, the review pack will cros
 ### Factory Integration
 
 When used within the Dark Factory loop, the PR Review Pack reuses Gate 0 Tier 2 (LLM review agent) findings if `artifacts/factory/gate0_results.json` exists. This avoids running the same LLM review twice -- once in Gate 0 and again in the review pack.
+
+## Permissions & Setup
+
+**This skill is extremely permissive.** The SKILL.md `allowed-tools` frontmatter pre-approves broad bash patterns (`python3 *`, `gh *`, `osascript *`, `screencapture *`) to avoid constant permission prompts during the multi-step pipeline. Review the list before adopting.
+
+### Claude Code Permissions
+
+The skill's `allowed-tools` should handle most prompts automatically. If you still get permission requests, add these to your project's `.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 *)", "Bash(gh *)", "Bash(git diff *)", "Bash(git log *)",
+      "Bash(git show *)", "Bash(git status *)", "Bash(screencapture *)",
+      "Bash(osascript *)", "Bash(open *)", "Bash(sleep *)", "Bash(which *)"
+    ]
+  }
+}
+```
+
+### macOS Permissions (one-time, per machine)
+
+Visual validation uses `screencapture` and `osascript` (for scrolling the browser). These require OS-level grants that cannot be automated:
+
+| Permission | Where to grant | When prompted |
+|------------|---------------|---------------|
+| **Screen Recording** | System Settings → Privacy & Security → Screen Recording → iTerm2 | First `screencapture` call |
+| **Accessibility** | System Settings → Privacy & Security → Accessibility → iTerm2 | First `osascript` keystroke call |
+
+Grant once per Mac. **Restart iTerm2 after granting.** If you skip visual validation, these aren't needed — but the red "NOT Visually Inspected" banner will remain on the review pack.
 
 ## License
 
