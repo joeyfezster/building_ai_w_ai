@@ -1,3 +1,11 @@
+---
+type: plan
+status: wip
+pr: 26
+created: 2025-03-05
+updated: 2025-03-07
+---
+
 # Plan: Make Standalone Packages Work as Advertised
 
 ## Context
