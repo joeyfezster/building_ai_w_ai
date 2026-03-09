@@ -59,3 +59,21 @@ zones:
     category: infra
     label: "Docker/Infra"
     sublabel: "Containers, compute"
+  review-pack:
+    paths: ["packages/pr-review-pack/**"]
+    specs: ["packages/pr-review-pack/references/build-spec.md"]
+    category: factory
+    label: "Review Pack"
+    sublabel: "PR review pack skill (template, renderer, scaffold, CLI, tests)"
+  review-prompts:
+    paths: ["packages/review-prompts/**"]
+    specs: []
+    category: factory
+    label: "Review Prompts"
+    sublabel: "Gate 0 Tier 2 paradigm prompts"
+  dark-factory:
+    paths: ["packages/dark-factory/**"]
+    specs: ["packages/dark-factory/docs/dark_factory.md"]
+    category: factory
+    label: "Dark Factory"
+    sublabel: "Factory convergence loop"
