@@ -47,12 +47,18 @@ zones:
     category: infra
     label: "Config"
     sublabel: "Build, deps, project config"
-  factory:
-    paths: ["scripts/**", ".github/**", ".claude/skills/**", ".claude/zone-registry.yaml", "docs/dark_factory.md", "docs/code_quality_standards.md", "docs/proposals/**", "CLAUDE.md"]
+  repo-infra:
+    paths: [".github/**", ".claude/skills/**", ".claude/zone-registry.yaml", "docs/proposals/**", "docs/factory_validation_strategy.md", "CLAUDE.md"]
     specs: []
     category: factory
-    label: "Factory"
-    sublabel: "Convergence loop infrastructure"
+    label: "Repo Infra"
+    sublabel: "CI workflows, zone registry, project-level config"
+  repo-scripts:
+    paths: ["scripts/**"]
+    specs: []
+    category: infra
+    label: "Repo Scripts"
+    sublabel: "Utility scripts (whitepapers, packaging, postmerge)"
   docker:
     paths: ["infra/**", ".devcontainer/**"]
     specs: []
@@ -73,8 +79,26 @@ zones:
     label: "Review Prompts"
     sublabel: "Gate 0 Tier 2 paradigm prompts"
   dark-factory:
-    paths: ["packages/dark-factory/**"]
+    paths: ["packages/dark-factory/**", "artifacts/factory/**"]
     specs: ["packages/dark-factory/docs/dark_factory.md"]
     category: factory
     label: "Dark Factory"
-    sublabel: "Factory convergence loop"
+    sublabel: "Factory convergence loop, gate artifacts"
+  docs:
+    paths: ["docs/*.md", "docs/*.html", "docs/*.py", "docs/decisions/**", "docs/whitepapers/**"]
+    specs: []
+    category: infra
+    label: "Documentation"
+    sublabel: "Project docs, decisions, whitepapers"
+  specs:
+    paths: ["specs/**", "scenarios/**"]
+    specs: []
+    category: factory
+    label: "Specs & Scenarios"
+    sublabel: "Component specs and holdout evaluation criteria"
+  play:
+    paths: ["src/play/**"]
+    specs: []
+    category: product
+    label: "Interactive Play"
+    sublabel: "Human vs agent gameplay"
