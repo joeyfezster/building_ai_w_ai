@@ -48,7 +48,7 @@ zones:
     label: "Config"
     sublabel: "Build, deps, project config"
   factory:
-    paths: ["scripts/**", ".github/**", ".claude/skills/**", "docs/dark_factory.md", "docs/code_quality_standards.md", "CLAUDE.md"]
+    paths: ["scripts/**", ".github/**", ".claude/skills/**", ".claude/zone-registry.yaml", "docs/dark_factory.md", "docs/code_quality_standards.md", "docs/proposals/**", "CLAUDE.md"]
     specs: []
     category: factory
     label: "Factory"
@@ -60,13 +60,14 @@ zones:
     label: "Docker/Infra"
     sublabel: "Containers, compute"
   review-pack:
-    paths: ["packages/pr-review-pack/**"]
+    paths: ["packages/pr-review-pack/**", "docs/pr*_review_pack.html", "docs/pr*_diff_data.json"]
     specs: ["packages/pr-review-pack/references/build-spec.md"]
     category: factory
     label: "Review Pack"
     sublabel: "PR review pack skill (template, renderer, scaffold, CLI, tests)"
   review-prompts:
     paths: ["packages/review-prompts/**"]
+    # No separate specs — the prompt files themselves define the review paradigms.
     specs: []
     category: factory
     label: "Review Prompts"
