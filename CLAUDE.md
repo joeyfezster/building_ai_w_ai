@@ -54,7 +54,7 @@ These standards are enforced by Gate 0 (adversarial review), Gate 1 (lint/typech
 
 When running `/factory-orchestrate`, these rules are hard constraints — not suggestions:
 
-1. **Gate 0 has two tiers.** Tier 1: run `./packages/dark-factory/scripts/run_gate0.py` (5 deterministic tool checks in parallel). Tier 2: spawn 4 LLM review agents via Agent Teams (Code Health, Security, Test Integrity, Adversarial) -- each runs in its own context window.
+1. **Gate 0 has two tiers.** Tier 1: run `./packages/dark-factory/scripts/run_gate0.py` (5 deterministic tool checks in parallel). Tier 2: spawn 5 LLM review agents via Agent Teams (Code Health, Security, Test Integrity, Adversarial, Architecture) -- each runs in its own context window.
 2. **Gate 0 failure: keep Codex's code.** Merge onto the factory branch so iteration N+1 is incremental. NEVER revert.
 3. **Delete Codex's remote branch immediately after merge.** Every merge, pass or fail. Stale branches pollute the namespace.
 4. **Convergence requires ALL scenarios passing.** A single failing scenario blocks convergence — no exceptions, no percentage thresholds. The factory owns its output quality end-to-end. Never excuse a failure by attributing it to a previous iteration or the base branch. If a scenario fails, fix it and re-run, regardless of cause.

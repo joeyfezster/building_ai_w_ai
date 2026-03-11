@@ -1,8 +1,27 @@
 {
-  "timestamp": "2026-02-27T02:53:55.095155+00:00",
+  "timestamp": "2026-03-11T01:20:21.829182-04:00",
   "tier": "deterministic",
-  "total_elapsed_s": 0.07,
+  "total_elapsed_s": 0.22,
   "checks": {
+    "complexity": {
+      "name": "complexity",
+      "status": "skipped",
+      "findings": [
+        {
+          "nfr": "complexity",
+          "severity": "INFO",
+          "message": "radon not available \u2014 install with: pip install radon",
+          "file": "",
+          "line": 0,
+          "metric": "",
+          "value": "",
+          "threshold": ""
+        }
+      ],
+      "tool": "radon",
+      "summary": "radon not available \u2014 install with: pip install radon",
+      "elapsed_s": 0.11
+    },
     "security": {
       "name": "security",
       "status": "skipped",
@@ -20,7 +39,7 @@
       ],
       "tool": "bandit",
       "summary": "bandit not available \u2014 install with: pip install bandit",
-      "elapsed_s": 0.03
+      "elapsed_s": 0.11
     },
     "dead_code": {
       "name": "dead_code",
@@ -39,42 +58,7 @@
       ],
       "tool": "vulture",
       "summary": "vulture not available \u2014 install with: pip install vulture",
-      "elapsed_s": 0.03
-    },
-    "complexity": {
-      "name": "complexity",
-      "status": "skipped",
-      "findings": [
-        {
-          "nfr": "complexity",
-          "severity": "INFO",
-          "message": "radon not available \u2014 install with: pip install radon",
-          "file": "",
-          "line": 0,
-          "metric": "",
-          "value": "",
-          "threshold": ""
-        }
-      ],
-      "tool": "radon",
-      "summary": "radon not available \u2014 install with: pip install radon",
-      "elapsed_s": 0.03
-    },
-    "test_quality": {
-      "name": "test_quality",
-      "tool": "check_test_quality.py",
-      "status": "passed",
-      "summary": "1 findings",
-      "findings": [
-        {
-          "file": "/Users/joelbaruch/repos/building_ai_w_ai/.claude/worktrees/humble-petting-jellyfish/tests/test_imports.py",
-          "line": 4,
-          "severity": "WARNING",
-          "pattern": "no_assertions",
-          "detail": "Test 'test_imports' has no assertions \u2014 may pass vacuously"
-        }
-      ],
-      "elapsed_s": 0.05
+      "elapsed_s": 0.11
     },
     "code_quality": {
       "name": "code_quality",
@@ -84,7 +68,7 @@
           "nfr": "code_quality",
           "severity": "WARNING",
           "message": "RET504: Unnecessary assignment to `rgb` before `return` statement",
-          "file": "/Users/joelbaruch/repos/building_ai_w_ai/.claude/worktrees/humble-petting-jellyfish/src/envs/minipong.py",
+          "file": "/Users/joeybaruch/Dropbox/0.second.brain/projects/repos/review-pack-v2/src/envs/minipong.py",
           "line": 124,
           "metric": "",
           "value": "",
@@ -93,17 +77,63 @@
         {
           "nfr": "code_quality",
           "severity": "WARNING",
-          "message": "C901: `run_game` is too complex (12 > 10)",
-          "file": "/Users/joelbaruch/repos/building_ai_w_ai/.claude/worktrees/humble-petting-jellyfish/src/play/play_minipong.py",
-          "line": 110,
+          "message": "C901: `run_game` is too complex (14 > 10)",
+          "file": "/Users/joeybaruch/Dropbox/0.second.brain/projects/repos/review-pack-v2/src/play/play_minipong.py",
+          "line": 118,
+          "metric": "",
+          "value": "",
+          "threshold": ""
+        },
+        {
+          "nfr": "code_quality",
+          "severity": "WARNING",
+          "message": "SIM108: Use ternary operator `runs = {r: artifacts_dir / r for r in args.runs} if args.runs else _discover_runs(artifacts_dir)` instead of `if`-`else`-block",
+          "file": "/Users/joeybaruch/Dropbox/0.second.brain/projects/repos/review-pack-v2/src/train/plot_training.py",
+          "line": 209,
+          "metric": "",
+          "value": "",
+          "threshold": ""
+        },
+        {
+          "nfr": "code_quality",
+          "severity": "WARNING",
+          "message": "C901: `train` is too complex (15 > 10)",
+          "file": "/Users/joeybaruch/Dropbox/0.second.brain/projects/repos/review-pack-v2/src/train/train_dqn.py",
+          "line": 68,
+          "metric": "",
+          "value": "",
+          "threshold": ""
+        },
+        {
+          "nfr": "code_quality",
+          "severity": "WARNING",
+          "message": "C901: `train_selfplay` is too complex (19 > 10)",
+          "file": "/Users/joeybaruch/Dropbox/0.second.brain/projects/repos/review-pack-v2/src/train/train_selfplay.py",
+          "line": 73,
           "metric": "",
           "value": "",
           "threshold": ""
         }
       ],
       "tool": "ruff (extended)",
-      "summary": "2 warnings",
-      "elapsed_s": 0.07
+      "summary": "5 warnings",
+      "elapsed_s": 0.21
+    },
+    "test_quality": {
+      "name": "test_quality",
+      "tool": "check_test_quality.py",
+      "status": "passed",
+      "summary": "1 findings",
+      "findings": [
+        {
+          "file": "/Users/joeybaruch/Dropbox/0.second.brain/projects/repos/review-pack-v2/tests/test_imports.py",
+          "line": 4,
+          "severity": "WARNING",
+          "pattern": "no_assertions",
+          "detail": "Test 'test_imports' has no assertions \u2014 may pass vacuously"
+        }
+      ],
+      "elapsed_s": 0.21
     }
   },
   "summary": {
@@ -112,7 +142,7 @@
     "failed": 0,
     "error": 3,
     "critical_findings": 0,
-    "warning_findings": 3,
+    "warning_findings": 6,
     "has_critical": false
   }
 }

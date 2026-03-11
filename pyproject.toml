@@ -31,5 +31,5 @@ disable_error_code = ["type-arg", "misc", "override", "return-value", "no-any-re
 
 [tool.pytest.ini_options]
 addopts = "-q"
-testpaths = ["tests"]
-pythonpath = ["."]
+testpaths = ["tests", "packages/pr-review-pack/tests"]
+pythonpath = [".", "packages/pr-review-pack"]

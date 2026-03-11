@@ -48,14 +48,18 @@ Tests that configure the system to behave trivially:
 - **Fake dependencies.** Tests that replace real dependencies with stubs that return canned responses. Acceptable for external services (network, filesystem); not acceptable for core modules (environment, agent, replay buffer).
 - **Subset testing.** Tests that exercise one branch of a multi-branch function and ignore the others. The untested branches could be completely wrong.
 
-### 4. Coverage Gaps (What's NOT Being Tested)
+### 4. Per-File Coverage Assessment (What's NOT Being Tested)
 
-Look at what the diff introduces and check whether tests cover it:
+**For each changed source file in the diff**, assess whether the diff includes corresponding test changes. This is your per-file test coverage commentary — the reviewer reading the pack should know, for every source file, whether its changes are tested.
 
-- **New functions without tests.** If a new public function is added to `src/`, there should be a test that exercises it through its real interface.
+- **New public API surface without tests.** If a changed source file gains new public functions, classes, or methods, and no test file in the diff covers them, flag as WARNING. Name the specific function and the test file that should exist.
+- **Modified behavior without test validation.** If a source file modifies existing behavior (not just refactoring — actual logic changes) and no test validates the new behavior, flag as WARNING. The test doesn't have to be new — an existing test that covers the changed code path counts.
 - **New branches without tests.** If new conditional logic is added, are both branches tested?
 - **Error paths untested.** Functions that can raise exceptions or return error states — are the error paths tested, or only the happy path?
 - **Edge cases ignored.** For RL systems: what happens at episode boundaries? With empty replay buffers? With maximum-length episodes? At the edges of the observation space?
+- **Test files without corresponding source changes.** If a test file is modified but its source file is NOT in the diff, note this — it may indicate test maintenance or may be a refactoring artifact. Not a finding, just context.
+
+**Output expectation:** Every source file in the diff (not test files, not config files) should get at least one sentence of coverage commentary in your findings. If a source file has adequate test coverage, a brief note suffices (e.g., "test_core.py exercises the new `process()` function with 3 test cases"). If coverage is missing, flag it.
 
 ### 5. Gaming Detection (Tests That Help the Attractor Cheat)
 
