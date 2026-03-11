@@ -1,3 +1,9 @@
+---
+status: implemented
+branch: review-pack-v2
+date: 2026-03-08
+---
+
 # Review Pack v2 — "Mission Control" Design Spec
 
 ## Design Intent
