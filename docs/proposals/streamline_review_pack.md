@@ -1,3 +1,10 @@
+---
+type: plan
+status: wip
+created: 2026-03-14
+updated: 2026-03-15
+---
+
 # PR Review Pack — Streamlining Proposal
 
 ## Part 1: Current State Spec (As-Built)

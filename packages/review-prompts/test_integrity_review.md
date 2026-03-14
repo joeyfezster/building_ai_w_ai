@@ -88,28 +88,50 @@ RL systems are inherently stochastic. Tests must handle this correctly:
 
 ## Review Output Format
 
-For each finding, report:
+Write one **ReviewConcept** JSON object per line to your output .jsonl file at `{output_path}`.
 
-```
-FINDING: [one-line summary]
-SEVERITY: CRITICAL | WARNING | NIT
-FILE: [path]
-LINE: [line number or range]
-EVIDENCE: [what you found — quote the test code and explain why it's vacuous/insufficient]
-IMPACT: [what bug or regression this test would fail to catch]
-FIX: [concrete improvement — what assertion or approach would make this test meaningful]
+```json
+{"concept_id": "test-integrity-1", "title": "Vacuous shape-only assertion misses black image bug", "grade": "C", "category": "test-integrity", "summary": "Test asserts obs.shape but not pixel values — a black image passes", "detail_html": "<p>Test <code>test_step_returns_observation</code> at line 23 asserts <code>obs.shape == (84, 84)</code> but doesn't verify pixel values — a black image would pass. Add <code>assert obs.max() > 0</code>.</p>", "locations": [{"file": "tests/test_env.py", "lines": "23-30", "zones": ["tests"], "comment": "Shape assertion without value check"}]}
 ```
 
-Severity guide:
-- **CRITICAL**: Test is vacuous (passes with implementation deleted) or actively masks a bug. Blocks merge.
-- **WARNING**: Test is weak (technically tests something but misses the important behavior) or has significant coverage gap. Should be fixed.
-- **NIT**: Test could be more thorough but covers the essential behavior. Can be deferred.
+### Fields
+
+- **concept_id**: `test-integrity-{seq}` (e.g., `test-integrity-1`, `test-integrity-2`)
+- **title**: One-line summary (max 200 chars)
+- **grade**: Test integrity grade:
+  - **A** — Tests are thorough and meaningful
+  - **B+** — Minor improvements possible, covers essentials
+  - **B** — Tests something but misses important behavior
+  - **C** — Significant coverage gap or weak assertions
+  - **F** — Test is vacuous (passes with implementation deleted) or masks a bug
+  - **N/A is NOT valid.** If you can't assess, explain why in the summary.
+- **category**: Always `"test-integrity"` for your findings
+- **summary**: Brief plain-text explanation
+- **detail_html**: Full explanation with evidence (HTML-safe: use `<p>`, `<code>`, `<strong>`, not markdown)
+- **locations**: Array of code locations (at least 1). Each location has:
+  - `file`: path relative to repo root
+  - `lines`: line range (e.g., `"42-58"`, `"12"`) or null for file-level
+  - `zones`: zone IDs from zone-registry.yaml (lowercase-kebab-case, must match registry keys)
+  - `comment`: location-specific context (optional)
+
+### Zone ID Rules
+- All zone IDs must be lowercase-kebab-case (e.g., `rl-core`, `review-pack`)
+- All zone IDs must exist in the zone registry (`.claude/zone-registry.yaml` or repo-root `zone-registry.yaml`)
+- Read the zone registry before writing output to ensure IDs are valid
+
+### Quality Standards Discovery
+Before reviewing, discover and read (with scrutiny, not as gospel):
+- `copilot-instructions.md` or `.github/copilot-instructions.md` (if exists)
+- `CLAUDE.md` at repo root (if exists)
+- `packages/dark-factory/docs/code_quality_standards.md` (if exists)
+
+These inform what the project values. Treat them as useful context, not infallible rules.
 
 ## Your Constraints
 
 - You are reviewing **test code** (tests/) and **the implementations they claim to test** (src/) — you need both to assess test integrity.
 - You have access to `gate0_results.json` for tier 1 context (AST scanner findings).
-- You have access to `docs/code_quality_standards.md` for test quality rules.
 - You do NOT have access to scenarios (holdout set).
+- **Use Read tool for all file access. Never use Bash.**
 - Focus on findings, not praise. If a test is solid, move on.
 - Be specific. "This test is weak" is not useful. "Test `test_step_returns_observation` at line 23 asserts `obs.shape == (84, 84)` but doesn't verify pixel values — a black image would pass. Add `assert obs.max() > 0` to verify the observation contains meaningful data" is useful.

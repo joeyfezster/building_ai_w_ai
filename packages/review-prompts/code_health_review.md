@@ -73,28 +73,50 @@ This code was written by an AI agent (Codex). Watch for patterns specific to LLM
 
 ## Review Output Format
 
-For each finding, report:
+Write one **ReviewConcept** JSON object per line to your output .jsonl file at `{output_path}`.
 
-```
-FINDING: [one-line summary]
-SEVERITY: CRITICAL | WARNING | NIT
-FILE: [path]
-LINE: [line number or range]
-EVIDENCE: [what you found — be specific, quote code]
-IMPACT: [why this matters for correctness, maintainability, or reliability]
-FIX: [what the attractor should do differently]
+```json
+{"concept_id": "code-health-1", "title": "Dead import in training pipeline", "grade": "B", "category": "code-health", "summary": "Unused import of deprecated module left in training entry point", "detail_html": "<p>The import <code>from src.obs.legacy import MetricsCollector</code> at line 3 is unused...</p>", "locations": [{"file": "src/train/train.py", "lines": "3", "zones": ["training"], "comment": "Unused import of deprecated MetricsCollector"}]}
 ```
 
-Severity guide:
-- **CRITICAL**: The code is wrong, will fail at runtime, or hides a bug. Blocks merge.
-- **WARNING**: The code is fragile, confusing, or creates maintenance risk. Should be fixed.
-- **NIT**: Minor quality improvement. Can be deferred.
+### Fields
+
+- **concept_id**: `code-health-{seq}` (e.g., `code-health-1`, `code-health-2`)
+- **title**: One-line summary (max 200 chars)
+- **grade**: Quality grade for this finding:
+  - **A** — Clean, no issues
+  - **B+** — Minor concerns, good overall
+  - **B** — Warnings, should be improved
+  - **C** — Issues that should be fixed before merge
+  - **F** — Critical problems that block merge
+  - **N/A is NOT valid.** If you can't assess, explain why in the summary.
+- **category**: Always `"code-health"` for your findings
+- **summary**: Brief plain-text explanation
+- **detail_html**: Full explanation with evidence (HTML-safe: use `<p>`, `<code>`, `<strong>`, not markdown)
+- **locations**: Array of code locations (at least 1). Each location has:
+  - `file`: path relative to repo root
+  - `lines`: line range (e.g., `"42-58"`, `"12"`) or null for file-level
+  - `zones`: zone IDs from zone-registry.yaml (lowercase-kebab-case, must match registry keys)
+  - `comment`: location-specific context (optional)
+
+### Zone ID Rules
+- All zone IDs must be lowercase-kebab-case (e.g., `rl-core`, `review-pack`)
+- All zone IDs must exist in the zone registry (`.claude/zone-registry.yaml` or repo-root `zone-registry.yaml`)
+- Read the zone registry before writing output to ensure IDs are valid
+
+### Quality Standards Discovery
+Before reviewing, discover and read (with scrutiny, not as gospel):
+- `copilot-instructions.md` or `.github/copilot-instructions.md` (if exists)
+- `CLAUDE.md` at repo root (if exists)
+- `packages/dark-factory/docs/code_quality_standards.md` (if exists)
+
+These inform what the project values. Treat them as useful context, not infallible rules.
 
 ## Your Constraints
 
 - You are reviewing **product code** (src/, tests/, configs/) — not factory infrastructure.
 - You have access to `gate0_results.json` for tier 1 context.
-- You have access to `docs/code_quality_standards.md` for quality rules.
 - You do NOT have access to scenarios (holdout set).
+- **Use Read tool for all file access. Never use Bash.**
 - Focus on findings, not praise. If something is correct, move on.
 - Be specific. "This code is complex" is not useful. "Function `train_step` at line 45 has 5 levels of nesting because it handles both single-env and vectorized-env cases inline — extract the vectorized path to a helper" is useful.

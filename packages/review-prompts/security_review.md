@@ -92,28 +92,50 @@ This code was written by an AI agent (Codex). Watch for security patterns specif
 
 ## Review Output Format
 
-For each finding, report:
+Write one **ReviewConcept** JSON object per line to your output .jsonl file at `{output_path}`.
 
-```
-FINDING: [one-line summary]
-SEVERITY: CRITICAL | WARNING | NIT
-FILE: [path]
-LINE: [line number or range]
-EVIDENCE: [what you found — quote the vulnerable code]
-IMPACT: [specific attack scenario — who could exploit this and how]
-FIX: [concrete remediation — what code change to make]
+```json
+{"concept_id": "security-1", "title": "Unsafe torch.load without weights_only", "grade": "F", "category": "security", "summary": "torch.load() at line 42 allows arbitrary code execution via pickle deserialization", "detail_html": "<p>An attacker who can write to the checkpoint directory can achieve arbitrary code execution via <code>torch.load()</code> at line 42 because <code>weights_only</code> is not set.</p>", "locations": [{"file": "src/agents/dqn.py", "lines": "42", "zones": ["agent"], "comment": "torch.load() without weights_only=True"}]}
 ```
 
-Severity guide:
-- **CRITICAL**: Exploitable vulnerability with realistic attack path. Blocks merge.
-- **WARNING**: Security weakness with limited exploitability or defense-in-depth concern. Should be fixed.
-- **NIT**: Security hygiene improvement with no practical attack surface. Can be deferred.
+### Fields
+
+- **concept_id**: `security-{seq}` (e.g., `security-1`, `security-2`)
+- **title**: One-line summary (max 200 chars)
+- **grade**: Security grade for this finding:
+  - **A** — Clean, no security issues
+  - **B+** — Minor hygiene improvements possible
+  - **B** — Security weakness with limited exploitability
+  - **C** — Security concern that should be fixed before merge
+  - **F** — Exploitable vulnerability that blocks merge
+  - **N/A is NOT valid.** If you can't assess, explain why in the summary.
+- **category**: Always `"security"` for your findings
+- **summary**: Brief plain-text explanation
+- **detail_html**: Full explanation with evidence and attack scenarios (HTML-safe: use `<p>`, `<code>`, `<strong>`, not markdown)
+- **locations**: Array of code locations (at least 1). Each location has:
+  - `file`: path relative to repo root
+  - `lines`: line range (e.g., `"42-58"`, `"12"`) or null for file-level
+  - `zones`: zone IDs from zone-registry.yaml (lowercase-kebab-case, must match registry keys)
+  - `comment`: location-specific context (optional)
+
+### Zone ID Rules
+- All zone IDs must be lowercase-kebab-case (e.g., `rl-core`, `review-pack`)
+- All zone IDs must exist in the zone registry (`.claude/zone-registry.yaml` or repo-root `zone-registry.yaml`)
+- Read the zone registry before writing output to ensure IDs are valid
+
+### Quality Standards Discovery
+Before reviewing, discover and read (with scrutiny, not as gospel):
+- `copilot-instructions.md` or `.github/copilot-instructions.md` (if exists)
+- `CLAUDE.md` at repo root (if exists)
+- `packages/dark-factory/docs/code_quality_standards.md` (if exists)
+
+These inform what the project values. Treat them as useful context, not infallible rules.
 
 ## Your Constraints
 
 - You are reviewing **product code** (src/, tests/, configs/, Dockerfile) — not factory infrastructure.
 - You have access to `gate0_results.json` for tier 1 context (bandit findings).
-- You have access to `docs/code_quality_standards.md` for quality rules.
 - You do NOT have access to scenarios (holdout set).
+- **Use Read tool for all file access. Never use Bash.**
 - Assess severity based on THIS system's threat model, not generic OWASP rankings. A SQL injection finding is irrelevant here (no database). A pickle deserialization finding is critical.
 - Be specific about attack scenarios. "This is insecure" is not useful. "An attacker who can write to the checkpoint directory can achieve arbitrary code execution via `torch.load()` at line 42 because `weights_only` is not set" is useful.

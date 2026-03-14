@@ -95,74 +95,62 @@ Your output feeds **multiple components** of the review pack:
 
 ## Review Output Format
 
-For each finding, report:
+Write your output to the .jsonl file at `{output_path}`. Your output has **two parts**, both written as JSON lines:
 
-```
-FINDING: [one-line summary]
-SEVERITY: CRITICAL | WARNING | NIT
-FILE: [path, or "N/A" for structural findings]
-LINE: [line number or range, or "N/A" for structural findings]
-EVIDENCE: [what you found — be specific about paths, patterns, zones, relationships]
-IMPACT: [why this matters for architectural coherence]
-FIX: [what should be done — update zone registry, create new zone, add docs, restructure, etc.]
+### Part 1: ReviewConcept Findings
+
+One **ReviewConcept** JSON object per line for each architectural finding:
+
+```json
+{"concept_id": "architecture-1", "title": "3 unzoned files in new src/new_module/ directory", "grade": "C", "category": "architecture", "summary": "New module has no zone coverage — needs zone-registry.yaml update", "detail_html": "<p>Files <code>src/new_module/core.py</code>, <code>utils.py</code>, <code>__init__.py</code> match no zone pattern. Suggest creating a new zone or adding to zone-alpha's paths.</p>", "locations": [{"file": "src/new_module/core.py", "zones": [], "comment": "Unzoned — suggest new 'new-module' zone"}, {"file": "src/new_module/utils.py", "zones": [], "comment": "Unzoned — same zone as core.py"}]}
 ```
 
-Severity guide:
-- **CRITICAL**: The architecture has a structural problem that will cause ongoing confusion, incorrect review pack output, or maintenance burden. Blocks merge. Examples: zone registry is fundamentally wrong, major structural change with no zone coverage, circular dependency introduced.
-- **WARNING**: An architectural gap that should be addressed. Examples: unzoned files, missing docs, stale zone patterns, new coupling between zones.
-- **NIT**: A minor improvement to zone registry health or documentation. Examples: uninformative sublabels, redundant zone patterns.
+### Fields
 
-**Additionally**, after all per-file/per-zone findings, output a structured architecture assessment block. This block is extracted separately from the findings and feeds the architecture diagram and warnings sections:
+- **concept_id**: `architecture-{seq}` (e.g., `architecture-1`, `architecture-2`)
+- **title**: One-line summary (max 200 chars)
+- **grade**: Architecture grade:
+  - **A** — Clean architecture, no structural issues
+  - **B+** — Minor gaps (uninformative sublabels, redundant zone patterns)
+  - **B** — Architectural gaps that should be addressed (unzoned files, missing docs)
+  - **C** — Significant structural problem affecting review pack output or maintenance
+  - **F** — Critical: zone registry fundamentally wrong, major undocumented structural change, circular dependency
+  - **N/A is NOT valid.** If you can't assess, explain why in the summary.
+- **category**: Always `"architecture"` for your findings
+- **summary**: Brief plain-text explanation
+- **detail_html**: Full explanation with evidence (HTML-safe: `<p>`, `<code>`, `<strong>`)
+- **locations**: Array of code locations. For structural findings, use the most relevant file(s). Zones may be empty for "unzoned" findings — this is the one exception where empty zones are valid.
 
+### Part 2: Architecture Assessment
+
+After all findings, write a **single additional line** with the architecture assessment. This is a special JSON object (NOT a ReviewConcept) that feeds the architecture diagram and warnings sections:
+
+```json
+{"_type": "architecture_assessment", "baselineDiagram": {"zones": [], "arrows": [], "rowLabels": [], "highlights": [], "narrative": "..."}, "updateDiagram": {"zones": [], "arrows": [], "rowLabels": [], "highlights": ["zone-alpha"], "narrative": "..."}, "diagramNarrative": "<p>...</p>", "unzonedFiles": [{"path": "src/new.py", "suggestedZone": "zone-alpha", "reason": "..."}], "zoneChanges": [], "registryWarnings": [], "couplingWarnings": [], "docRecommendations": [], "decisionZoneVerification": [], "overallHealth": "needs-attention", "summary": "<p>...</p>"}
 ```
-ARCHITECTURE_ASSESSMENT:
-{
-  "baselineDiagram": {
-    "zones": [/* ArchitectureZone[] — architecture BEFORE this PR */],
-    "arrows": [/* ArchitectureArrow[] — relationships between zones */],
-    "rowLabels": [/* RowLabel[] */],
-    "highlights": [],
-    "narrative": "<p>Baseline architecture: 3 zones across 2 layers...</p>"
-  },
-  "updateDiagram": {
-    "zones": [/* ArchitectureZone[] — architecture AFTER this PR */],
-    "arrows": [/* ArchitectureArrow[] — updated relationships */],
-    "rowLabels": [/* RowLabel[] */],
-    "highlights": ["zone-alpha"],
-    "narrative": "<p>This PR modifies zone-alpha and introduces a new dependency on zone-beta...</p>"
-  },
-  "diagramNarrative": "<p>Summary of what changed architecturally between baseline and update.</p>",
-  "unzonedFiles": [
-    {"path": "src/new_module.py", "suggestedZone": "zone-alpha", "reason": "Matches zone-alpha's domain based on imports and functionality"}
-  ],
-  "zoneChanges": [
-    {"type": "new_zone_recommended", "zone": "new-module", "reason": "3 new files in src/new_module/ don't fit existing zones", "suggestedPaths": ["src/new_module/**"]}
-  ],
-  "registryWarnings": [
-    {"zone": "zone-beta", "warning": "Missing specs reference — no linked documentation", "severity": "WARNING"}
-  ],
-  "couplingWarnings": [
-    {"fromZone": "zone-alpha", "toZone": "zone-beta", "files": ["src/alpha/core.py"], "evidence": "Direct import of beta internal module beta._helpers"}
-  ],
-  "docRecommendations": [
-    {"type": "update_needed", "path": "docs/architecture.md", "reason": "New module added in this PR without architecture doc update"}
-  ],
-  "decisionZoneVerification": [
-    {"decisionNumber": 1, "claimedZones": ["zone-alpha"], "verified": true, "reason": "3 files in diff touch zone-alpha paths"}
-  ],
-  "overallHealth": "needs-attention",
-  "summary": "<p>2 unzoned files and 1 zone registry warning. The zone registry covers 85% of changed files but <code>src/new_module/</code> needs a new zone definition.</p>"
-}
-```
+
+The `_type: "architecture_assessment"` discriminator tells the assembler this line is the assessment, not a ReviewConcept. See `references/data-schema.md` for the full interface definitions of each field.
 
 **`overallHealth` values:**
 - `"healthy"` — all files zoned, registry is complete, no structural issues
 - `"needs-attention"` — minor gaps (a few unzoned files, missing docs) that don't block merge
-- `"action-required"` — significant architectural gaps that should be addressed (many unzoned files, stale zones, major structural change undocumented)
+- `"action-required"` — significant architectural gaps that should be addressed
 
-**`summary`** is an HTML-safe paragraph (use `<p>`, `<code>`, `<strong>` — not markdown).
+**Diagram data format:** `baselineDiagram` and `updateDiagram` use `ArchitectureZone`, `ArchitectureArrow`, and `RowLabel` interfaces from `references/data-schema.md`. Each zone needs: `id`, `label`, `sublabel`, `category`, `fileCount`, `position` (x, y, width, height), `specs`, `isModified`. Position zones by category row (factory, product, infra).
 
-**Diagram data format:** The `baselineDiagram` and `updateDiagram` use the same `ArchitectureZone`, `ArchitectureArrow`, and `RowLabel` interfaces defined in `references/data-schema.md`. Each zone needs: `id`, `label`, `sublabel`, `category`, `fileCount`, `position` (x, y, width, height), `specs`, `isModified`. Position zones by category row (factory, product, infra) with sequential x-placement.
+### Zone ID Rules
+- All zone IDs must be lowercase-kebab-case (e.g., `rl-core`, `review-pack`)
+- All zone IDs must exist in the zone registry (`.claude/zone-registry.yaml` or repo-root `zone-registry.yaml`)
+- Exception: "unzoned" findings may have empty zones arrays — this is valid for the architecture reviewer only
+- Read the zone registry before writing output to ensure IDs are valid
+
+### Quality Standards Discovery
+Before reviewing, discover and read (with scrutiny, not as gospel):
+- `copilot-instructions.md` or `.github/copilot-instructions.md` (if exists)
+- `CLAUDE.md` at repo root (if exists)
+- `packages/dark-factory/docs/code_quality_standards.md` (if exists)
+
+These inform what the project values. Treat them as useful context, not infallible rules.
 
 ## Your Constraints
 
@@ -170,6 +158,7 @@ ARCHITECTURE_ASSESSMENT:
 - You have access to the zone registry, diff data, repo file tree, scaffold architecture data, and whatever architecture docs exist in the repo.
 - You have access to `gate0_results.json` for tier 1 context.
 - You do NOT have access to scenarios (holdout set).
+- **Use Read tool for all file access. Never use Bash.**
 - The zone registry is a **collaboration interface** between the user and this skill — treat it as a living document that should be maintained, not just a config file.
 - Every `unzonedFile` entry should include a `suggestedZone` when possible. "Unzoned" without guidance is less useful than "unzoned, belongs in zone-X because..."
 - Your architecture assessment must be **independently derived** from reading the code and diff — not just parroting what the zone registry says. If the zone registry is wrong, say so.
