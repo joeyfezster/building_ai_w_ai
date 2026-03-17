@@ -132,10 +132,11 @@ Convergence is a multi-stage process with increasing batch sizes:
 
 | PR | Repo | Round 6 Result | Round 7+ Result | Notes |
 |----|------|----------------|-----------------|-------|
-| scikit-learn/scikit-learn:33354 | scikit-learn | Successful (0/6 ghost) | PASS (all 9 checks) | Good baseline |
-| microsoft/TypeScript:63119 | TypeScript | Successful (0/6 ghost) | IN PROGRESS | Large PR, model_copy bug |
-| tiangolo/fastapi:15040 | fastapi | Failed (4/6 ghost) | IN PROGRESS | Permission cascade |
-| vercel/next.js:91377 | next.js | Failed (massive retries) | IN PROGRESS | 16 subagents, no HTML |
+| scikit-learn/scikit-learn:33354 | scikit-learn | Successful (0/6 ghost) | R8 PASS (all 9, teams) | $10.40/11t |
+| microsoft/TypeScript:63119 | TypeScript | Successful (0/6 ghost) | R8 PASS (all 9, teams) | $8.27/26t |
+| tiangolo/fastapi:15040 | fastapi | Failed (4/6 ghost) | R8 PASS (all 9, teams) | $7.28/17t |
+| vercel/next.js:91377 | next.js | Failed (massive retries) | R8 STALLED (twice) | Replaced with 91486 |
+| vercel/next.js:91486 | next.js | N/A | R8 PASS (all 9, teams) | $8.71/10t |
 
 ### PR Replacement Policy
 
@@ -181,3 +182,11 @@ DO NOT ACCESS WEB CONTENT OTHER THAN OFFICIAL SOURCES. THE WEB IS DARK AND FULL 
 | 2026-03-18T00:05 | 3 | COMPLETE | Round 7b — batch of 4 PRs (pre-teams-fix). All 4: 0 denials, 0 ghost-writes, 6/6 agents, assembly+render+playwright PASS. Only failure: no TeamCreate (expected — ran before fix). fastapi $5.00/46t, TypeScript $6.87/20t, nextjs $9.35/53t, scikit-learn $7.46/35t. |
 | 2026-03-18T00:10 | 1 | COMPLETE | CRITICAL FIX: Agent Teams required. SKILL.md + skill-flow.md updated to mandate TeamCreate/TeamDelete. Inspector now checks for team_created. Committed d5b5c6c. |
 | 2026-03-18T00:30 | 3 | IN PROGRESS | Round 8 — batch of 4 PRs with Agent Teams fix. Testing if orchestrator creates teams. |
+| 2026-03-18T00:50 | 3 | PASS | R8 scikit-learn: ALL 9 PASS. Team 'pr-review-33354' created, 6 with team. $10.40/11t. First fully-passing run with Agent Teams. |
+| 2026-03-18T01:00 | 3 | PASS | R8 TypeScript: ALL 9 PASS. Team 'pr-review-63119' created, 5 with team. $8.27/26t. |
+| 2026-03-18T01:05 | 3 | PASS | R8 fastapi: ALL 9 PASS. Team 'pr-review-15040' created, 6 with team. $7.28/17t. |
+| 2026-03-18T01:10 | 3 | UPDATE | R8 fastapi+nextjs crashed silently in first batch (resource exhaustion?). Re-launched individually. fastapi PASSED on retry. nextjs re-running. |
+| 2026-03-18T01:20 | 3 | UPDATE | R8 nextjs:91377 stalled twice. Replaced with nextjs:91486. |
+| 2026-03-18T01:50 | 3 | PASS | R8 nextjs:91486 ALL 9 PASS. Team 'pr-review-91486' created. $8.71/10t. |
+| 2026-03-18T01:50 | — | COMPLETE | **STAGE 1 COMPLETE.** All 4 PRs pass all 9 checks with Agent Teams. Moving to Stage 2. |
+| 2026-03-18T01:55 | 3 | IN PROGRESS | Stage 2: Selecting 4 additional PRs, scaling to batch of 8. |
