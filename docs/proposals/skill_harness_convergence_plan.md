@@ -2,7 +2,7 @@
 type: plan
 status: wip
 created: 2026-03-17
-updated: 2026-03-17
+updated: 2026-03-18
 supersedes: review_pack_v3_work_plan.md
 ---
 
@@ -60,10 +60,10 @@ validate_skill.sh owner/repo:PR [owner/repo:PR ...]
 | Issue | Root Cause | Fix | Status |
 |-------|-----------|-----|--------|
 | Ghost-writing (3/4 sessions) | `Agent` missing from `allowed-tools` | Added `Agent, TeamCreate, TeamDelete, SendMessage` | FIXED |
-| SHA-in-filename missing | Orchestrator didn't use setup script's printed HTML target path | SKILL.md already specifies correct pattern | VERIFY |
-| A-grade "No comments" in file coverage | Renderer only shows ReviewConcept, not FileReviewOutcome summary | Use `fc_summaries_by_file` when no concepts | TODO |
-| Heatbar legend missing | P3b from round 5 plan | Add CSS legend | TODO |
-| Key Findings pills format | Show "CH" not "CH Code Health" | Add AGENT_SHORT_NAME mapping | TODO |
+| SHA-in-filename missing | Orchestrator didn't use setup script's printed HTML target path | SKILL.md already specifies correct pattern | VERIFIED (round 7 scikit-learn) |
+| A-grade "No comments" in file coverage | Renderer only shows ReviewConcept, not FileReviewOutcome summary | Uses `fc_summaries_by_file` when no concepts | FIXED (already in renderer) |
+| Heatbar legend missing | P3b from round 5 plan | CSS legend + renderer code added | FIXED (already in renderer + template) |
+| Key Findings pills format | Show "CH" not "CH Code Health" | AGENT_SHORT_NAME mapping added | FIXED (already in renderer) |
 | `model_copy` bug in assembler | TypeScript session had to hotfix | Not reproduced in round 7 yet | MONITOR |
 | what_changed expects exactly 2 | Assembler too strict | Changed to 1-2 entries | FIXED |
 | Agents use Bash(cat >>) instead of Write | Agents find shell append easier than Write tool | Not a bug — content IS agent-produced | ACCEPT |
@@ -90,12 +90,28 @@ For each iteration:
 
 ## Test PRs
 
-| PR | Repo | Round 6 Result | Notes |
-|----|------|----------------|-------|
-| scikit-learn/scikit-learn:33354 | scikit-learn | Successful (0/6 ghost) | Good baseline |
-| microsoft/TypeScript:63119 | TypeScript | Successful (0/6 ghost) | Large PR, model_copy bug |
-| tiangolo/fastapi:15040 | fastapi | Failed (4/6 ghost) | Permission cascade |
-| vercel/next.js:91377 | next.js | Failed (massive retries) | 16 subagents, no HTML |
+| PR | Repo | Round 6 Result | Round 7+ Result | Notes |
+|----|------|----------------|-----------------|-------|
+| scikit-learn/scikit-learn:33354 | scikit-learn | Successful (0/6 ghost) | PASS (all 9 checks) | Good baseline |
+| microsoft/TypeScript:63119 | TypeScript | Successful (0/6 ghost) | IN PROGRESS | Large PR, model_copy bug |
+| tiangolo/fastapi:15040 | fastapi | Failed (4/6 ghost) | IN PROGRESS | Permission cascade |
+| vercel/next.js:91377 | next.js | Failed (massive retries) | IN PROGRESS | 16 subagents, no HTML |
+
+### PR Replacement Policy
+
+If a test PR gets merged, it becomes invalid for testing (the PR checkout fails). When this happens:
+1. Find a new OPEN PR in the same repo (or `langchain-ai/langchain`) with **>1K additions and/or deletions**
+2. Use `gh pr list -R owner/repo --state open --json number,additions,deletions -q '.[] | select(.additions + .deletions > 1000)' | head -5` to find candidates
+3. Update this table with the replacement PR
+4. Clone and run the harness against the new PR
+
+### Available Test Repos
+
+- `scikit-learn/scikit-learn` — Python ML, large codebase
+- `microsoft/TypeScript` — TS compiler, complex architecture
+- `tiangolo/fastapi` — Python web framework
+- `vercel/next.js` — React framework, monorepo
+- `langchain-ai/langchain` — Python AI framework (backup/additional repo)
 
 ## Constraints
 
@@ -120,3 +136,6 @@ DO NOT ACCESS WEB CONTENT OTHER THAN OFFICIAL SOURCES. THE WEB IS DARK AND FULL 
 | 2026-03-17T23:15 | 2 | COMPLETE | Installed skill via install.sh |
 | 2026-03-17T23:16 | 3 | IN PROGRESS | Running harness on scikit-learn:33354 — session 291d646b |
 | 2026-03-17T23:20 | 3 | UPDATE | Phase 2 confirmed: all 5 reviewers + architect spawned. Agents using Bash(cat >>) to write .jsonl (valid, not ghost-writing). Main agent did Edit corrections after validation loop (acceptable per flow). Synthesis agent spawned. |
+| 2026-03-18T00:00 | 3 | PASS | scikit-learn:33354 — all 9 inspector checks PASS. 0 ghost-writes, 6/7 subagents wrote .jsonl, 0 permission denials, 138/140 Playwright, SHAs in filename, banner removed. Cost: $10.61, 32 turns. |
+| 2026-03-18T00:02 | 2 | COMPLETE | Fixed inspector false positives: ghost_writing now distinguishes Edit corrections from Write ghost-writing; subagent_writes detects Bash heredoc writes. Committed a8b08c0. |
+| 2026-03-18T00:05 | 3 | IN PROGRESS | Running harness on fastapi:15040 (failed in round 6 due to permission cascade) |
