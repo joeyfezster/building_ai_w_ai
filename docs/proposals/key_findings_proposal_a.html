@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Key Findings Card — Proposal A: Severity Cascade</title>
+<style>
+  :root {
+    --green: #22c55e; --green-bg: #f0fdf4; --green-border: #86efac;
+    --yellow: #eab308; --yellow-bg: #fefce8;
+    --orange: #f97316; --orange-bg: #fff7ed;
+    --red: #ef4444; --red-bg: #fef2f2;
+    --gray: #6b7280; --gray-bg: #f9fafb; --gray-border: #e5e7eb;
+    --blue: #3b82f6; --blue-bg: #eff6ff;
+    --purple: #8b5cf6; --purple-bg: #f5f3ff;
+    --text: #1f2937; --text-secondary: #6b7280; --text-muted: #9ca3af;
+    --border: #e5e7eb; --bg: #f3f4f6;
+    --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  [data-theme="dark"] {
+    --text: #e5e7eb; --text-secondary: #9ca3af; --text-muted: #6b7280;
+    --border: #374151; --bg: #111827;
+    --gray-bg: #1f2937; --gray-border: #374151; --gray: #9ca3af;
+    --green-bg: #064e3b; --green-border: #10b981;
+    --yellow-bg: #713f12; --red-bg: #7f1d1d; --orange-bg: #7c2d12;
+    --blue-bg: #1e3a5f; --purple-bg: #2e1065;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--text); background: var(--bg); line-height: 1.5; font-size: 14px; padding: 24px; }
+
+  .layout { display: flex; gap: 24px; max-width: 1400px; margin: 0 auto; }
+  .sidebar-demo { width: 260px; min-width: 260px; background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; height: fit-content; position: sticky; top: 24px; }
+  [data-theme="dark"] .sidebar-demo { background: #1f2937; }
+  .main-demo { flex: 1; min-width: 0; }
+
+  .proposal-header { margin-bottom: 24px; padding: 16px; background: var(--blue-bg); border: 1px solid var(--blue); border-radius: 8px; }
+  .proposal-header h1 { font-size: 18px; color: var(--blue); margin-bottom: 4px; }
+  .proposal-header p { font-size: 13px; color: var(--text-secondary); }
+
+  /* Theme toggle */
+  .theme-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .theme-toggle button { border: none; background: transparent; padding: 4px 10px; font-size: 14px; cursor: pointer; color: var(--text-secondary); }
+  .theme-toggle button:hover { background: var(--gray-bg); }
+  .theme-toggle button.active { background: var(--blue); color: white; }
+
+  /* ── Section card (matches template_v2) ── */
+  .section { background: white; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; overflow: hidden; }
+  [data-theme="dark"] .section { background: #1f2937; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; user-select: none; }
+  .section-header:hover { background: var(--gray-bg); }
+  .section-header h2 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .section-body { padding: 0 16px 16px; }
+
+  /* ── Grade badges ── */
+  .grade { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 22px; padding: 0 6px; border-radius: 6px; font-size: 11px; font-weight: 700; font-family: var(--mono); }
+  .grade.a { background: var(--green-bg); color: #166534; }
+  .grade.b { background: var(--yellow-bg); color: #854d0e; }
+  .grade.c { background: var(--orange-bg); color: #9a3412; }
+  .grade.f { background: var(--red-bg); color: #991b1b; }
+  [data-theme="dark"] .grade.a { background: #064e3b; color: #34d399; }
+  [data-theme="dark"] .grade.b { background: #713f12; color: #fde047; }
+  [data-theme="dark"] .grade.c { background: #7c2d12; color: #fdba74; }
+  [data-theme="dark"] .grade.f { background: #7f1d1d; color: #fca5a5; }
+
+  /* ── Agent tags ── */
+  .agent-tag { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; background: var(--gray-bg); color: var(--text-secondary); font-family: var(--mono); }
+  [data-theme="dark"] .agent-tag { background: #374151; color: #9ca3af; }
+
+  /* ── Zone tags ── */
+  .zone-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+  .zone-tag.product { background: #dcfce7; color: #166534; }
+  .zone-tag.infra { background: #f3e8ff; color: #6d28d9; }
+  [data-theme="dark"] .zone-tag.product { background: #064e3b; color: #6ee7b7; }
+  [data-theme="dark"] .zone-tag.infra { background: #2e1065; color: #c4b5fd; }
+
+  /* ── File paths ── */
+  .file-ref { font-family: var(--mono); font-size: 11px; color: var(--blue); cursor: pointer; border-bottom: 1px dashed var(--blue); }
+  .file-ref:hover { color: #2563eb; }
+
+  /* ── Severity tier headers ── */
+  .severity-tier { margin-bottom: 12px; }
+  .severity-tier:last-child { margin-bottom: 0; }
+  .tier-header { display: flex; align-items: center; gap: 8px; padding: 6px 0; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+  .tier-header .tier-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+  .tier-header .tier-count { font-size: 11px; color: var(--text-muted); }
+
+  /* ── Finding sub-cards (Proposal A) ── */
+  .finding-card { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; overflow: hidden; transition: box-shadow 0.15s; }
+  .finding-card:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  [data-theme="dark"] .finding-card:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .finding-card:last-child { margin-bottom: 0; }
+
+  .finding-card.severity-f { border-left: 3px solid var(--red); }
+  .finding-card.severity-c { border-left: 3px solid var(--orange); }
+  .finding-card.severity-b { border-left: 3px solid var(--yellow); }
+  .finding-card.severity-bp { border-left: 3px solid #a3e635; }
+  .finding-card.severity-a { border-left: 3px solid var(--green); }
+
+  .finding-header { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; cursor: pointer; user-select: none; }
+  .finding-header:hover { background: var(--gray-bg); }
+  [data-theme="dark"] .finding-header:hover { background: #374151; }
+
+  .finding-grade { flex-shrink: 0; margin-top: 1px; }
+  .finding-title-block { flex: 1; min-width: 0; }
+  .finding-title { font-size: 13px; font-weight: 600; line-height: 1.3; }
+  .finding-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; align-items: center; }
+  .finding-chevron { flex-shrink: 0; color: var(--text-muted); font-size: 12px; transition: transform 0.15s; margin-top: 3px; }
+  .finding-card.expanded .finding-chevron { transform: rotate(90deg); }
+
+  .finding-detail { display: none; padding: 0 12px 12px 50px; font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
+  .finding-card.expanded .finding-detail { display: block; }
+  .finding-detail p { margin-bottom: 8px; }
+  .finding-files { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .finding-files-label { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-right: 4px; }
+
+  /* ── Summary bar ── */
+  .findings-summary { display: flex; align-items: center; gap: 12px; padding: 8px 12px; margin-bottom: 12px; background: var(--gray-bg); border-radius: 8px; font-size: 12px; }
+  [data-theme="dark"] .findings-summary { background: #111827; }
+  .findings-summary .summary-count { font-weight: 700; }
+  .summary-grades { display: flex; gap: 8px; margin-left: auto; }
+  .summary-grade-item { display: flex; align-items: center; gap: 3px; }
+  .summary-grade-item .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .summary-grade-item .dot.f { background: var(--red); }
+  .summary-grade-item .dot.c { background: var(--orange); }
+  .summary-grade-item .dot.b { background: var(--yellow); }
+  .summary-grade-item .dot.bp { background: #a3e635; }
+  .summary-grade-item .dot.a { background: var(--green); }
+
+  /* ── Sidebar nav items ── */
+  .sb-nav-group-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); padding: 8px 6px 2px; }
+  .sb-nav-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; font-size: 12px; cursor: pointer; border-radius: 4px; color: var(--text-secondary); }
+  .sb-nav-item:hover { background: var(--gray-bg); color: var(--text); }
+  .sb-nav-item.active { color: var(--blue); font-weight: 600; }
+  .sb-nav-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; font-size: 9px; font-weight: 700; border-radius: 50%; flex-shrink: 0; }
+  .sb-nav-icon.count { background: var(--blue-bg); color: var(--blue); }
+  .sb-nav-icon.count-warn { background: #fef3c7; color: #92400e; }
+  .sb-nav-icon.count-fail { background: #fee2e2; color: #991b1b; }
+  .sb-nav-icon.pass { color: var(--green); }
+  [data-theme="dark"] .sb-nav-icon.count { background: #1e3a5f; color: #93c5fd; }
+  [data-theme="dark"] .sb-nav-icon.count-warn { background: #451a03; color: #fcd34d; }
+  [data-theme="dark"] .sb-nav-icon.count-fail { background: #450a0a; color: #fca5a5; }
+
+  .sb-nav-separator { border-top: 1px solid var(--border); margin: 4px 6px; }
+
+  .nav-states { margin-top: 16px; }
+  .nav-states h3 { font-size: 12px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted); }
+  .nav-state-group { margin-bottom: 12px; padding: 8px; background: var(--gray-bg); border-radius: 6px; }
+  [data-theme="dark"] .nav-state-group { background: #111827; }
+  .nav-state-group .state-label { font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .overall-grade-badge { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-left: 8px; }
+</style>
+</head>
+<body>
+<div class="theme-toggle">
+  <button class="active" onclick="setTheme('light')">Light</button>
+  <button onclick="setTheme('dark')">Dark</button>
+</div>
+
+<div class="proposal-header">
+  <h1>Proposal A: Severity Cascade</h1>
+  <p>Findings grouped by severity tier, each as an expandable sub-card with left-border severity indicator. Grade badge + title on the collapsed row, full detail + file references on expansion. Emphasizes "worst first" scanning.</p>
+</div>
+
+<div class="layout">
+  <!-- Sidebar demo -->
+  <div class="sidebar-demo">
+    <div class="sb-nav-group-label">Review</div>
+    <div class="sb-nav-item" style="font-weight:600; color: var(--text);">
+      <span class="sb-nav-icon">&#x1F50D;</span>
+      Arch Assessment
+    </div>
+
+    <!-- KEY FINDINGS nav item — multiple state demos -->
+    <div class="nav-states">
+      <h3>Key Findings Nav Icon States</h3>
+
+      <div class="nav-state-group">
+        <div class="state-label">Has F-grade findings (blocked)</div>
+        <div class="sb-nav-item active">
+          <span class="sb-nav-icon count-fail">2</span>
+          Key Findings
+        </div>
+      </div>
+
+      <div class="nav-state-group">
+        <div class="state-label">Worst is C-grade (needs review)</div>
+        <div class="sb-nav-item">
+          <span class="sb-nav-icon count-warn">5</span>
+          Key Findings
+        </div>
+      </div>
+
+      <div class="nav-state-group">
+        <div class="state-label">All B+ or better (clean)</div>
+        <div class="sb-nav-item">
+          <span class="sb-nav-icon count">11</span>
+          Key Findings
+        </div>
+      </div>
+
+      <div class="nav-state-group">
+        <div class="state-label">All A-grade (pass)</div>
+        <div class="sb-nav-item">
+          <span class="sb-nav-icon pass">&#x2713;</span>
+          Key Findings
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-nav-separator"></div>
+    <div class="sb-nav-item">
+      <span class="sb-nav-icon count">10</span>
+      Code Review
+    </div>
+    <div class="sb-nav-item">
+      <span class="sb-nav-icon count">40</span>
+      CI Performance
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main-demo">
+    <div class="section">
+      <div class="section-header">
+        <h2>
+          Key Findings
+          <span class="grade f" style="font-size: 11px;">Overall: F</span>
+        </h2>
+        <span style="font-size: 12px; color: var(--text-muted);">26 findings across 5 agents</span>
+      </div>
+      <div class="section-body">
+
+        <!-- Summary bar -->
+        <div class="findings-summary">
+          <span class="summary-count">26 findings</span>
+          <span style="color: var(--text-muted);">from</span>
+          <span class="agent-tag">CH</span>
+          <span class="agent-tag">SE</span>
+          <span class="agent-tag">TI</span>
+          <span class="agent-tag">AD</span>
+          <span class="agent-tag">AR</span>
+          <div class="summary-grades">
+            <span class="summary-grade-item"><span class="dot f"></span> 2</span>
+            <span class="summary-grade-item"><span class="dot c"></span> 5</span>
+            <span class="summary-grade-item"><span class="dot b"></span> 8</span>
+            <span class="summary-grade-item"><span class="dot bp"></span> 5</span>
+            <span class="summary-grade-item"><span class="dot a"></span> 6</span>
+          </div>
+        </div>
+
+        <!-- CRITICAL tier (F-grade) -->
+        <div class="severity-tier">
+          <div class="tier-header">
+            <span class="grade f">F</span>
+            <span class="tier-label">Critical</span>
+            <span class="tier-count">2 findings</span>
+          </div>
+
+          <div class="finding-card severity-f expanded" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade f">F</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">WebSocket exception-handler tests are vacuous: no assertions, all signal swallowed</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">AD</span>
+                  <span class="zone-tag product">tests</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>The WebSocket exception handler tests call the endpoint and assert only that the connection succeeds (status 1000). They never check whether the custom exception handler was actually invoked. A test that passes regardless of whether the feature works provides false confidence.</p>
+              <p>The handler could be completely removed and these tests would still pass. This is a textbook vacuous test pattern — the test exists but proves nothing about the feature it claims to cover.</p>
+              <div class="finding-files">
+                <span class="finding-files-label">Files:</span>
+                <span class="file-ref">tests/test_router_exception_handlers.py</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="finding-card severity-f" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade f">F</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">WebSocket exception handler tests are vacuous — no assertion on handler invocation</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">TI</span>
+                  <span class="zone-tag product">tests</span>
+                  <span class="zone-tag product">core</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>Independent corroboration of the same vacuous test issue found by the Adversarial reviewer. The test-integrity reviewer confirms that no handler invocation is asserted — the test structure covers the happy path but not the feature behavior.</p>
+              <div class="finding-files">
+                <span class="finding-files-label">Files:</span>
+                <span class="file-ref">tests/test_router_exception_handlers.py</span>
+                <span class="file-ref">fastapi/routing.py</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ISSUES tier (C-grade) -->
+        <div class="severity-tier">
+          <div class="tier-header">
+            <span class="grade c">C</span>
+            <span class="tier-label">Issues</span>
+            <span class="tier-count">5 findings</span>
+          </div>
+
+          <div class="finding-card severity-c" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade c">C</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">Scope mutation uses undocumented Starlette private API with no stability guarantee</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">AD</span>
+                  <span class="zone-tag product">core</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>The implementation injects exception handlers into <code>scope['starlette.exception_handlers']</code> — a key that is not part of Starlette's public API. If Starlette changes this internal mechanism, the feature silently breaks with no compile-time or test-time warning.</p>
+              <div class="finding-files">
+                <span class="finding-files-label">Files:</span>
+                <span class="file-ref">fastapi/routing.py</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="finding-card severity-c" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade c">C</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">include_router drops self.exception_handlers when flattening already-decorated routes</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">AD</span>
+                  <span class="zone-tag product">core</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>When a sub-router's routes are flattened into the parent, the parent router's own exception handlers are not merged into the decorated routes. This means exception handlers set on the parent are silently lost for included routes.</p>
+              <div class="finding-files">
+                <span class="finding-files-label">Files:</span>
+                <span class="file-ref">fastapi/routing.py</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="finding-card severity-c" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade c">C</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">scope['starlette.exception_handlers'] is an undocumented Starlette internal</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">CH</span>
+                  <span class="zone-tag product">core</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>Corroborates the adversarial finding: the key used for scope injection has no public API contract in Starlette, creating an implicit coupling to Starlette internals.</p>
+              <div class="finding-files">
+                <span class="finding-files-label">Files:</span>
+                <span class="file-ref">fastapi/routing.py</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="finding-card severity-c" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade c">C</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">add_exception_handler does not affect routes registered before it is called</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">CH</span>
+                  <span class="zone-tag product">core</span>
+                  <span class="zone-tag product">tests</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>Exception handlers added via <code>add_exception_handler()</code> after routes are already registered will not apply to those existing routes, because the scope-injection happens at route decoration time, not at request time. This ordering dependency is undocumented.</p>
+              <div class="finding-files">
+                <span class="finding-files-label">Files:</span>
+                <span class="file-ref">fastapi/routing.py</span>
+                <span class="file-ref">tests/test_router_exception_handlers.py</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="finding-card severity-c" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade c">C</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">Scope-injection approach is untested with custom Starlette middleware in the stack</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">TI</span>
+                  <span class="zone-tag product">core</span>
+                  <span class="zone-tag product">tests</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>No test verifies the behavior when a middleware sits between the ASGI app and the route handler. A middleware that replaces or mutates the scope dict could silently drop the injected exception handlers.</p>
+              <div class="finding-files">
+                <span class="finding-files-label">Files:</span>
+                <span class="file-ref">fastapi/routing.py</span>
+                <span class="file-ref">tests/test_router_exception_handlers.py</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- REVIEW tier (B-grade) — showing 3 of 8, collapsed -->
+        <div class="severity-tier">
+          <div class="tier-header">
+            <span class="grade b">B</span>
+            <span class="tier-label">Review</span>
+            <span class="tier-count">8 findings</span>
+          </div>
+
+          <div class="finding-card severity-b" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade b">B</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">test_router_overrides_app tests the wrong precedence scenario</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">AD</span>
+                  <span class="zone-tag product">tests</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>The test verifies that a router-level handler overrides the app-level handler, but misses the critical case of nested include_router calls where handler precedence becomes ambiguous.</p>
+            </div>
+          </div>
+
+          <div class="finding-card severity-b" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade b">B</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">Duplicated scope-mutation block in request_response and websocket_session</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">CH</span>
+                  <span class="zone-tag product">core</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>The same scope-mutation logic is copy-pasted between two functions. A change to one must be manually replicated in the other — a classic maintenance trap.</p>
+            </div>
+          </div>
+
+          <div class="finding-card severity-b" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade b">B</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">No validation on exception handler callables: Callable[..., Any] accepts any callable</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">SE</span>
+                  <span class="zone-tag product">core</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>The type annotation <code>Callable[..., Any]</code> provides no guardrail against registering an async handler where sync is expected or vice versa, leading to silent runtime failures.</p>
+            </div>
+          </div>
+
+          <div style="text-align: center; padding: 8px; font-size: 12px; color: var(--text-muted);">
+            + 5 more B-grade findings
+          </div>
+        </div>
+
+        <!-- MINOR tier (B+-grade) — collapsed summary -->
+        <div class="severity-tier">
+          <div class="tier-header">
+            <span class="grade b">B+</span>
+            <span class="tier-label">Minor</span>
+            <span class="tier-count">5 findings</span>
+          </div>
+
+          <div class="finding-card severity-bp" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade b">B+</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">Redundant 'or None' pattern on always-initialized exception_handlers dict</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">CH</span>
+                  <span class="zone-tag product">core</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>Multiple locations use <code>self.exception_handlers or None</code> but the dict is always initialized in __init__, so the <code>or None</code> is dead code that obscures intent.</p>
+            </div>
+          </div>
+
+          <div style="text-align: center; padding: 8px; font-size: 12px; color: var(--text-muted);">
+            + 4 more B+-grade findings
+          </div>
+        </div>
+
+        <!-- CLEAN tier (A-grade) — fully collapsed -->
+        <div class="severity-tier">
+          <div class="tier-header">
+            <span class="grade a">A</span>
+            <span class="tier-label">Clean</span>
+            <span class="tier-count">6 findings</span>
+          </div>
+
+          <div class="finding-card severity-a" onclick="this.classList.toggle('expanded')">
+            <div class="finding-header">
+              <span class="finding-grade"><span class="grade a">A</span></span>
+              <div class="finding-title-block">
+                <div class="finding-title">Clean feature addition: router-level exception handlers confined to core zone</div>
+                <div class="finding-meta">
+                  <span class="agent-tag">AR</span>
+                  <span class="zone-tag product">core</span>
+                </div>
+              </div>
+              <span class="finding-chevron">&#9654;</span>
+            </div>
+            <div class="finding-detail">
+              <p>The new feature is well-contained within the core zone. No unexpected coupling or cross-zone side effects.</p>
+            </div>
+          </div>
+
+          <div style="text-align: center; padding: 8px; font-size: 12px; color: var(--text-muted);">
+            + 5 more A-grade findings
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -41,3 +41,27 @@ The factory's decision persistence script (`packages/dark-factory/scripts/persis
 - **Decision log** tracks individual decisions made during PR review (the "why we built it this way").
 
 Both are useful. They don't replace each other. A single plan may produce multiple PRs, each with multiple decisions in the log.
+
+## Progress Log Convention
+
+Every plan document MUST include a **Progress Log** section at the bottom. This is a timestamped table that records milestones, issues, compaction events, and status changes as work progresses. It serves as the durable audit trail for the plan's execution.
+
+### Format
+
+```markdown
+## Progress Log
+
+| Timestamp | Phase | Status | Notes |
+|-----------|-------|--------|-------|
+| 2026-03-15T00:10 | 1.1 | COMPLETE | Description of what was done |
+| 2026-03-15T01:00 | — | COMPACTION | Context compacted; resumed from plan |
+| 2026-03-15T02:30 | 3.2 | FIX | Bug found and fixed: description |
+```
+
+### Rules
+
+1. **Every entry MUST have a timestamp** (ISO 8601, minute precision is fine).
+2. **Context compactions MUST be logged** — they are significant operational events.
+3. **Phase references** should match the plan's section numbering (e.g., "1.1", "3.2"). Use "—" for cross-cutting events.
+4. **Status values**: COMPLETE, IN PROGRESS, FIX, UPDATE, COMPACTION, START, RESEARCH, BLOCKED.
+5. The log is **append-only** — never edit or delete previous entries.
