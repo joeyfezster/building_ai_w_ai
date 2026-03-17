@@ -2,7 +2,7 @@
 type: plan
 status: wip
 created: 2026-03-17
-updated: 2026-03-18
+updated: 2026-03-18T03:15
 supersedes: review_pack_v3_work_plan.md
 ---
 
@@ -67,6 +67,9 @@ validate_skill.sh owner/repo:PR [owner/repo:PR ...]
 | `model_copy` bug in assembler | TypeScript session had to hotfix | Not reproduced in round 7 yet | MONITOR |
 | what_changed expects exactly 2 | Assembler too strict | Changed to 1-2 entries | FIXED |
 | Agents use Bash(cat >>) instead of Write | Agents find shell append easier than Write tool | Not a bug — content IS agent-produced | ACCEPT |
+| TypeScript sessions stall with 13 subagents | Unknown — overcounting suggests duplicate agent spawns or team_name misrouting | Investigate subagent JSONL traces, check TeamCreate/Agent correlation | OPEN |
+| Premature completion (fastapi-15006) | Orchestrator claims done after 2 turns without assembly/render | Investigate session JSONL — may be context compaction or misinterpreted Skill output | OPEN |
+| Resource exhaustion at 8 concurrent runs | 3/8 processes die silently with 0-byte output | Limit to 4 concurrent runs, or run sequentially | WORKAROUND |
 
 ## Iteration Protocol
 
@@ -130,13 +133,17 @@ Convergence is a multi-stage process with increasing batch sizes:
 
 ## Test PRs
 
-| PR | Repo | Round 6 Result | Round 7+ Result | Notes |
-|----|------|----------------|-----------------|-------|
-| scikit-learn/scikit-learn:33354 | scikit-learn | Successful (0/6 ghost) | R8 PASS (all 9, teams) | $10.40/11t |
-| microsoft/TypeScript:63119 | TypeScript | Successful (0/6 ghost) | R8 PASS (all 9, teams) | $8.27/26t |
-| tiangolo/fastapi:15040 | fastapi | Failed (4/6 ghost) | R8 PASS (all 9, teams) | $7.28/17t |
-| vercel/next.js:91377 | next.js | Failed (massive retries) | R8 STALLED (twice) | Replaced with 91486 |
-| vercel/next.js:91486 | next.js | N/A | R8 PASS (all 9, teams) | $8.71/10t |
+| PR | Repo | Stage 1 Result | Stage 2 Result | Notes |
+|----|------|----------------|----------------|-------|
+| scikit-learn/scikit-learn:33354 | scikit-learn | PASS (all 9, teams) | PASS ($12.77/2t) | Stable across both stages |
+| microsoft/TypeScript:63119 | TypeScript | PASS (all 9, teams) | STALLED (13 subagents) | Passed in Stage 1, stalls in Stage 2 concurrent batch |
+| tiangolo/fastapi:15040 | fastapi | PASS (all 9, teams) | PASS ($12.35/2t) | Stable across both stages |
+| vercel/next.js:91377 | next.js | STALLED (twice) | — | Replaced with 91486 |
+| vercel/next.js:91486 | next.js | PASS (all 9, teams) | PASS ($9.56/11t) | Ghost-writing fix confirmed |
+| microsoft/TypeScript:63147 | TypeScript | N/A | PASS ($5.36/15t) | New PR, clean first run |
+| microsoft/TypeScript:63108 | TypeScript | N/A | STALLED (13 subagents) | New PR, same stall pattern as 63119 |
+| tiangolo/fastapi:15006 | fastapi | N/A | PARTIAL ($9.09/2t) | JONLs ok, assembly/render missing |
+| langchain-ai/langchain:35644 | langchain | N/A | PASS ($6.52/11t) | New repo, clean first run |
 
 ### PR Replacement Policy
 
@@ -189,4 +196,47 @@ DO NOT ACCESS WEB CONTENT OTHER THAN OFFICIAL SOURCES. THE WEB IS DARK AND FULL 
 | 2026-03-18T01:20 | 3 | UPDATE | R8 nextjs:91377 stalled twice. Replaced with nextjs:91486. |
 | 2026-03-18T01:50 | 3 | PASS | R8 nextjs:91486 ALL 9 PASS. Team 'pr-review-91486' created. $8.71/10t. |
 | 2026-03-18T01:50 | — | COMPLETE | **STAGE 1 COMPLETE.** All 4 PRs pass all 9 checks with Agent Teams. Moving to Stage 2. |
-| 2026-03-18T01:55 | 3 | IN PROGRESS | Stage 2: Selecting 4 additional PRs, scaling to batch of 8. |
+| 2026-03-18T02:00 | 3 | UPDATE | Stage 2 Wave 1 (original 4): 3/4 PASS, nextjs-91486 FAIL (ghost-writing via Bash cat >>). Strengthened SKILL.md anti-ghost-writing (faa2af4). |
+| 2026-03-18T02:25 | 3 | IN PROGRESS | Stage 2b: Full batch of 8 PRs launched (4 original + 4 new: TS-63147, TS-63108, fastapi-15006, langchain-35644). |
+| 2026-03-18T03:15 | 3 | PARTIAL | Stage 2b results: 5/8 PASS, 1 PARTIAL, 2 STALLED. See Stage 2 Findings below. |
+| 2026-03-18T03:15 | — | PAUSED | Session ending (3:45 AM kill switch). Stage 2 not yet complete — 2 TypeScript PRs need re-run. |
+
+## Stage 2 Findings (Critical Milestone — 8 PR Batch)
+
+**Date:** 2026-03-18, ~02:25-03:15 EST
+**Results directory:** `~/tmp/validation-results/stage2b_20260317_022437`
+**Total cost:** ~$65.65 across 6 completed runs
+
+### Per-PR Results
+
+| PR | Repo | Result | Cost | Turns | Denials | Ghost-Writes | Teams | Notes |
+|----|------|--------|------|-------|---------|-------------|-------|-------|
+| scikit-learn:33354 | scikit-learn | **PASS** | $12.77 | 2 | 0 | 0 | Yes | Repeat from Stage 1 — stable |
+| fastapi:15040 | fastapi | **PASS** | $12.35 | 2 | 0 | 0 | Yes | Repeat from Stage 1 — stable |
+| nextjs:91486 | next.js | **PASS** | $9.56 | 11 | 0 | 0 | Yes | Ghost-writing fix confirmed (was FAIL in Wave 1) |
+| TypeScript:63147 | TypeScript | **PASS** | $5.36 | 15 | 0 | 0 | Yes | NEW PR — clean first run |
+| langchain:35644 | langchain | **PASS** | $6.52 | 11 | 0 | 0 | Yes | NEW REPO — clean first run |
+| fastapi:15006 | fastapi | **PARTIAL** | $9.09 | 2 | 0 | 0 | Yes | NEW PR — 6/6 JONLs have content, but assembly/render/playwright never ran. Claimed completion at 2 turns. |
+| TypeScript:63119 | TypeScript | **STALLED** | N/A | N/A | N/A | N/A | N/A | 13 subagents spawned, session stopped progressing after ~162 JSONL lines. Repeat of nextjs:91377 stall pattern. |
+| TypeScript:63108 | TypeScript | **STALLED** | N/A | N/A | N/A | N/A | N/A | 13 subagents spawned, session stopped progressing after ~153 JSONL lines. Same stall pattern. |
+
+### Key Observations
+
+1. **Core pipeline is solid.** 5/8 fully pass all checks including Agent Teams, zero ghost-writing, zero permission denials, SHA-in-filename, banner removal. The anti-ghost-writing fix (faa2af4) is confirmed effective.
+
+2. **TypeScript stalling is a systemic issue.** Both new TypeScript PRs (63119, 63108) stalled identically: 13 subagents spawned (2x expected), then activity stops. TypeScript-63147 passed, so it's not all TS PRs. The 81K-file repo may overwhelm agent context when PRs touch many files. Previously, nextjs:91377 showed the same pattern.
+
+3. **Subagent overcounting (13 vs 6-7 expected)** suggests the orchestrator is spawning duplicate agents or not recognizing team membership. This needs investigation — it may correlate with the stall.
+
+4. **fastapi-15006 "PARTIAL"** is a new failure mode: orchestrator claims completion at 2 turns without running assembly/render. All 6 JSONL files have real content (14-17 lines each), so review agents worked correctly. The pipeline simply stopped before Phase 3.
+
+5. **Cost per successful PR:** $5.36-$12.77 (avg ~$9.31). Acceptable for a deep 5-reviewer review pack.
+
+6. **Concurrent execution limit:** Running 8 `claude -p` instances simultaneously causes resource exhaustion. 3/8 never started (0-byte output). Recommend max 4 concurrent, or sequential for TypeScript repos.
+
+### Remaining Work for Stage 2 Completion
+
+- [ ] Investigate and fix TypeScript stalling (13-subagent overcounting)
+- [ ] Investigate fastapi-15006 premature completion (2 turns, no assembly)
+- [ ] Re-run TypeScript-63119, TypeScript-63108, fastapi-15006 after fixes
+- [ ] Achieve 8/8 PASS before proceeding to Stage 3
