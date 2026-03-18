@@ -71,6 +71,8 @@ validate_skill.sh owner/repo:PR [owner/repo:PR ...]
 | Premature completion (fastapi-15006) | NOT A BUG — first run completed, cleanup deleted outputs, second run was killed | Don't clean repos that already passed | RESOLVED |
 | Resource exhaustion at 8 concurrent runs | `claude -p` processes start but do 0 work (0 CPU, 0 JSONL) when >4 concurrent | Max 2-3 concurrent `claude -p` instances | WORKAROUND |
 | `claude -p` output serialization hang | Process completes all work (verified via JSONL + filesystem) but never writes JSON output | Kill process, verify via JSONL + filesystem | MONITOR |
+| Validation loop not resuming agents | Orchestrator spawns NEW agents to fix validation errors instead of RESUME-ing originals. 0 resumes across all 8 Stage 2 sessions. New agents lack analysis context. | SKILL.md updated with explicit Agent(resume=...) syntax. Inspector now detects resume vs new-spawn. | FIXED (untested) |
+| Inspector only checked process, not substance | 9 checks verified tool calls happened but not output quality, loop fidelity, or filesystem artifacts | Inspector expanded to 12 checks with --repo-dir support | FIXED |
 
 ## Iteration Protocol
 
@@ -248,3 +250,52 @@ DO NOT ACCESS WEB CONTENT OTHER THAN OFFICIAL SOURCES. THE WEB IS DARK AND FULL 
 - [x] fastapi-15006 premature completion — was artifact of cleanup deleting first run's outputs
 - [x] 13-subagent overcounting — normal Agent Teams behavior, not duplicate spawns
 - [x] All 8/8 PRs PASS → proceed to Stage 3
+
+## Stage 3 — Convergence Runs (2 consecutive clean batches of 8, NO code changes)
+
+**Status:** BLOCKED — must first re-validate with strengthened inspector (12 checks) after SKILL.md resume fix.
+
+**Pre-Stage-3 checklist (must complete before any Stage 3 runs):**
+1. [ ] Commit inspector + SKILL.md fixes to monorepo
+2. [ ] Re-install skill via install.sh
+3. [ ] Run 1 PR as smoke test with the 12-check inspector (verify resume behavior works)
+4. [ ] If smoke test passes, run 4 PRs (mini Stage 2 re-validation)
+5. [ ] If all 4 pass 12/12, proceed to Stage 3 Batch 1
+
+**Execution plan (once unblocked):**
+- All 8 PRs in a single wave (user confirmed 8 concurrent OK)
+- Each `claude -p` launched as separate `run_in_background` Bash call
+- Run inspector with --repo-dir and --pr on all 8
+- If Batch 1 passes 12/12 on all 8, immediately run Batch 2
+
+| Timestamp | Phase | Status | Notes |
+|-----------|-------|--------|-------|
+| 2026-03-17T21:12 | 3-prep | COMPLETE | All 8 repos cleaned and verified ready. Session ending — only 35 min until kill switch (9:47 PM EST). Next session should launch Stage 3 Batch 1 immediately. |
+| 2026-03-17T21:45 | — | STOPPED | Kill switch fired. Detailed gap analysis revealed validation_loop is BROKEN: 0 agent resumes across all 8 sessions. Orchestrator spawns NEW agents instead of resuming originals. |
+| 2026-03-17T21:55 | 2 | FIX | Inspector strengthened: 12 checks (was 9). Added: validation_loop fidelity (resume detection), zone_registry, filesystem_artifacts (HTML+SHAs+banner, data JSON, 6 .jsonl), synthesis_content (what_changed). Inspector now takes --repo-dir and --pr. |
+| 2026-03-17T21:55 | 2 | FIX | SKILL.md updated: explicit Agent(resume=...) syntax in validation loop. Previous language said "RESUME" but never showed the tool syntax — orchestrator didn't know HOW. |
+| 2026-03-17T21:55 | — | RESET | **Stage 3 counter RESET.** Code changes (inspector + SKILL.md) mean Stage 3 must restart. Must re-install skill and re-run Stage 2 validation with strengthened inspector before proceeding. |
+
+## Inspector Gap Analysis (2026-03-17)
+
+What the inspector validates well (STRONG):
+- Process adherence: all 4 phases run in order (9/9 checks pass on 8/8 PRs)
+- Trust model: zero ghost-writing across all 8 PRs
+- Agent Teams: TeamCreate + team_name verified on all runs
+- Permission denials: zero across all runs
+
+What the inspector does NOT validate (GAPS):
+
+| Gap | Risk | What skill-flow.md requires | What inspector checks |
+|-----|------|----------------------------|----------------------|
+| Validation loop depth | MEDIUM | `--validate-only` per reviewer (≥5 runs), RESUME same agent on failure | Only `validation_runs >= 1` |
+| HYBRID output format | MEDIUM | FileReviewOutcome (1/file) + ReviewConcept per agent | Only that subagents wrote *something* to .jsonl |
+| File coverage exhaustiveness | MEDIUM | Every diff file has FileReviewOutcome from every agent | Not checked (assembler does internally) |
+| Pre-created .jsonl files | LOW | Setup pre-creates 6 .jsonl with meta headers | Not checked |
+| Zone registry creation | LOW | Architect agent creates if missing | Not checked |
+| Synthesis quality | LOW | Reads all 5 agents, produces what_changed + corroboration | Only that synthesis spawned and wrote |
+| SHA-in-HTML-filename | LOW | `pr{N}_review_pack_{base8}-{head8}.html` | Checked by harness script, not inspector |
+| Banner removal | LOW | `data-inspected="true"` in HTML | Checked by harness script, not inspector |
+| TeamDelete cleanup | LOW | Must call TeamDelete after agents complete | Warning only, not failure |
+
+**Decision needed before Stage 3:** Strengthen inspector to cover MEDIUM-risk gaps, or run Stage 3 as-is and address after convergence?
