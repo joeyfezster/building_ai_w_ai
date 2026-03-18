@@ -67,9 +67,10 @@ validate_skill.sh owner/repo:PR [owner/repo:PR ...]
 | `model_copy` bug in assembler | TypeScript session had to hotfix | Not reproduced in round 7 yet | MONITOR |
 | what_changed expects exactly 2 | Assembler too strict | Changed to 1-2 entries | FIXED |
 | Agents use Bash(cat >>) instead of Write | Agents find shell append easier than Write tool | Not a bug — content IS agent-produced | ACCEPT |
-| TypeScript sessions stall with 13 subagents | Unknown — overcounting suggests duplicate agent spawns or team_name misrouting | Investigate subagent JSONL traces, check TeamCreate/Agent correlation | OPEN |
-| Premature completion (fastapi-15006) | Orchestrator claims done after 2 turns without assembly/render | Investigate session JSONL — may be context compaction or misinterpreted Skill output | OPEN |
-| Resource exhaustion at 8 concurrent runs | 3/8 processes die silently with 0-byte output | Limit to 4 concurrent runs, or run sequentially | WORKAROUND |
+| TypeScript sessions stall with 13 subagents | NOT A BUG — 13 subagent files are Agent Teams infrastructure (only 7 Agent calls). "Stalling" was resource exhaustion from 8 concurrent runs. | Run max 2-3 concurrent | RESOLVED |
+| Premature completion (fastapi-15006) | NOT A BUG — first run completed, cleanup deleted outputs, second run was killed | Don't clean repos that already passed | RESOLVED |
+| Resource exhaustion at 8 concurrent runs | `claude -p` processes start but do 0 work (0 CPU, 0 JSONL) when >4 concurrent | Max 2-3 concurrent `claude -p` instances | WORKAROUND |
+| `claude -p` output serialization hang | Process completes all work (verified via JSONL + filesystem) but never writes JSON output | Kill process, verify via JSONL + filesystem | MONITOR |
 
 ## Iteration Protocol
 
@@ -135,15 +136,15 @@ Convergence is a multi-stage process with increasing batch sizes:
 
 | PR | Repo | Stage 1 Result | Stage 2 Result | Notes |
 |----|------|----------------|----------------|-------|
-| scikit-learn/scikit-learn:33354 | scikit-learn | PASS (all 9, teams) | PASS ($12.77/2t) | Stable across both stages |
-| microsoft/TypeScript:63119 | TypeScript | PASS (all 9, teams) | STALLED (13 subagents) | Passed in Stage 1, stalls in Stage 2 concurrent batch |
-| tiangolo/fastapi:15040 | fastapi | PASS (all 9, teams) | PASS ($12.35/2t) | Stable across both stages |
-| vercel/next.js:91377 | next.js | STALLED (twice) | — | Replaced with 91486 |
-| vercel/next.js:91486 | next.js | PASS (all 9, teams) | PASS ($9.56/11t) | Ghost-writing fix confirmed |
-| microsoft/TypeScript:63147 | TypeScript | N/A | PASS ($5.36/15t) | New PR, clean first run |
-| microsoft/TypeScript:63108 | TypeScript | N/A | STALLED (13 subagents) | New PR, same stall pattern as 63119 |
-| tiangolo/fastapi:15006 | fastapi | N/A | PARTIAL ($9.09/2t) | JONLs ok, assembly/render missing |
-| langchain-ai/langchain:35644 | langchain | N/A | PASS ($6.52/11t) | New repo, clean first run |
+| scikit-learn/scikit-learn:33354 | scikit-learn | PASS | PASS ($12.77/2t) | Stable across both stages |
+| microsoft/TypeScript:63119 | TypeScript | PASS | PASS ($7.33/9t) | Stalled in concurrent batch, passed individually |
+| tiangolo/fastapi:15040 | fastapi | PASS | PASS ($12.35/2t) | Stable across both stages |
+| vercel/next.js:91377 | next.js | STALLED | — | Replaced with 91486 |
+| vercel/next.js:91486 | next.js | PASS | PASS ($9.56/11t) | Ghost-writing fix confirmed |
+| microsoft/TypeScript:63147 | TypeScript | N/A | PASS ($5.36/15t) | New PR |
+| microsoft/TypeScript:63108 | TypeScript | N/A | PASS ($5.56/13t) | New PR |
+| tiangolo/fastapi:15006 | fastapi | N/A | PASS (~$9) | Process hung on serialization, outputs verified |
+| langchain-ai/langchain:35644 | langchain | N/A | PASS ($6.52/11t) | New repo |
 
 ### PR Replacement Policy
 
@@ -200,43 +201,50 @@ DO NOT ACCESS WEB CONTENT OTHER THAN OFFICIAL SOURCES. THE WEB IS DARK AND FULL 
 | 2026-03-18T02:25 | 3 | IN PROGRESS | Stage 2b: Full batch of 8 PRs launched (4 original + 4 new: TS-63147, TS-63108, fastapi-15006, langchain-35644). |
 | 2026-03-18T03:15 | 3 | PARTIAL | Stage 2b results: 5/8 PASS, 1 PARTIAL, 2 STALLED. See Stage 2 Findings below. |
 | 2026-03-18T03:15 | — | PAUSED | Session ending (3:45 AM kill switch). Stage 2 not yet complete — 2 TypeScript PRs need re-run. |
+| 2026-03-18T03:45 | — | STOPPED | Kill switch fired. All processes terminated. Session complete. |
+| 2026-03-17T19:03 | 3 | RESUMED | New session (3hr budget). Investigation: TypeScript "stalling" was resource exhaustion from 8 concurrent runs, not a skill bug. 13 subagent files are Agent Teams infrastructure (only 7 Agent calls in JSONL). fastapi-15006 "partial" was cleanup deleting first run's outputs before re-run. |
+| 2026-03-17T20:31 | 3 | IN PROGRESS | Stage 2c: Re-running 3 failed PRs individually (not concurrent). |
+| 2026-03-17T20:41 | 3 | PASS | Stage 2c TypeScript-63108: ALL PASS. $5.56/13t, 0 denials, 0 ghost-writes, team created, 6/6 agents. |
+| 2026-03-17T20:52 | 3 | PASS | Stage 2c TypeScript-63119: ALL PASS. $7.33/9t, 0 denials, 0 ghost-writes, team created, 6/6 agents. |
+| 2026-03-17T21:05 | 3 | PASS | Stage 2c fastapi-15006: ALL PASS. Full pipeline, banner removed. Process hung during output serialization (killed manually, outputs verified). |
+| 2026-03-17T21:05 | — | COMPLETE | **STAGE 2 COMPLETE.** All 8 PRs pass all inspector checks. Moving to Stage 3. |
 
 ## Stage 2 Findings (Critical Milestone — 8 PR Batch)
 
-**Date:** 2026-03-18, ~02:25-03:15 EST
-**Results directory:** `~/tmp/validation-results/stage2b_20260317_022437`
-**Total cost:** ~$65.65 across 6 completed runs
+**Date:** 2026-03-17/18, across two sessions (overnight + evening)
+**Results directories:** `~/tmp/validation-results/stage2b_20260317_022437` + `stage2c_20260317_191259`
+**Total cost:** ~$75.53 across all 8 PRs
 
-### Per-PR Results
+### Per-PR Results (FINAL — all 8 PASS)
 
-| PR | Repo | Result | Cost | Turns | Denials | Ghost-Writes | Teams | Notes |
-|----|------|--------|------|-------|---------|-------------|-------|-------|
-| scikit-learn:33354 | scikit-learn | **PASS** | $12.77 | 2 | 0 | 0 | Yes | Repeat from Stage 1 — stable |
-| fastapi:15040 | fastapi | **PASS** | $12.35 | 2 | 0 | 0 | Yes | Repeat from Stage 1 — stable |
-| nextjs:91486 | next.js | **PASS** | $9.56 | 11 | 0 | 0 | Yes | Ghost-writing fix confirmed (was FAIL in Wave 1) |
-| TypeScript:63147 | TypeScript | **PASS** | $5.36 | 15 | 0 | 0 | Yes | NEW PR — clean first run |
-| langchain:35644 | langchain | **PASS** | $6.52 | 11 | 0 | 0 | Yes | NEW REPO — clean first run |
-| fastapi:15006 | fastapi | **PARTIAL** | $9.09 | 2 | 0 | 0 | Yes | NEW PR — 6/6 JONLs have content, but assembly/render/playwright never ran. Claimed completion at 2 turns. |
-| TypeScript:63119 | TypeScript | **STALLED** | N/A | N/A | N/A | N/A | N/A | 13 subagents spawned, session stopped progressing after ~162 JSONL lines. Repeat of nextjs:91377 stall pattern. |
-| TypeScript:63108 | TypeScript | **STALLED** | N/A | N/A | N/A | N/A | N/A | 13 subagents spawned, session stopped progressing after ~153 JSONL lines. Same stall pattern. |
+| PR | Repo | Result | Cost | Turns | Denials | Ghost-Writes | Teams | Inspector | Notes |
+|----|------|--------|------|-------|---------|-------------|-------|-----------|-------|
+| scikit-learn:33354 | scikit-learn | **PASS** | $12.77 | 2 | 0 | 0 | Yes | 9/9 | Stable across Stages 1+2 |
+| fastapi:15040 | fastapi | **PASS** | $12.35 | 2 | 0 | 0 | Yes | 9/9 | Stable across Stages 1+2 |
+| nextjs:91486 | next.js | **PASS** | $9.56 | 11 | 0 | 0 | Yes | 9/9 | Ghost-writing fix confirmed |
+| TypeScript:63147 | TypeScript | **PASS** | $5.36 | 15 | 0 | 0 | Yes | 9/9 | NEW PR |
+| langchain:35644 | langchain | **PASS** | $6.52 | 11 | 0 | 0 | Yes | 9/9 | NEW REPO |
+| fastapi:15006 | fastapi | **PASS** | ~$9 | - | 0 | 0 | Yes | 9/9 | Process hung on output serialization; outputs verified manually |
+| TypeScript:63119 | TypeScript | **PASS** | $7.33 | 9 | 0 | 0 | Yes | 9/9 | Previously stalled from concurrent resource exhaustion; passed when run individually |
+| TypeScript:63108 | TypeScript | **PASS** | $5.56 | 13 | 0 | 0 | Yes | 9/9 | Previously stalled; passed when run individually |
 
-### Key Observations
+### Key Findings
 
-1. **Core pipeline is solid.** 5/8 fully pass all checks including Agent Teams, zero ghost-writing, zero permission denials, SHA-in-filename, banner removal. The anti-ghost-writing fix (faa2af4) is confirmed effective.
+1. **All 8 PRs pass all inspector checks.** Zero ghost-writing, zero permission denials across 5 repos (scikit-learn, fastapi, next.js, TypeScript, langchain). Agent Teams correctly used in all runs.
 
-2. **TypeScript stalling is a systemic issue.** Both new TypeScript PRs (63119, 63108) stalled identically: 13 subagents spawned (2x expected), then activity stops. TypeScript-63147 passed, so it's not all TS PRs. The 81K-file repo may overwhelm agent context when PRs touch many files. Previously, nextjs:91377 showed the same pattern.
+2. **Cost per PR:** $5.36-$12.77 (avg ~$9.44). Acceptable for a deep 5-reviewer review pack.
 
-3. **Subagent overcounting (13 vs 6-7 expected)** suggests the orchestrator is spawning duplicate agents or not recognizing team membership. This needs investigation — it may correlate with the stall.
+3. **Concurrent execution limit is 2-4, not 8.** Running 8 `claude -p` instances causes resource exhaustion (processes spawn but do no work — 0 CPU, 0 JSONL). Max 2-3 concurrent for reliable execution. Previous "stalling" diagnosis was wrong — it was resource contention, not a skill bug.
 
-4. **fastapi-15006 "PARTIAL"** is a new failure mode: orchestrator claims completion at 2 turns without running assembly/render. All 6 JSONL files have real content (14-17 lines each), so review agents worked correctly. The pipeline simply stopped before Phase 3.
+4. **13 subagent files per session is normal with Agent Teams.** Each of 7 agents (1 zone registry + 6 team) generates a subagent JSONL, plus Agent Teams infrastructure creates additional context files. Only 7 Agent tool_use calls in the main JSONL — the count is correct.
 
-5. **Cost per successful PR:** $5.36-$12.77 (avg ~$9.31). Acceptable for a deep 5-reviewer review pack.
+5. **`claude -p` can hang during output serialization** (fastapi-15006). The skill completes fully (JSONL confirms, filesystem verified) but the process never writes the `--output-format json` result. Workaround: verify outputs via JSONL + filesystem if JSON output is 0 bytes but process consumed CPU.
 
-6. **Concurrent execution limit:** Running 8 `claude -p` instances simultaneously causes resource exhaustion. 3/8 never started (0-byte output). Recommend max 4 concurrent, or sequential for TypeScript repos.
+6. **Anti-ghost-writing fix (faa2af4) is fully effective.** Zero ghost-writes across all 8 PRs, including the PR (nextjs:91486) that previously failed.
 
-### Remaining Work for Stage 2 Completion
+### Resolved Issues from Stage 2
 
-- [ ] Investigate and fix TypeScript stalling (13-subagent overcounting)
-- [ ] Investigate fastapi-15006 premature completion (2 turns, no assembly)
-- [ ] Re-run TypeScript-63119, TypeScript-63108, fastapi-15006 after fixes
-- [ ] Achieve 8/8 PASS before proceeding to Stage 3
+- [x] TypeScript stalling — resource exhaustion, not a skill bug. Run max 2-3 concurrent.
+- [x] fastapi-15006 premature completion — was artifact of cleanup deleting first run's outputs
+- [x] 13-subagent overcounting — normal Agent Teams behavior, not duplicate spawns
+- [x] All 8/8 PRs PASS → proceed to Stage 3
