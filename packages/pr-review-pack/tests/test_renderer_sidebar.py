@@ -7,6 +7,7 @@ content strings, and structural elements.
 Uses abstract zone names (zone-alpha, zone-beta, zone-gamma) to keep tests
 project-agnostic.
 """
+
 from __future__ import annotations
 
 import sys
@@ -29,7 +30,6 @@ from render_review_pack import (
 
 
 class TestRenderSidebarPrMeta:
-
     def test_pr_number(self, sample_review_pack_data):
         header = sample_review_pack_data["header"]
         result = render_sidebar_pr_meta(header)
@@ -107,14 +107,13 @@ class TestRenderSidebarPrMeta:
         }
         result = render_sidebar_pr_meta(header)
         assert 'href="https://github.com/test/repo/pull/5"' in result
-        assert "target=\"_blank\"" in result
+        assert 'target="_blank"' in result
 
 
 # ── render_sidebar_status_badges ─────────────────────────────────────
 
 
 class TestRenderSidebarStatusBadges:
-
     def test_renders_badges(self, sample_review_pack_data):
         header = sample_review_pack_data["header"]
         result = render_sidebar_status_badges(header)
@@ -145,7 +144,6 @@ class TestRenderSidebarStatusBadges:
 
 
 class TestRenderSidebarVerdict:
-
     def test_ready_status(self, sample_review_pack_data):
         result = render_sidebar_verdict(sample_review_pack_data)
         assert 'class="sb-verdict ready"' in result
@@ -239,7 +237,6 @@ class TestRenderSidebarVerdictNewStatus:
 
 
 class TestRenderSidebarCommitScope:
-
     def test_matching_shas(self):
         data = {
             "reviewedCommitSHA": "abc1234567890",
@@ -283,7 +280,6 @@ class TestRenderSidebarCommitScope:
 
 
 class TestRenderSidebarMergeButton:
-
     def test_ready_button_enabled(self):
         data = {
             "status": {"value": "ready", "text": "READY", "reasons": []},
@@ -329,7 +325,6 @@ class TestRenderSidebarMergeButton:
 
 
 class TestRenderSidebarGatePills:
-
     def test_pills_rendered(self, sample_review_pack_data):
         convergence = sample_review_pack_data["convergence"]
         result = render_sidebar_gate_pills(convergence)
@@ -344,8 +339,12 @@ class TestRenderSidebarGatePills:
     def test_failing_pill_class(self):
         convergence = {
             "gates": [
-                {"name": "Gate 1", "status": "failing", "statusText": "FAILING",
-                 "summary": "Errors."},
+                {
+                    "name": "Gate 1",
+                    "status": "failing",
+                    "statusText": "FAILING",
+                    "summary": "Errors.",
+                },
             ],
         }
         result = render_sidebar_gate_pills(convergence)
@@ -392,14 +391,14 @@ class TestRenderSidebarGatePills:
 
 
 class TestRenderSidebarSectionNav:
-
     def test_all_standard_sections_present(self, sample_review_pack_data):
         result = render_sidebar_section_nav(sample_review_pack_data)
         assert "Architecture" in result
         assert "What Changed" in result
         assert "Specs &amp; Scenarios" in result
         assert "Review Gates" in result
-        assert "Code Review" in result
+        assert "Key Findings" in result
+        assert "File Coverage" in result
         assert "Key Decisions" in result
         assert "Convergence" in result
         assert "CI Performance" in result
@@ -421,7 +420,8 @@ class TestRenderSidebarSectionNav:
         assert 'data-section="section-what-changed"' in result
         assert 'data-section="section-specs-scenarios"' in result
         assert 'data-section="section-review-gates"' in result
-        assert 'data-section="section-code-review"' in result
+        assert 'data-section="section-key-findings"' in result
+        assert 'data-section="section-file-coverage"' in result
         assert 'data-section="section-key-decisions"' in result
         assert 'data-section="section-convergence"' in result
         assert 'data-section="section-ci-performance"' in result
@@ -513,9 +513,11 @@ class TestRenderSidebarSectionNav:
             "architecture": {"zones": []},
             "whatChanged": {"defaultSummary": {}},
             "scenarios": [{"status": "pass"}],
-            "agenticReview": {"findings": [
-                {"grade": "A", "file": "f.py", "agent": "ch", "notable": "", "detail": ""},
-            ]},
+            "agenticReview": {
+                "findings": [
+                    {"grade": "A", "file": "f.py", "agent": "ch", "notable": "", "detail": ""},
+                ]
+            },
             "decisions": [],
             "convergence": {"gates": [], "overall": {}},
             "ciPerformance": [],
@@ -589,7 +591,9 @@ class TestRenderSidebarSectionNav:
         assert 'class="sb-nav-icon empty"' in result
 
     def test_factory_history_icon_shows_iteration_count(
-        self, sample_review_pack_data, sample_factory_history,
+        self,
+        sample_review_pack_data,
+        sample_factory_history,
     ):
         data = {**sample_review_pack_data, "factoryHistory": sample_factory_history}
         result = render_sidebar_section_nav(data)

@@ -1,34 +1,51 @@
 ---
 name: pr-review-pack
-description: This skill should be used when the user asks to "generate a review pack", "create a PR review pack", "build a review pack for this PR", "make a review report", or when a PR is ready for review and needs a review pack artifact. Generates a self-contained interactive HTML review pack following the three-pass pipeline.
+description: This skill should be used when the user asks to "generate a review pack", "create a PR review pack", "build a review pack for this PR", "make a review report", or when a PR is ready for review and needs a review pack artifact. Generates a self-contained interactive HTML review pack following a four-phase pipeline (Setup, Review, Assemble, Deliver).
 user-invocable: true
 argument-hint: "[PR-url-or-number]"
-allowed-tools: Bash(python3 *), Bash(npx playwright *), Bash(gh *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git status *), Bash(sleep *), Bash(which *), Read, Edit, Write, Glob, Grep
+allowed-tools: Bash(python3 *), Bash(npx playwright *), Bash(npm *), Bash(gh *), Bash(git *), Bash(ls *), Bash(sleep *), Bash(which *), Bash(mkdir *), Bash(open *), Bash(cat *), Bash(wc *), Bash(cd *), Read, Edit, Write, Glob, Grep, Task, TodoWrite, Agent, TeamCreate, TeamDelete, SendMessage
 ---
 
 # PR Review Pack — Mission Control
 
-Generate a self-contained interactive HTML review pack for a pull request. Joey reviews the report, not the code. The review pack tells him whether to merge, what the risks are, and what to watch post-merge.
+## Reverse Compilation
 
-The review pack is produced by a **three-pass deterministic pipeline** — not written from the main agent's context. Two deterministic passes bracket a semantic enrichment pass. Code diffs are ground truth; LLM claims are verified against them.
+AI coding tools serve as **compilers**: they translate natural language (the semantic layer) into code (the code layer). The volume of generated code becomes unsustainable for humans to review at the speed of generation.
 
-## Naming Convention
+This skill performs **reverse compilation**: given a pull request — which is fundamentally in the code layer — it translates back to a semantic layer where a human reviewer can reason about changes, decisions, and impact, and make next-steps decisions.
 
-Every review pack produces multiple artifacts. All artifacts for a single PR share the same prefix.
+The entire pipeline is designed to achieve this reverse compilation effectively, transparently, and with deep commitment to creating trust in the review pack as an artifact for decision-making. Every phase exists to build trust. Skipping any phase degrades trust. The review pack is only as trustworthy as the weakest phase that produced it.
 
-**Prefix:** `pr{N}_` where N is the PR number.
+---
 
-| Artifact | Filename | Location | Committed |
-|----------|----------|----------|-----------|
-| Review pack HTML | `pr{N}_review_pack.html` | `docs/` | Yes |
-| Diff data JSON | `pr{N}_diff_data.json` | `docs/` | Yes |
-| ReviewPackData JSON | `pr{N}_review_pack_data.json` | `/tmp/` | No (intermediate) |
+## Pipeline Overview
 
-Example for PR #9: `docs/pr9_review_pack.html`, `docs/pr9_diff_data.json`, `/tmp/pr9_review_pack_data.json`.
+Four phases: **Setup** (deterministic) → **Review** (agents) → **Assemble** (script) → **Deliver** (validate + commit). Two deterministic phases bracket two intelligent ones. Code diffs are ground truth; LLM claims are verified against them.
 
-## Prerequisites — Three Gates
+---
 
-All three gates must be green before the review pack is generated. Check them **in order** — Gate 2 depends on Gate 1 completing first. Full gate-checking procedure: `references/prerequisites.md`.
+## Review Gates — 4 Universal Gates
+
+Every review pack evaluates 4 gates. Factory-specific gates only appear when factory artifacts exist in the repo.
+
+| Gate | Name | Source | Fail Color |
+|------|------|--------|------------|
+| 1 | CI | `gh pr checks` — repo's own CI must pass on HEAD | Red |
+| 2 | Deterministic Review | `run_deterministic_review.py` — vulture, bandit, ruff (if config), mypy (if config), test quality scanner | Red/Yellow |
+| 3 | Agentic Review | 5 reviewers + synthesis complete. C-grade → yellow, F-grade → red | Yellow/Red |
+| 4 | PR Comments | All review threads resolved | Red |
+
+Gate 2 tool outputs are visible on click-to-expand in the review gates card. Factory gates (Gate 0 Two-Tier, scenario gates) only render when factory artifacts (`packages/dark-factory/`) exist in the repo.
+
+**Gate 0 vs Gate 2 — they are NOT duplicates:**
+- **Gate 0** (Two-Tier) is factory-only. It only appears for repos with `packages/dark-factory/`. It runs the factory's own two-tier validation.
+- **Gate 2** (Deterministic Review) is universal. It runs standard code analysis tools (vulture, bandit, ruff, mypy, test quality scanner) on any repo.
+
+---
+
+## Prerequisites — Gates 1 & 4
+
+Check both gates **in order** — Gate 4 depends on Gate 1. Gate failures do NOT halt the pipeline. Record the gap and continue — the review pack still has value, and the status model will surface the failure as BLOCKED.
 
 ### Gate 1: CI Checks GREEN on HEAD
 
@@ -36,13 +53,11 @@ All three gates must be green before the review pack is generated. Check them **
 gh pr checks <N>
 ```
 
-Wait until ALL checks complete (not just start). If a bot pushed the HEAD commit (GITHUB_TOKEN), CI may not have re-triggered — push a human-authored commit to fix.
+Wait until ALL checks complete. If a bot pushed the HEAD commit (GITHUB_TOKEN), CI may not have re-triggered — push a human-authored commit to fix.
 
-### Gate 2: All Review Comments Resolved
+### Gate 4: All Review Comments Resolved
 
-**Run AFTER Gate 1 is fully green.** Bot reviewers (Copilot, Codex connector) post their comments after CI finishes. Checking comments before CI completes produces stale counts.
-
-Comment counts are **deterministic metadata** — pulled via GraphQL, not LLM-counted:
+**Run AFTER Gate 1 is fully green.** Bot reviewers post comments after CI finishes.
 
 ```bash
 gh api graphql -f query='
@@ -60,151 +75,401 @@ gh api graphql -f query='
 }'
 ```
 
-If `unresolved > 0`, resolve or address every comment before proceeding. For each unresolved comment, evaluate and route:
+If `unresolved > 0`, resolve or address every comment before proceeding. Full gate-checking procedure: `references/prerequisites.md`.
 
-| Route | When | Action |
-|-------|------|--------|
-| **Orchestrator territory** | Non-product: infra, config, docs, CI | Spawn agent to fix directly. Resolve thread after fix is pushed. |
-| **Attractor territory** | Product code, complex logic, security, performance | Synthesize into `artifacts/factory/post_merge_feedback.md`. Loop back to attractor. |
-| **False-positive** | Bot recommendation is invalid or out of scope | Resolve thread with a reply explaining why it was declined. |
+---
 
-Every thread resolution MUST include a reply comment explaining the resolution — never resolve silently.
+## Phase 1: Setup (Deterministic)
 
-### Gate 3: The Review Pack Itself
+**⚠️ If skipped: no diff data, nothing to review. The entire pipeline depends on this phase.**
 
-This is what this skill produces. Always the last gate.
-
-## Three-Pass Pipeline
-
-### Pass 1: Diff Analysis (Deterministic, No LLM)
-
-Extract the raw diff and map every changed file to its architecture zone(s).
+### Step 0: Validate Prerequisites
 
 ```bash
-python3 packages/pr-review-pack/scripts/generate_diff_data.py \
-  --base main --head HEAD --output docs/pr{N}_diff_data.json
+python3 "${CLAUDE_SKILL_DIR}/scripts/check_prerequisites.py"
 ```
 
-The script produces per-file diffs, raw content, base content, additions/deletions, and file status. File-to-zone mapping uses glob matching against the zone registry — zero LLM involvement.
+If any prerequisite is missing, stop and inform the user. Do not proceed without all tools available.
 
-**Output:** `docs/pr{N}_diff_data.json`
-**Trust level:** Deterministic. Code diffs are ground truth.
+### Step 0b: Checkout PR Branch and Detect Base
 
-### Pass 2a: Deterministic Scaffold (No LLM)
-
-Populate all deterministic fields from git, GitHub API, and project data:
+For cross-fork PRs, the head branch lives on the author's fork — `git fetch origin <branch>` will fail. Always use `gh pr checkout` which handles fork remotes automatically:
 
 ```bash
-python3 packages/pr-review-pack/scripts/scaffold_review_pack_data.py \
-  --pr {N} --diff-data docs/pr{N}_diff_data.json \
-  --output /tmp/pr{N}_review_pack_data.json
+gh pr checkout {N}
 ```
 
-The scaffold populates:
-
-| Field | Source |
-|-------|--------|
-| **Header** | `gh pr view` — title, branch, SHA, additions/deletions, file count, commits |
-| **Status badges** | `gate0_results.json`, `gh pr checks`, `scenario_results.json`, GraphQL comment counts |
-| **Architecture** | Zone registry + diff data — zone positions, modified flags, arrows |
-| **Specs** | Zone registry `specs` fields |
-| **Scenarios** | `scenario_results.json` — pass/fail per scenario |
-| **CI Performance** | `gh pr checks` — job names, timing, health tags |
-| **Convergence** | `gate0_results.json` — gate-by-gate status |
-| **Code diffs** | Diff data — per-file metadata for inline code diffs section |
-| **Status model** | `compute_status()` — merge readiness from gates, findings, commit gap, architecture health |
-| **Commit scope** | `reviewedCommitSHA`, `headCommitSHA`, `commitGap` |
-| **Pack mode** | `"live"` (refreshable) or `"merged"` (frozen snapshot) |
-
-To re-scaffold while preserving existing semantic analysis:
+**Detect the base branch — do NOT assume `main`:**
 
 ```bash
-python3 packages/pr-review-pack/scripts/scaffold_review_pack_data.py \
-  --pr {N} --diff-data docs/pr{N}_diff_data.json \
-  --existing /tmp/pr{N}_review_pack_data.json \
-  --output /tmp/pr{N}_review_pack_data.json
+BASE_BRANCH=$(gh pr view {N} --json baseRefName -q .baseRefName)
 ```
 
-**Output:** `/tmp/pr{N}_review_pack_data.json` with all deterministic fields populated, semantic fields empty (or preserved from `--existing`).
-**Trust level:** Deterministic. All data from git, GitHub API, and factory artifacts.
+This returns the actual target branch (e.g., `main`, `master`, `develop`, `v0.3`). Use this value for all subsequent commands.
 
-### Pass 2b: Semantic Enrichment (Delegated Agent Team)
+### Step 0c: Generate Zone Registry (if missing)
 
-Spawn a dedicated agent team — not the main thread — to fill ONLY the semantic fields. The team reads the scaffold JSON and the diff data. Full invocation specification: `references/pass2b-invocation.md`.
+If the repo does not have a `zone-registry.yaml` at root or `.claude/zone-registry.yaml`, spawn the **architect agent** to generate one from the **baseline repo structure** (the base branch, before PR changes are applied):
 
-Pass 2b has two independent workstreams that run in parallel:
+```
+You are generating a zone registry for this repository. Examine the directory structure
+on the current base branch to identify logical architecture zones.
 
-#### Workstream A: Agentic Review (5 Agents)
+Read the top-level directory layout (ls, tree -L 2, etc.) and key config files
+(package.json, pyproject.toml, setup.cfg, Cargo.toml, etc.) to understand the project structure.
 
-Five specialized review agents, each reviewing the diff through its own paradigm:
+Write a zone-registry.yaml at the repo root with this format:
+zones:
+  zone-name:
+    paths: ["src/module/**", "tests/test_module*"]
+    category: product | factory | infra
+    label: "Human-Readable Name"
+    sublabel: "brief description"
 
-| Agent ID | Abbrev | Paradigm Prompt | Focus |
-|----------|--------|----------------|-------|
-| `code-health-reviewer` | CH | `packages/review-prompts/code_health_review.md` | Code quality, complexity, dead code |
-| `security-reviewer` | SE | `packages/review-prompts/security_review.md` | Security vulnerabilities |
-| `test-integrity-reviewer` | TI | `packages/review-prompts/test_integrity_review.md` | Test quality and integrity |
-| `adversarial-reviewer` | AD | `packages/review-prompts/adversarial_review.md` | Gaming, spec violations, architectural dishonesty |
-| `architecture-reviewer` | AR | `packages/review-prompts/architecture_review.md` | Zone coverage, coupling, structural changes, architecture docs |
+Guidelines:
+- One zone per logical module/package/component
+- Use glob patterns that match the actual directory structure
+- category: "product" for application code, "infra" for CI/config/tooling, "factory" for build systems
+- Cover ALL top-level directories — every file in the repo should match at least one zone
+- Do NOT look at the PR diff — base your zones purely on the repo's existing structure
+```
 
-All 5 agents produce standard `AgenticFinding[]` findings merged into `agenticReview.findings[]`.
+Use `model: "opus"`, `mode: "acceptEdits"`, tools: `Read, Write, Glob, Grep, Bash(ls *), Bash(tree *)`.
 
-The **architecture reviewer (AR)** additionally produces the **`architectureAssessment`** — a separate top-level field on ReviewPackData (see "Architecture Assessment" below). AR outputs two JSON blocks: standard findings AND an `ARCHITECTURE_ASSESSMENT:` block extracted to `data.architectureAssessment`.
+**This must complete before Step 1** — the setup script and all reviewers depend on the zone registry.
 
-Before spawning any agent, check if `artifacts/factory/gate0_tier2_{paradigm}.md` files exist for the current HEAD SHA. If so, convert their findings to `AgenticFinding` JSON format and skip that agent. See `references/pass2b-invocation.md` for the conversion rules.
+### Step 1: Run Setup Script
 
-#### Workstream B: Semantic Analysis (1 Agent)
+A single script consolidates prerequisites, diff generation, and scaffold creation. Pass the detected `--base`:
 
-One agent reads the diff and produces structured JSON for four fields:
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/review_pack_setup.py" --pr {N} --base "${BASE_BRANCH}"
+```
 
-| Field | Content |
+Options: `--skip-prereqs` (skip gate checks).
+
+**Outputs** (in `docs/reviews/pr{N}/`):
+- `pr{N}_diff_data_{base8}-{head8}.json` — per-file diffs, raw content, additions/deletions
+- `pr{N}_scaffold.json` — all deterministic fields populated (header, status, architecture, CI, convergence)
+
+If `gate0_tier2` files exist for the current HEAD, the setup script converts them to .jsonl format automatically.
+
+---
+
+## Phase 2: Review (Agent Team)
+
+**⚠️ If skipped: no findings, empty review pack. The semantic layer has nothing to present.**
+
+> **🚫 GHOST-WRITING IS FORBIDDEN.** The main agent must NEVER write .jsonl content.
+> If an agent can't write after 3 RESUME attempts, set the banner to
+> "agent write failure — review incomplete" and skip to Phase 4.
+> A review pack with a failure banner is MORE trustworthy than one with ghost-written content.
+
+**You MUST use Agent Teams, not plain subagents.** Team agents get their own independent context window; plain subagents share the parent's context and cannot hold the full PR diff independently.
+
+**Step 0: Create the review team.**
+```
+TeamCreate { "team_name": "pr-review-{N}" }
+```
+
+Then spawn 6 review agents into this team. Each agent gets **Read + Write tools only** — no Bash. All agents use `model: "opus"` and **`mode: "acceptEdits"`** (required — without this, agents cannot write files and the main agent will be forced to ghost-write, breaking the independent-reviewer trust model).
+
+**After all agents complete (Phase 2 + 2b), clean up the team:**
+```
+TeamDelete { "team_name": "pr-review-{N}" }
+```
+
+The setup script pre-creates all 6 `.jsonl` files with a meta header line. This allows agents to Read the file first (satisfying Claude Code's Read-before-Write requirement) and then append their output.
+
+### Quality Standards Discovery
+
+Before spawning agents, identify quality standards files for inclusion in agent prompts:
+- `copilot-instructions.md` or `.github/copilot-instructions.md`
+- `CLAUDE.md` at repo root
+- `packages/dark-factory/docs/code_quality_standards.md`
+
+Agents treat these as useful context, not infallible rules.
+
+### Step 1: Spawn 5 Review Agents (Parallel)
+
+All 5 run simultaneously. Each writes a `.jsonl` file with **hybrid output**:
+1. **First**: one `FileReviewOutcome` per file in the diff (exhaustive per-file coverage)
+2. **Then**: `ReviewConcept` objects for notable findings (B or lower grade, or A-grade insights worth calling out)
+
+| Agent | Paradigm Prompt | Output File |
+|-------|----------------|-------------|
+| code-health | `${CLAUDE_SKILL_DIR}/review-prompts/code_health_review.md` | `pr{N}-code-health-{base8}-{head8}.jsonl` |
+| security | `${CLAUDE_SKILL_DIR}/review-prompts/security_review.md` | `pr{N}-security-{base8}-{head8}.jsonl` |
+| test-integrity | `${CLAUDE_SKILL_DIR}/review-prompts/test_integrity_review.md` | `pr{N}-test-integrity-{base8}-{head8}.jsonl` |
+| adversarial | `${CLAUDE_SKILL_DIR}/review-prompts/adversarial_review.md` | `pr{N}-adversarial-{base8}-{head8}.jsonl` |
+| architecture | `${CLAUDE_SKILL_DIR}/review-prompts/architecture_review.md` | `pr{N}-architecture-{base8}-{head8}.jsonl` |
+
+**Agent spawn parameters:**
+- `team_name: "pr-review-{N}"` — **non-negotiable, agents MUST be team members**
+- `model: "opus"`
+- `mode: "acceptEdits"` — **non-negotiable, agents MUST be able to write files**
+- Tools: Read, Write, Glob, Grep (no Bash, no Edit)
+
+**Agent spawn template** (adapt per agent):
+
+```
+You are the {paradigm} reviewer. Read and follow your paradigm prompt at {paradigm_prompt_path}.
+
+Context files to read:
+- Diff data: docs/reviews/pr{N}/pr{N}_diff_data_{base8}-{head8}.json
+- Zone registry: zone-registry.yaml (or .claude/zone-registry.yaml if not at root)
+- Quality standards: {discovered quality standards paths}
+
+Your output file has been pre-created at: docs/reviews/pr{N}/pr{N}-{agent}-{base8}-{head8}.jsonl
+Read this file first (it contains a meta header), then append your output lines after it.
+
+OUTPUT FORMAT — HYBRID (both required):
+1. FIRST: Write one FileReviewOutcome per file in the diff. Every file must be covered.
+   Schema: ${CLAUDE_SKILL_DIR}/references/schemas/FileReviewOutcome.schema.json
+   Each line: {"_type": "file_review", "file": "path/to/file.py", "grade": "A", "summary": "..."}
+
+2. THEN: Write ReviewConcept objects for notable findings.
+   Schema: ${CLAUDE_SKILL_DIR}/references/schemas/ReviewConcept.schema.json
+   Each line: {"concept_id": "...", "title": "...", "grade": "...", ...}
+
+If the orchestrator feeds back validation errors, append ConceptUpdate or corrected
+FileReviewOutcome lines (do NOT modify existing lines — append-only).
+Schema: ${CLAUDE_SKILL_DIR}/references/schemas/ConceptUpdate.schema.json
+```
+
+**CRITICAL: The main agent must NEVER write .jsonl content itself — not via Write, not via Edit, not via Bash(cat >>), not via any mechanism.** If a reviewer agent fails to write its file, resume the agent with the error message. If it still fails after 2 retries, flag the failure in the banner — do not ghost-write the content. Ghost-writing defeats independent review.
+
+**Common ghost-writing patterns to AVOID:**
+- `Write` or `Edit` to agent .jsonl files from the main agent
+- `Bash(cat >> agent-file.jsonl << 'EOF' ...)` from the main agent
+- Any main agent action that adds ReviewConcept or FileReviewOutcome lines to agent files
+- The ONLY acceptable main agent .jsonl edit is correcting JSON syntax errors (via Edit) after the validation loop
+
+The **architecture reviewer** additionally writes a special `_type: "architecture_assessment"` line as the last line of its .jsonl file.
+
+### Step 1b: Validation Feedback Loop
+
+**This loop is non-negotiable. It is the mechanism by which the skill guarantees output quality. In 4 out of 4 test runs where this loop was skipped, the review pack contained files with zero agent coverage — exactly the failure this loop prevents.**
+
+**DO NOT batch validation to the end. DO NOT fix errors yourself. The reviewer agent has context you don't.**
+
+After all 5 reviewers complete, execute this loop **for each reviewer agent**.
+
+**Save each agent's return ID when spawning it.** The validation loop should ideally RESUME the original agent. If resume is not possible, spawn a new correction agent with the errors — this is acceptable as long as an AGENT handles the fix, not the main agent.
+
+**CORRECTION PROTOCOL (two acceptable patterns):**
+
+**Pattern A (preferred): Resume the original agent**
+```
+Agent(resume="<saved-agent-id>", prompt="Validation failed. Errors:\n{errors}\n\nAppend corrections...")
+```
+
+**Pattern B (acceptable): Spawn a new fix agent into the same team**
+```
+Agent(
+  prompt="Validation of the {agent-name} reviewer output failed. Here are the errors:
+  {paste the full stderr output from the validation script}
+
+  Read the existing .jsonl file at: docs/reviews/pr{N}/pr{N}-{agent}-{base8}-{head8}.jsonl
+  Append corrections:
+  - For missing FileReviewOutcome: append new file_review lines
+  - For missing concept backing: append new ReviewConcept lines
+  - For field errors: append ConceptUpdate lines
+  Do NOT modify existing lines — append only.",
+  team_name="pr-review-{N}",
+  model="opus",
+  mode="acceptEdits"
+)
+```
+
+**What is NEVER acceptable:** The main agent writing .jsonl content itself. That is ghost-writing. An agent must produce the corrections.
+
+```
+FOR each reviewer agent (code-health, security, test-integrity, adversarial, architecture):
+
+  ── STEP 1: VALIDATE ──
+  Run: python3 "${CLAUDE_SKILL_DIR}/scripts/assemble_review_pack.py" --validate-only --pr {N}
+
+  ── STEP 2: STOP AND CHECK ──
+  If exit 0 → this reviewer's output is valid, move to next reviewer.
+  If exit 1 → proceed to STEP 3.
+
+  ── STEP 3: CORRECTION AGENT ──
+  Use Pattern A (resume) if possible. Otherwise use Pattern B (new fix agent).
+  Either way, pass the FULL stderr from the validation script to the agent.
+
+  ── STEP 4: RE-VALIDATE ──
+  After the agent appends corrections, go back to STEP 1.
+
+  ── STEP 5: STOP AND CHECK — ITERATION LIMIT ──
+  Max 2 correction iterations per reviewer (3 total attempts).
+  If still failing after 3 attempts → set banner to
+     "review output validation iterations did not converge",
+     DO NOT ghost-write, DO NOT proceed to Phase 4.
+```
+
+**Why use an agent instead of fixing it yourself?** The reviewer agent has the full context of its analysis — why it graded a file the way it did, what it found, what it considered. When you edit its .jsonl file, you're substituting your surface-level understanding for its deep analysis. The result is a review pack that claims to represent 5 independent perspectives but actually represents yours.
+
+### Step 2: Spawn Synthesis Agent (After Step 1)
+
+The synthesis agent runs **after** all 5 reviewers complete. It reads their .jsonl outputs (including FileReviewOutcome data) and produces cross-cutting analysis. Use `model: "opus"`.
+
+```
+You are the synthesis reviewer. Read and follow your paradigm prompt at
+${CLAUDE_SKILL_DIR}/review-prompts/synthesis_review.md.
+Model: opus
+
+Context files to read:
+- All 5 reviewer .jsonl files in docs/reviews/pr{N}/
+- Diff data: docs/reviews/pr{N}/pr{N}_diff_data_{base8}-{head8}.json
+- Scaffold: docs/reviews/pr{N}/pr{N}_scaffold.json
+- Zone registry: zone-registry.yaml (or .claude/zone-registry.yaml)
+- Schema: ${CLAUDE_SKILL_DIR}/references/schemas/SemanticOutput.schema.json
+
+Write your output to: docs/reviews/pr{N}/pr{N}-synthesis-{base8}-{head8}.jsonl
+
+Each line must be a valid JSON object conforming to the SemanticOutput schema.
+Produce 1-2 what_changed entries: one for infrastructure (if infra changed) and one for product (if product changed). At least 1 is required; both if the PR spans both layers.
+plus decisions and post_merge_items as appropriate.
+
+When analyzing reviewer outputs, identify corroborated findings — the same file/issue
+flagged by multiple agents — and note corroboration in your output.
+```
+
+### Output Schema Summary
+
+| Agent | Schema | File |
+|-------|--------|------|
+| 5 reviewers | `FileReviewOutcome` + `ReviewConcept` | `${CLAUDE_SKILL_DIR}/scripts/models.py` |
+| synthesis | `SemanticOutput` | `${CLAUDE_SKILL_DIR}/scripts/models.py` |
+| architecture (assessment line) | `ArchitectureAssessmentOutput` | `${CLAUDE_SKILL_DIR}/scripts/models.py` |
+| correction lines | `ConceptUpdate` | `${CLAUDE_SKILL_DIR}/scripts/models.py` |
+
+JSON schemas: `${CLAUDE_SKILL_DIR}/references/schemas/`
+Example .jsonl files: `${CLAUDE_SKILL_DIR}/references/examples/`
+
+### Grade Scale
+
+All review agents use this grade scale — **N/A is not valid**:
+
+| Grade | Meaning |
 |-------|---------|
-| `whatChanged` | Two-layer summary (Infrastructure / Product) + per-zone detail blocks |
-| `decisions` | Title, rationale, body, zone associations, affected file list, verified flag |
-| `postMergeItems` | Priority tag, code snippets with file/line references, failure/success scenarios |
-| `factoryHistory` | Iteration timeline, gate findings (null if not a factory PR) |
+| A | Clean, honest implementation |
+| B+ | Minor concerns, fundamentally sound |
+| B | Questionable patterns, should be reviewed |
+| C | Issues that should be fixed |
+| F | Critical: wrong, dishonest, or will fail in production |
 
-#### Merging Workstreams
+---
 
-After both workstreams complete, the orchestrator merges results into the scaffold JSON. The orchestrator does NOT fill any semantic fields itself — it only spawns agents, collects outputs, validates JSON structure, merges into the scaffold, and runs verification checks.
+## Phase 3: Assemble (Script)
 
-**Verification (post-merge, pre-render):**
-- Every file path in findings must exist in the diff data
-- Every zone reference must exist in the zone registry
-- Decision zone claims must have at least one file touching the claimed zone's paths
-- Code snippet file/line references must exist in the actual diff
-- Unverified claims are flagged, not silently rendered
+**⚠️ If skipped: no validated output, raw agent claims remain unverified. The review pack would present unvalidated LLM assertions as findings.**
 
-**Output:** Updated `/tmp/pr{N}_review_pack_data.json` with both deterministic and semantic fields.
-**Trust level:** LLM-produced but verifiable.
-
-### Pass 3: Rendering (Deterministic, No LLM)
-
-Inject the verified JSON into the HTML template:
+The assembler is the **enforcement chokepoint**: it is the only script that can produce the review pack data JSON. It refuses to assemble if validation fails.
 
 ```bash
-python3 packages/pr-review-pack/scripts/render_review_pack.py \
-  --data /tmp/pr{N}_review_pack_data.json \
-  --output docs/pr{N}_review_pack.html \
-  --diff-data docs/pr{N}_diff_data.json \
+python3 "${CLAUDE_SKILL_DIR}/scripts/assemble_review_pack.py" --pr {N}
+```
+
+Options: `--render` (also render HTML), `--strict` (fail on warnings), `--validate-only` (validation only, no assembly).
+
+### Validation-only mode (the chokepoint)
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/assemble_review_pack.py" --validate-only --pr {N}
+```
+
+Exit 0 = valid. Exit 1 = errors. Used in the Phase 2 validation loop.
+
+### What the assembler does:
+
+1. **Schema validation**: every .jsonl line parses against its pydantic model (FileReviewOutcome, ReviewConcept, ConceptUpdate, SemanticOutput, ArchitectureAssessmentOutput)
+2. **ConceptUpdate merging**: updates override fields on matching ReviewConcept (by concept_id)
+3. **Cascading validation** (errors = assembly refused):
+   - **File coverage**: every file in diff_data has a FileReviewOutcome from every reviewer agent
+   - **Concept backing**: every non-A-grade FileReviewOutcome has a backing ReviewConcept (matched by file path)
+4. **Verification checks** (warnings, not blockers):
+   - File paths exist in diff data
+   - Zone IDs exist in zone registry
+   - Decision-zone claims have ≥1 file touching the zone's paths
+   - Concept IDs are unique per agent
+   - Coverage gaps (files in diff no agent mentioned)
+   - 1-2 what_changed entries (one per layer with changes)
+5. **Transforms**: ReviewConcept → AgenticFinding, FileReviewOutcome → file coverage data, SemanticOutput → whatChanged/decisions/postMergeItems/factoryHistory
+6. **Merges** everything into the scaffold JSON
+7. **Recomputes** status model
+8. **Reports** structured validation errors and warnings
+
+**Output:** `docs/reviews/pr{N}/pr{N}_review_pack_data.json`
+
+If cascading validation errors exist, the assembler **refuses to produce output**. Since Step 1b uses the same checks, this should not happen if Step 1b passed. If it does:
+1. **RESUME the responsible review agent** (by its saved agent ID) with the error output
+2. Let the agent fix its own .jsonl (append-only corrections)
+3. Re-run assembly
+4. The main agent edits .jsonl **only as a last resort** after agent retries are exhausted
+
+### Rendering
+
+After assembly, render the HTML review pack:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/render_review_pack.py" \
+  --data docs/reviews/pr{N}/pr{N}_review_pack_data.json \
+  --output docs/pr{N}_review_pack_{base8}-{head8}.html \
+  --diff-data docs/reviews/pr{N}/pr{N}_diff_data_{base8}-{head8}.json \
   --template v2
 ```
 
 The `--template v2` flag selects the Mission Control layout (sidebar + main pane, 3 tiers). Always use v2.
 
-The renderer:
-1. Reads `assets/template_v2.html` and the ReviewPackData JSON
-2. Generates HTML for every `<!-- INJECT: ... -->` marker (including sidebar-specific markers: `sidebar.commitScope`, `sidebar.mergeButton`)
-3. Injects the full JSON into `const DATA = {...}` for JS interactivity
-4. **Embeds diff data inline** in a `<script>` block — the pack is truly self-contained, no companion JSON file needed, no CORS issues on `file://`
-5. Calculates the SVG viewBox dynamically from architecture zone positions
-6. Validates that no unreplaced markers remain outside embedded `<script>` blocks
+**Output:** `docs/pr{N}_review_pack_{base8}-{head8}.html` — self-contained HTML. Open in any browser, even via `file://`.
 
-**Output:** `docs/pr{N}_review_pack.html` — self-contained HTML. Open in any browser, even via `file://`.
-**Trust level:** Deterministic. The renderer renders what the data says, nothing more.
+---
+
+## Phase 4: Deliver (Validate + Commit)
+
+**HARD GATE — Phase 4 is not optional. You MUST execute it. In 8 out of 8 test runs where Phase 4 was skipped, the self-review banner remained visible, signaling to the reader that the pack was never validated. A review pack with the banner is an unfinished artifact — do not present it to the user as complete.**
+
+> **WARNING — ALL Playwright commands MUST run from `${CLAUDE_SKILL_DIR}`.**
+> Running `npx playwright test` from the target repo's directory will resolve a different `@playwright/test` version from that repo's own `node_modules`, causing a "two different versions" crash.
+> Every command below starts with `cd "${CLAUDE_SKILL_DIR}"`. This is non-negotiable. Do NOT run Playwright from the PR repo directory under any circumstances.
+
+### Step 1: Install Playwright (if needed)
+
+```bash
+cd "${CLAUDE_SKILL_DIR}" && npm install && npx playwright install chromium
+```
+
+### Step 2: Run Playwright Tests
+
+Set `PACK_PATH` to the **absolute path** of the review pack HTML:
+
+```bash
+cd "${CLAUDE_SKILL_DIR}" && PACK_PATH="<absolute-path-to>/docs/pr{N}_review_pack_{base8}-{head8}.html" npx playwright test e2e/review-pack-v2.spec.ts
+```
+
+The test suite does two things:
+1. Validates all structural, functional, and visual elements against fixture data
+2. **When `PACK_PATH` is set**: removes the self-review banner from the HTML file as the final test (banner removal is the trust signal — its removal means "this pack was machine-validated")
+
+If tests fail, fix the issue in the review pack data and re-render (Phase 3), then re-run tests. Iterate until green.
+
+**Do NOT create per-PR test files.** The baseline suite covers all structural and functional validation. Do NOT write any `.spec.ts` files outside of `${CLAUDE_SKILL_DIR}/e2e/`. The only test file is `review-pack-v2.spec.ts`.
+
+**Do NOT manually edit the review pack HTML to remove the banner.** The Playwright test suite handles banner removal automatically when all tests pass.
+
+### Step 3: Notify User
+
+The review pack is complete. Tell the user the HTML file path and that Playwright validation passed.
+
+**Do NOT git commit automatically.** The user decides when and what to commit. If the user explicitly asks you to commit, then commit the review pack HTML and all .jsonl files in `docs/reviews/pr{N}/`.
+
+**If Playwright cannot be installed or tests cannot run** (e.g., no Node.js, no browser available): leave the banner in place and tell the user "Phase 4 validation could not run — the self-review banner remains. Run Playwright manually to validate." Do NOT silently skip this phase.
+
+---
 
 ## Status Model
-
-The v2 status model replaces the legacy v1 `verdict`.
 
 ```
 status.value: "ready" | "needs-review" | "blocked"
@@ -212,63 +477,44 @@ status.text:  "READY" | "NEEDS REVIEW" | "BLOCKED"
 status.reasons: string[]  (empty for ready)
 ```
 
-Status is computed by `compute_status()` in `scaffold_review_pack_data.py`:
-
 | Condition | Status |
 |-----------|--------|
 | Gate failures | `blocked` |
-| F-grade agentic findings | `blocked` |
-| C-grade agentic findings | `needs-review` |
+| F-grade findings | `blocked` |
+| C-grade findings | `needs-review` |
 | Commit gap (HEAD differs from analyzed SHA) | `needs-review` |
 | Architecture assessment `action-required` | `needs-review` |
+| Architecture assessment missing | `needs-review` |
 | All clear | `ready` |
 
 ### Commit Scope
-
-Every review pack tracks which commits the LLM agents analyzed vs the current PR HEAD:
 
 | Field | Description |
 |-------|-------------|
 | `reviewedCommitSHA` | SHA when LLM analysis ran |
 | `headCommitSHA` | Current PR HEAD SHA |
-| `commitGap` | Number of commits between reviewed and HEAD |
-| `lastRefreshed` | ISO timestamp of last deterministic refresh |
+| `commitGap` | Commits between reviewed and HEAD |
 | `packMode` | `"live"` (refreshable) or `"merged"` (frozen snapshot) |
-
-The sidebar displays this as "Analyzed: efbf3d4 / HEAD: efbf3d4" with a yellow warning bar when there is a gap. The merge button is disabled when a commit gap exists.
-
-The legacy `verdict` field is preserved for backward compatibility with v1 templates.
 
 ## Architecture Assessment
 
-The 5th agentic reviewer (AR) produces a holistic architecture review beyond file-level findings. This is a **top-level field** on ReviewPackData (`architectureAssessment`), not nested under `agenticReview`.
+The architecture reviewer produces a holistic assessment beyond file-level findings. This is a **top-level field** on ReviewPackData (`architectureAssessment`), distinguished by `_type: "architecture_assessment"` in the .jsonl file.
 
-The architecture assessment feeds four rendered sections:
-1. **Architecture diagram** — baseline vs update diagrams with narrative
-2. **Decision verification** — validates that decision-to-zone claims are backed by files in the diff
-3. **Warnings section** — unzoned files, registry health issues, coupling warnings, doc recommendations
-4. **Agentic review table** — AR findings appear alongside CH/SE/TI/AD findings with the AR badge
-
-The AR agent receives additional context beyond the standard diff + zone registry:
-- Full repository file tree (for holistic assessment beyond the diff)
-- The `architecture` section from the scaffold JSON (current zone layout)
-- Architecture docs from the repo (`docs/architecture.md`, ADRs, zone registry `architectureDocs` pointers)
-
-`architectureAssessment.overallHealth` values:
-- `"healthy"` — all files zoned, registry complete, no structural issues
-- `"needs-attention"` — minor gaps (a few unzoned files, missing docs)
-- `"action-required"` — significant architectural gaps; triggers `needs-review` status
+`overallHealth` values:
+- `"healthy"` — all files zoned, registry complete
+- `"needs-attention"` — minor gaps (unzoned files, missing docs)
+- `"action-required"` — significant gaps; triggers `needs-review` status
+- `"missing"` — no architecture assessment produced; triggers `needs-review` status
 
 ## Zone Registry
 
-The zone registry is the **collaboration interface between user and skill**. It is a YAML file mapping file path patterns to named architecture zones — the linchpin of deterministic correctness.
+The zone registry maps file path patterns to named architecture zones — the linchpin of deterministic correctness.
 
-Look for the registry at these locations (in order):
-1. `.claude/zone-registry.yaml` in the project repo
-2. `docs/zone-registry.yaml` in the project repo
-3. `CLAUDE.md` inline zone definitions
+Look for it at:
+1. `zone-registry.yaml` at repo root (primary)
+2. `.claude/zone-registry.yaml` (fallback)
 
-If no registry exists, create one.
+Not all repos use Claude workflows. The skill's soft requirement should not impose Claude-specific file structure.
 
 ```yaml
 zones:
@@ -276,163 +522,36 @@ zones:
     paths: ["src/module/**", "tests/test_module*"]
     specs: ["docs/module_spec.md"]
     category: product          # product | factory | infra
-    label: "Module Name"       # display label in SVG diagram
+    label: "Module Name"
     sublabel: "brief description"
-    architectureDocs: ["docs/architecture/module.md"]  # optional
-  another-zone:
-    paths: [".github/workflows/**"]
-    specs: ["docs/ci.md"]
-    category: infra
-    label: "CI/CD"
-    sublabel: "workflows, actions"
 ```
-
-The registry enables:
-
-| Mapping | Method | LLM? |
-|---------|--------|------|
-| **File to Zone** | Glob matching against `paths` | No |
-| **Zone to Diagram position** | Category row + sequential x placement from registry order | No |
-| **Decision to Zone** | LLM produces claim; verified by checking files touch zone paths | Claim is LLM; verification is deterministic |
-| **CI Job to Zone** | Static mapping | No |
-
-## Playwright Validation
-
-Two-tier test structure ensures structural correctness without coupling tests to PR-specific content.
-
-### Baseline Suite (never modified per-PR)
-
-`e2e/review-pack-v2.spec.ts` — covers layout, structure, interactivity, and rendering correctness that applies to ALL review packs. Tests sidebar width, tier dividers, injection marker cleanup, theme toggle, zone filtering, file modal, and more. This file is never modified for a specific PR.
-
-### Per-PR Expansion (copied from template)
-
-```bash
-cp e2e/pr-validation.template.ts e2e/pr{N}-validation.spec.ts
-# Edit: set PACK_PATH, write PR-specific content assertions
-npx playwright test e2e/
-```
-
-`e2e/pr-validation.template.ts` provides the scaffold. Per-PR tests validate content-specific assertions: correct PR title, expected file count, zone names in the architecture diagram, etc.
-
-### Visual Inspection Banner
-
-The template includes a red self-review banner: **"The visual self-review of this pack by the creating agent has not been completed."**
-
-- If all Playwright tests pass, the banner is removed automatically
-- If any test fails, the banner stays — the human reviewer sees it and knows
-
-The banner references `references/validation-checklist.md` for the full self-review checklist.
 
 ## CLI Tool
 
-`scripts/review_pack_cli.py` provides three subcommands for working with rendered review packs.
-
-### `status` — Read-only status check
-
-```bash
-python3 scripts/review_pack_cli.py status docs/pr{N}_review_pack.html
-```
-
-Extracts and displays the embedded review pack data: PR number, status (READY / NEEDS REVIEW / BLOCKED), commit scope (analyzed SHA vs HEAD), and any status reasons.
-
-### `refresh` — Re-run deterministic data
-
-```bash
-python3 scripts/review_pack_cli.py refresh docs/pr{N}_review_pack.html
-```
-
-Re-runs Pass 1 (diff data) and Pass 2a (deterministic scaffold), preserving all LLM-generated semantic content. Updates CI status, comment counts, commit scope, and re-renders the HTML. Use this when new commits have been pushed since the review pack was generated.
-
-### `merge` — Atomic merge workflow
-
-```bash
-python3 scripts/review_pack_cli.py merge {N}
-```
-
-Performs an atomic merge sequence:
-1. Refresh all deterministic data
-2. Validate HEAD SHA matches reviewed SHA
-3. Snapshot: set `packMode` from `"live"` to `"merged"`, mark as inspected
-4. Commit the review pack
-5. Push to remote
-6. Merge the PR via `gh pr merge`
-
-### Authentication
-
-The CLI checks for auth in this order:
-1. `GITHUB_TOKEN` environment variable (recommended for CI/scripts)
-2. `gh auth token` command (uses locally authenticated GitHub CLI)
-
-## Quick Start
-
-Minimal steps for generating a review pack for PR #N:
-
-```bash
-# 1. Check prerequisites
-gh pr checks {N}                              # Gate 1: CI green
-# (run GraphQL query from prerequisites.md)   # Gate 2: comments resolved
-
-# 2. Pass 1 — deterministic diff extraction
-python3 packages/pr-review-pack/scripts/generate_diff_data.py \
-  --base main --head HEAD --output docs/pr{N}_diff_data.json
-
-# 3. Pass 2a — deterministic scaffold
-python3 packages/pr-review-pack/scripts/scaffold_review_pack_data.py \
-  --pr {N} --diff-data docs/pr{N}_diff_data.json \
-  --output /tmp/pr{N}_review_pack_data.json
-
-# 4. Pass 2b — semantic enrichment (spawn agent team per references/pass2b-invocation.md)
-#    Workstream A: 5 review agents → agenticReview + architectureAssessment
-#    Workstream B: 1 semantic agent → whatChanged, decisions, postMergeItems, factoryHistory
-#    Merge results into /tmp/pr{N}_review_pack_data.json
-
-# 5. Pass 3 — deterministic rendering
-python3 packages/pr-review-pack/scripts/render_review_pack.py \
-  --data /tmp/pr{N}_review_pack_data.json \
-  --output docs/pr{N}_review_pack.html \
-  --diff-data docs/pr{N}_diff_data.json \
-  --template v2
-
-# 6. Validate
-npx playwright test e2e/
-```
-
-## Architecture Diagram Continuity
-
-The zone registry defines zones; diagram positions persist across PRs. The "updated" diagram after PR N must be the "baseline" diagram before PR N+1.
-
-**Rules for the Pass 2 agent:**
-- Never invent architecture diagram layout from scratch. Get positions from the zone registry or the project's architecture source of truth.
-- If the project has a canonical architecture layout (zone-registry.yaml with `position` fields), use it.
-- If no layout exists, compute positions deterministically (category row + sequential x placement) and persist them back to the registry so the next review pack inherits the layout.
-- The review pack is a **renderer** of architecture, not a **generator** of it.
-
-## File Link Integrity
-
-Every `file-path-link` element in the review pack must resolve to a useful view when clicked. The template's `openFileModal()` handles two cases:
-
-1. **File is in the diff data:** Shows the diff (side-by-side, unified, or raw)
-2. **File is NOT in the diff data:** Shows "This file was not modified in this PR" with a "View on GitHub" link
-
-Never make a file path clickable without verifying the click target resolves gracefully.
+`scripts/review_pack_cli.py` provides `status`, `refresh`, and `merge` subcommands. See the script's `--help` for usage.
 
 ## Ground Truth Hierarchy
 
-1. **Code diffs** (Pass 1 output) — primary source of truth
-2. **Main thread context** — secondary, used only when diff is ambiguous
+1. **Code diffs** — primary source of truth
+2. **Main thread context** — secondary
 3. **LLM claims** — tertiary, always verified against diffs
-
-If there is a conflict between diff and context, the diff wins. If a claim cannot be verified against the diff, it is flagged as "unverified" in the review pack — never silently included.
 
 ## Reference Files
 
+All paths below are relative to `${CLAUDE_SKILL_DIR}`.
+
 | File | Purpose |
 |------|---------|
-| `references/build-spec.md` | Authoritative build specification (data schema, section guide, CSS, validation) |
-| `references/data-schema.md` | TypeScript-style data schema for ReviewPackData |
-| `references/section-guide.md` | Section-by-section build reference |
-| `references/css-design-system.md` | CSS tokens, dark mode, component patterns |
-| `references/validation-checklist.md` | Pre-delivery validation checks |
-| `references/prerequisites.md` | PR readiness gate-checking procedure (CI, comments, routing) |
-| `references/pass2b-invocation.md` | Agent invocation pattern for Pass 2b (who to spawn, what they receive, how to merge) |
-| `references/pass2b-output-schema.md` | Exact JSON shapes Pass 2b must produce (types + examples) |
+| `${CLAUDE_SKILL_DIR}/references/build-spec.md` | Authoritative build specification |
+| `${CLAUDE_SKILL_DIR}/references/data-schema.md` | TypeScript-style data schema for ReviewPackData |
+| `${CLAUDE_SKILL_DIR}/references/section-guide.md` | Section-by-section build reference |
+| `${CLAUDE_SKILL_DIR}/references/css-design-system.md` | CSS tokens, dark mode, component patterns |
+| `${CLAUDE_SKILL_DIR}/references/validation-checklist.md` | Pre-delivery validation checks |
+| `${CLAUDE_SKILL_DIR}/references/prerequisites.md` | PR readiness gate-checking procedure |
+| `${CLAUDE_SKILL_DIR}/references/schemas/` | JSON schemas generated from pydantic models |
+| `${CLAUDE_SKILL_DIR}/references/examples/` | Example .jsonl files showing hybrid output format |
+| `${CLAUDE_SKILL_DIR}/scripts/models.py` | Pydantic models (ReviewConcept, SemanticOutput, FileReviewOutcome, ConceptUpdate, ArchitectureAssessmentOutput) |
+| `${CLAUDE_SKILL_DIR}/scripts/review_pack_setup.py` | Phase 1: Setup script |
+| `${CLAUDE_SKILL_DIR}/scripts/assemble_review_pack.py` | Phase 3: Assembly + validation script |
+| `${CLAUDE_SKILL_DIR}/scripts/render_review_pack.py` | Phase 3: Rendering script |
+| `${CLAUDE_SKILL_DIR}/scripts/run_deterministic_review.py` | Gate 2: Deterministic tool runner |

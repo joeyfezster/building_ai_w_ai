@@ -11,6 +11,7 @@ Usage:
     python3 render_review_pack.py --data data.json --output out.html \
       --diff-data pr6_diff_data.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -89,47 +90,40 @@ def esc(text: str) -> str:
 
 def layer_tag_class(category: str) -> str:
     """Map zone category to CSS class for zone-tag."""
-    return {"factory": "factory", "product": "product", "infra": "infra"}.get(
-        category, "product"
-    )
+    return {"factory": "factory", "product": "product", "infra": "infra"}.get(category, "product")
 
 
 # ── Section renderers ───────────────────────────────────────────────
+
 
 def render_stat_items(header: dict) -> str:
     commits = header.get("commits", 0)
     additions = header.get("additions", 0)
     deletions = header.get("deletions", 0)
     files = header.get("filesChanged", 0)
-    return "\n      ".join([
-        f'<span class="stat green">'
-        f'<span class="num">+{additions}</span> additions</span>',
-        f'<span class="stat red">'
-        f'<span class="num">&minus;{deletions}</span> deletions</span>',
-        f'<span class="stat">'
-        f'<span class="num">{files}</span> files</span>',
-        f'<span class="stat">'
-        f'<span class="num">{commits}</span>'
-        f' commit{"s" if commits != 1 else ""}</span>',
-    ])
+    return "\n      ".join(
+        [
+            f'<span class="stat green"><span class="num">+{additions}</span> additions</span>',
+            f'<span class="stat red"><span class="num">&minus;{deletions}</span> deletions</span>',
+            f'<span class="stat"><span class="num">{files}</span> files</span>',
+            f'<span class="stat">'
+            f'<span class="num">{commits}</span>'
+            f" commit{'s' if commits != 1 else ''}</span>",
+        ]
+    )
 
 
 def render_status_badges(header: dict) -> str:
     badges = []
     for b in header.get("statusBadges", []):
         icon = b.get("icon", "")
-        badges.append(
-            f'<span class="status-badge {b["type"]}">{icon} {esc(b["label"])}</span>'
-        )
+        badges.append(f'<span class="status-badge {b["type"]}">{icon} {esc(b["label"])}</span>')
     return "\n      ".join(badges)
 
 
 def render_factory_history_tab_button(data: dict) -> str:
     if data.get("factoryHistory"):
-        return (
-            '<button class="tab-btn" onclick="switchTab(\'history\')">'
-            "Factory History</button>"
-        )
+        return '<button class="tab-btn" onclick="switchTab(\'history\')">Factory History</button>'
     return ""
 
 
@@ -210,19 +204,18 @@ def render_architecture_svg(arch: dict) -> str:
                 f'<text x="{cx}" y="{sublabel_y}" text-anchor="middle" '
                 f'class="zone-sublabel" '
                 f'style="pointer-events:none">'
-                f'{esc(sublabel)}</text>'
+                f"{esc(sublabel)}</text>"
             )
         else:
             tspans = "".join(
-                f'<tspan x="{cx}" dy="{0 if i == 0 else 11}">'
-                f'{esc(line)}</tspan>'
+                f'<tspan x="{cx}" dy="{0 if i == 0 else 11}">{esc(line)}</tspan>'
                 for i, line in enumerate(sublabel_lines)
             )
             parts.append(
                 f'<text x="{cx}" y="{sublabel_y}" text-anchor="middle" '
                 f'class="zone-sublabel" '
                 f'style="pointer-events:none">'
-                f'{tspans}</text>'
+                f"{tspans}</text>"
             )
         fc = zone.get("fileCount", 0)
         if fc > 0:
@@ -249,11 +242,13 @@ def render_architecture_svg(arch: dict) -> str:
     # Unzoned files warning
     unzoned = arch.get("unzonedFiles", [])
     if unzoned:
-        warn_y = max(
-            (z["position"]["y"] + z["position"]["height"]
-             for z in arch.get("zones", [])),
-            default=200,
-        ) + 25
+        warn_y = (
+            max(
+                (z["position"]["y"] + z["position"]["height"] for z in arch.get("zones", [])),
+                default=200,
+            )
+            + 25
+        )
         parts.append(
             f'<text x="10" y="{warn_y}" fill="#ef4444" '
             f'font-size="11" font-weight="700" '
@@ -321,9 +316,9 @@ def render_architecture_assessment(data: dict) -> str:
             for v in unverified:
                 core_body.append(
                     f'<div class="arch-verification-item">'
-                    f'Decision #{v.get("decisionNumber", "?")}: '
-                    f'zones {esc(", ".join(v.get("claimedZones", [])))} '
-                    f'&mdash; {esc(v.get("reason", ""))}</div>'
+                    f"Decision #{v.get('decisionNumber', '?')}: "
+                    f"zones {esc(', '.join(v.get('claimedZones', [])))} "
+                    f"&mdash; {esc(v.get('reason', ''))}</div>"
                 )
         parts.append(
             '<div class="arch-section collapsed">'
@@ -333,9 +328,7 @@ def render_architecture_assessment(data: dict) -> str:
             f"{esc(pill_label)}</span></h4>"
             '<span class="chevron">&#x25BC;</span>'
             "</div>"
-            '<div class="arch-section-body">'
-            + "\n".join(core_body)
-            + "</div></div>"
+            '<div class="arch-section-body">' + "\n".join(core_body) + "</div></div>"
         )
 
     # ── Section 2: Architectural Changes Detected ──
@@ -347,8 +340,8 @@ def render_architecture_assessment(data: dict) -> str:
             change_items.append(
                 f'<div class="arch-change-item">'
                 f"<strong>{ch_type}</strong>: "
-                f'{esc(ch.get("zone", ""))} &mdash; '
-                f'{esc(ch.get("reason", ""))}</div>'
+                f"{esc(ch.get('zone', ''))} &mdash; "
+                f"{esc(ch.get('reason', ''))}</div>"
             )
         parts.append(
             '<div class="arch-section collapsed">'
@@ -357,9 +350,7 @@ def render_architecture_assessment(data: dict) -> str:
             "<h4>Architectural Changes Detected</h4>"
             '<span class="chevron">&#x25BC;</span>'
             "</div>"
-            '<div class="arch-section-body">'
-            + "\n".join(change_items)
-            + "</div></div>"
+            '<div class="arch-section-body">' + "\n".join(change_items) + "</div></div>"
         )
 
     # ── Section 3: Architect's Recommendations ──
@@ -378,9 +369,9 @@ def render_architecture_assessment(data: dict) -> str:
             for cw in coupling:
                 rec_body.append(
                     f'<div class="arch-coupling-item">'
-                    f'{esc(cw.get("fromZone", ""))} &rarr; '
-                    f'{esc(cw.get("toZone", ""))}: '
-                    f'{esc(cw.get("evidence", ""))}</div>'
+                    f"{esc(cw.get('fromZone', ''))} &rarr; "
+                    f"{esc(cw.get('toZone', ''))}: "
+                    f"{esc(cw.get('evidence', ''))}</div>"
                 )
 
         # Zone Registry subsection
@@ -393,16 +384,14 @@ def render_architecture_assessment(data: dict) -> str:
                     rec_body.append(
                         f'<div class="arch-registry-item">'
                         f'<span class="badge {sev}">'
-                        f'{esc(rw.get("severity", ""))}</span> '
-                        f'{esc(rw.get("zone", ""))}: '
-                        f'{esc(rw.get("warning", ""))}</div>'
+                        f"{esc(rw.get('severity', ''))}</span> "
+                        f"{esc(rw.get('zone', ''))}: "
+                        f"{esc(rw.get('warning', ''))}</div>"
                     )
             # Unzoned files sub-subsection
             if unzoned:
                 rec_body.append('<div class="arch-subsubsection">')
-                rec_body.append(
-                    f"<h6>&#x26A0; {len(unzoned)} Unzoned File(s)</h6>"
-                )
+                rec_body.append(f"<h6>&#x26A0; {len(unzoned)} Unzoned File(s)</h6>")
                 rec_body.append(
                     "<table><thead><tr>"
                     "<th>File</th><th>Suggested Zone</th><th>Reason</th>"
@@ -412,9 +401,9 @@ def render_architecture_assessment(data: dict) -> str:
                     suggested = esc(uf.get("suggestedZone") or "\u2014")
                     rec_body.append(
                         f"<tr>"
-                        f'<td><code>{esc(uf["path"])}</code></td>'
+                        f"<td><code>{esc(uf['path'])}</code></td>"
                         f"<td>{suggested}</td>"
-                        f'<td>{esc(uf["reason"])}</td>'
+                        f"<td>{esc(uf['reason'])}</td>"
                         f"</tr>"
                     )
                 rec_body.append("</tbody></table></div>")
@@ -427,8 +416,8 @@ def render_architecture_assessment(data: dict) -> str:
             for dr in doc_recs:
                 rec_body.append(
                     f'<div class="arch-doc-item">'
-                    f'<code>{esc(dr.get("path", ""))}</code>: '
-                    f'{esc(dr.get("reason", ""))}</div>'
+                    f"<code>{esc(dr.get('path', ''))}</code>: "
+                    f"{esc(dr.get('reason', ''))}</div>"
                 )
             rec_body.append("</div>")
 
@@ -439,9 +428,7 @@ def render_architecture_assessment(data: dict) -> str:
             "<h4>Architect&rsquo;s Recommendations</h4>"
             '<span class="chevron">&#x25BC;</span>'
             "</div>"
-            '<div class="arch-section-body">'
-            + "\n".join(rec_body)
-            + "</div></div>"
+            '<div class="arch-section-body">' + "\n".join(rec_body) + "</div></div>"
         )
 
     return "\n".join(parts)
@@ -452,11 +439,11 @@ def render_spec_list(specs: list[dict]) -> str:
     for s in specs:
         path = s["path"]
         items.append(
-            f'<li>{s.get("icon", "\U0001F4C4")} '
+            f"<li>{s.get('icon', '\U0001f4c4')} "
             f'<code class="file-path-link" '
             f"onclick=\"openFileModal('{esc(path)}')\">"
-            f'{esc(path)}</code> &mdash; '
-            f'{esc(s["description"])}</li>'
+            f"{esc(path)}</code> &mdash; "
+            f"{esc(s['description'])}</li>"
         )
     return "\n          ".join(items)
 
@@ -472,35 +459,33 @@ def render_scenario_legend(scenarios: list[dict]) -> str:
 def render_scenario_cards(scenarios: list[dict]) -> str:
     cards = []
     for s in scenarios:
-        color, icon, text = STATUS_STYLE.get(
-            s["status"], ("var(--gray)", "?", s["status"])
-        )
+        color, icon, text = STATUS_STYLE.get(s["status"], ("var(--gray)", "?", s["status"]))
         cat_class = CATEGORY_CLASS.get(s.get("category", ""), "")
         zone = s.get("zone", "")
         d = s.get("detail", {})
         # detail may be a dict {what, how, result} or a plain string
         if isinstance(d, str):
-            detail_html = f'<p>{esc(d)}</p>' if d else ''
+            detail_html = f"<p>{esc(d)}</p>" if d else ""
         else:
             detail_html = (
-                f'<dl>\n'
-                f'      <dt>What</dt><dd>{esc(d.get("what", ""))}</dd>\n'
-                f'      <dt>How</dt><dd>{esc(d.get("how", ""))}</dd>\n'
-                f'      <dt>Result</dt><dd>{esc(d.get("result", ""))}</dd>\n'
-                f'    </dl>'
+                f"<dl>\n"
+                f"      <dt>What</dt><dd>{esc(d.get('what', ''))}</dd>\n"
+                f"      <dt>How</dt><dd>{esc(d.get('how', ''))}</dd>\n"
+                f"      <dt>Result</dt><dd>{esc(d.get('result', ''))}</dd>\n"
+                f"    </dl>"
             )
         cards.append(
             f'<div class="scenario-card" data-zone="{esc(zone)}" '
-            f'onclick="this.classList.toggle(\'open\')">\n'
+            f"onclick=\"this.classList.toggle('open')\">\n"
             f'  <div class="name">{esc(s["name"])}\n'
             f'    <span class="scenario-category {cat_class}">'
-            f'{esc(s.get("category", ""))}</span>\n'
-            f'  </div>\n'
+            f"{esc(s.get('category', ''))}</span>\n"
+            f"  </div>\n"
             f'  <div class="status" style="color:{color}">{icon} {text}</div>\n'
             f'  <div class="scenario-card-detail">\n'
-            f'    {detail_html}\n'
-            f'  </div>\n'
-            f'</div>'
+            f"    {detail_html}\n"
+            f"  </div>\n"
+            f"</div>"
         )
     return "\n          ".join(cards)
 
@@ -517,14 +502,10 @@ def render_what_changed_default(wc: dict) -> str:
     parts = []
     infra = default.get("infrastructure", "")
     if infra:
-        parts.append(
-            f'<div class="wc-summary"><strong>Infrastructure:</strong> {infra}</div>'
-        )
+        parts.append(f'<div class="wc-summary"><strong>Infrastructure:</strong> {infra}</div>')
     product = default.get("product", "")
     if product:
-        parts.append(
-            f'<div class="wc-summary"><strong>Product:</strong> {product}</div>'
-        )
+        parts.append(f'<div class="wc-summary"><strong>Product:</strong> {product}</div>')
     return "\n          ".join(parts)
 
 
@@ -539,9 +520,9 @@ def render_what_changed_zones(wc: dict) -> str:
     for z in wc.get("zoneDetails", []):
         divs.append(
             f'<div class="wc-zone-detail" data-zone="{esc(z["zoneId"])}">\n'
-            f'  <h4>{esc(z["title"])}</h4>\n'
-            f'  <div>{z["description"]}</div>\n'
-            f'</div>'
+            f"  <h4>{esc(z['title'])}</h4>\n"
+            f"  <div>{z['description']}</div>\n"
+            f"</div>"
         )
     return "\n        ".join(divs)
 
@@ -568,11 +549,7 @@ def render_agentic_legend() -> str:
             f'<span class="agent-legend-item" title="{esc(desc)}">'
             f'<span class="agent-abbrev">{abbrev}</span> {esc(name)}</span>'
         )
-    return (
-        '<div class="agent-legend">'
-        + " ".join(items)
-        + "</div>"
-    )
+    return '<div class="agent-legend">' + " ".join(items) + "</div>"
 
 
 def render_agentic_rows(review: dict, zone_categories: dict[str, str] | None = None) -> str:
@@ -614,7 +591,7 @@ def render_agentic_rows(review: dict, zone_categories: dict[str, str] | None = N
                 f'<span class="agent-grade-badge">'
                 f'<span class="agent-abbrev">{esc(abbrev)}</span>'
                 f'<span class="grade {grade_css}">{esc(grade)}</span>'
-                f'</span>'
+                f"</span>"
             )
         badges_html = " ".join(badges)
 
@@ -631,14 +608,14 @@ def render_agentic_rows(review: dict, zone_categories: dict[str, str] | None = N
             f'<tr class="adv-row" data-zones="{esc(zones)}" '
             f'data-grade-sort="{worst_sort}" onclick="toggleAdvDetail(this)">\n'
             f'  <td><code class="file-path-link" '
-            f"onclick=\"event.stopPropagation();"
+            f'onclick="event.stopPropagation();'
             f"openFileModal('{esc(filepath)}')\">"
-            f'{esc(filepath)}</code></td>\n'
+            f"{esc(filepath)}</code></td>\n"
             f'  <td class="agent-badges-cell">{badges_html}</td>\n'
             f'  <td><span class="zone-tag {layer_tag_class(zone_cat)}">'
-            f'{esc(zones)}</span></td>\n'
-            f'  <td>{esc(notable_text)}</td>\n'
-            f'</tr>\n'
+            f"{esc(zones)}</span></td>\n"
+            f"  <td>{esc(notable_text)}</td>\n"
+            f"</tr>\n"
         )
 
         # Detail row: per-agent breakdown
@@ -657,15 +634,15 @@ def render_agentic_rows(review: dict, zone_categories: dict[str, str] | None = N
                 f'<span class="agent-abbrev">{esc(abbrev)}</span>'
                 f'<span class="grade {grade_css}">{esc(grade)}</span>'
                 f'<span class="agent-detail-name">{esc(agent_name)}</span>'
-                f'</span>'
+                f"</span>"
                 f'<div class="agent-detail-body">{detail_text}</div>'
-                f'</div>'
+                f"</div>"
             )
 
         rows.append(
             f'<tr class="adv-detail-row" data-zones="{esc(zones)}">\n'
             f'  <td colspan="4">{"".join(detail_parts)}</td>\n'
-            f'</tr>'
+            f"</tr>"
         )
 
     return "\n            ".join(rows)
@@ -689,18 +666,13 @@ def render_ci_rows(ci_checks: list[dict], zone_categories: dict[str, str] | None
                 "onclick=\"event.stopPropagation();this.classList.toggle('open')\">\n"
                 f'  <div class="ci-check-summary">'
                 f'<span class="ci-sub-chevron">&#x25B6;</span> '
-                f'{esc(chk["label"])}</div>\n'
+                f"{esc(chk['label'])}</div>\n"
                 f'  <div class="ci-check-detail">{esc(chk.get("detail", ""))}</div>\n'
                 "</div>\n"
             )
 
-        zones_html = " ".join(
-            _zone_tag(z, zone_categories)
-            for z in detail.get("zones", [])
-        )
-        specs_html = " ".join(
-            f'<code>{esc(s)}</code>' for s in detail.get("specRefs", [])
-        )
+        zones_html = " ".join(_zone_tag(z, zone_categories) for z in detail.get("zones", []))
+        specs_html = " ".join(f"<code>{esc(s)}</code>" for s in detail.get("specRefs", []))
         notes_html = (
             f'<p style="margin-top:6px;font-style:italic;font-size:12px;'
             f'color:var(--text-muted)">{esc(detail["notes"])}</p>'
@@ -710,25 +682,25 @@ def render_ci_rows(ci_checks: list[dict], zone_categories: dict[str, str] | None
 
         rows.append(
             f'<tr class="expandable" onclick="toggleCIDetail(this)">\n'
-            f'  <td><strong>{esc(ci["name"])}</strong> '
+            f"  <td><strong>{esc(ci['name'])}</strong> "
             f'<small style="color:var(--text-muted)">'
-            f'{esc(ci.get("trigger", ""))}</small></td>\n'
+            f"{esc(ci.get('trigger', ''))}</small></td>\n"
             f'  <td><span class="badge {status_css}">{esc(ci["status"])}</span></td>\n'
             f'  <td><span class="time-label {health_css}">{esc(ci["time"])}</span>'
             f'<br><span class="time-health-sub">'
-            f'{esc(ci.get("healthTag", ""))}</span></td>\n'
+            f"{esc(ci.get('healthTag', ''))}</span></td>\n"
             f'  <td class="ci-chevron">&#x25BC;</td>\n'
-            f'</tr>\n'
+            f"</tr>\n"
             f'<tr class="detail-row">\n'
             f'  <td colspan="4">\n'
-            f'    <p><strong>Coverage:</strong> {esc(detail.get("coverage", ""))}</p>\n'
-            f'    <p><strong>Gates:</strong> {esc(detail.get("gates", ""))}</p>\n'
-            f'    {sub_html}'
+            f"    <p><strong>Coverage:</strong> {esc(detail.get('coverage', ''))}</p>\n"
+            f"    <p><strong>Gates:</strong> {esc(detail.get('gates', ''))}</p>\n"
+            f"    {sub_html}"
             f'    <div style="margin-top:6px">Zones: {zones_html}</div>\n'
-            + (f'    <div>Specs: {specs_html}</div>\n' if specs_html else "")
-            + f'    {notes_html}\n'
-            f'  </td>\n'
-            f'</tr>'
+            + (f"    <div>Specs: {specs_html}</div>\n" if specs_html else "")
+            + f"    {notes_html}\n"
+            f"  </td>\n"
+            f"</tr>"
         )
     return "\n            ".join(rows)
 
@@ -748,10 +720,7 @@ def render_decision_cards(
             if not verified
             else ""
         )
-        zone_tags = " ".join(
-            _zone_tag(z, zone_categories)
-            for z in zones_str.split()
-        )
+        zone_tags = " ".join(_zone_tag(z, zone_categories) for z in zones_str.split())
 
         files_html = ""
         if d.get("files"):
@@ -759,10 +728,10 @@ def render_decision_cards(
             for f in d["files"]:
                 file_rows += (
                     f'<tr><td><code class="file-path-link" '
-                    f"onclick=\"event.stopPropagation();"
+                    f'onclick="event.stopPropagation();'
                     f"openFileModal('{esc(f['path'])}')\">"
-                    f'{esc(f["path"])}</code></td>'
-                    f'<td>{esc(f["change"])}</td></tr>\n'
+                    f"{esc(f['path'])}</code></td>"
+                    f"<td>{esc(f['change'])}</td></tr>\n"
                 )
             files_html = (
                 '<table style="width:100%;margin-top:8px">'
@@ -779,13 +748,13 @@ def render_decision_cards(
             f'    <span class="decision-num">{d["number"]}</span>\n'
             f"    <div>\n"
             f'      <div class="decision-title">'
-            f'{esc(d["title"])}{unverified}</div>\n'
+            f"{esc(d['title'])}{unverified}</div>\n"
             f'      <div class="decision-rationale">'
-            f'{esc(d["rationale"])}</div>\n'
+            f"{esc(d['rationale'])}</div>\n"
             f"    </div>\n"
             f"  </div>\n"
             f'  <div class="decision-body">\n'
-            f'    <p>{d.get("body", "")}</p>\n'
+            f"    <p>{d.get('body', '')}</p>\n"
             f'    <div class="decision-zones">{zone_tags}</div>\n'
             f'    <div class="decision-files">{files_html}</div>\n'
             f"  </div>\n"
@@ -836,18 +805,12 @@ def render_post_merge_items(
         code_html = ""
         if item.get("codeSnippet"):
             cs = item["codeSnippet"]
-            header = f'## {cs.get("file", "")}'
+            header = f"## {cs.get('file', '')}"
             if cs.get("lineRange"):
-                header += f', {cs["lineRange"]}'
-            code_html = (
-                f'<div class="code-block">'
-                f'{esc(header)}\n{esc(cs.get("code", ""))}</div>'
-            )
+                header += f", {cs['lineRange']}"
+            code_html = f'<div class="code-block">{esc(header)}\n{esc(cs.get("code", ""))}</div>'
 
-        zones_html = " ".join(
-            _zone_tag(z, zone_categories)
-            for z in item.get("zones", [])
-        )
+        zones_html = " ".join(_zone_tag(z, zone_categories) for z in item.get("zones", []))
 
         # title is escaped (plain text label).
         # description is HTML-safe: sanitized at ingestion by the Pass 2
@@ -858,18 +821,18 @@ def render_post_merge_items(
             f"onclick=\"this.parentElement.classList.toggle('open')\">\n"
             f'    <span class="priority {priority}">'
             f"{esc(priority.upper())}</span>\n"
-            f'    <span>{esc(item.get("title", ""))}</span>\n'
+            f"    <span>{esc(item.get('title', ''))}</span>\n"
             f"  </div>\n"
             f'  <div class="pm-body">\n'
-            f'    <p>{item.get("description", "")}</p>\n'
+            f"    <p>{item.get('description', '')}</p>\n"
             f"    {code_html}\n"
             f'    <div class="scenario-box failure">\n'
             f'      <div class="scenario-label">Failure scenario</div>\n'
-            f'      {esc(item.get("failureScenario", ""))}\n'
+            f"      {esc(item.get('failureScenario', ''))}\n"
             f"    </div>\n"
             f'    <div class="scenario-box success">\n'
             f'      <div class="scenario-label">Resolution</div>\n'
-            f'      {esc(item.get("successScenario", ""))}\n'
+            f"      {esc(item.get('successScenario', ''))}\n"
             f"    </div>\n"
             f'    <div style="margin-top:6px">{zones_html}</div>\n'
             f"  </div>\n"
@@ -879,28 +842,30 @@ def render_post_merge_items(
 
 
 def render_history_summary_cards(history: dict) -> str:
-    return "\n        ".join([
-        (
-            f'<div class="conv-card" onclick="this.classList.toggle(\'open\')">\n'
-            f'  <div class="conv-name">Iterations</div>\n'
-            f'  <div class="conv-status passing">'
-            f'{esc(history.get("iterationCount", ""))}</div>\n'
-            f'  <div class="conv-detail">Factory convergence iterations</div>\n'
-            f'  <div class="conv-card-detail">'
-            f'{esc(history.get("satisfactionDetail", ""))}</div>\n'
-            f"</div>"
-        ),
-        (
-            f'<div class="conv-card" onclick="this.classList.toggle(\'open\')">\n'
-            f'  <div class="conv-name">Satisfaction</div>\n'
-            f'  <div class="conv-status passing">'
-            f'{esc(history.get("satisfactionTrajectory", ""))}</div>\n'
-            f'  <div class="conv-detail">Scenario satisfaction trajectory</div>\n'
-            f'  <div class="conv-card-detail">'
-            f'{esc(history.get("satisfactionDetail", ""))}</div>\n'
-            f"</div>"
-        ),
-    ])
+    return "\n        ".join(
+        [
+            (
+                f'<div class="conv-card" onclick="this.classList.toggle(\'open\')">\n'
+                f'  <div class="conv-name">Iterations</div>\n'
+                f'  <div class="conv-status passing">'
+                f"{esc(history.get('iterationCount', ''))}</div>\n"
+                f'  <div class="conv-detail">Factory convergence iterations</div>\n'
+                f'  <div class="conv-card-detail">'
+                f"{esc(history.get('satisfactionDetail', ''))}</div>\n"
+                f"</div>"
+            ),
+            (
+                f'<div class="conv-card" onclick="this.classList.toggle(\'open\')">\n'
+                f'  <div class="conv-name">Satisfaction</div>\n'
+                f'  <div class="conv-status passing">'
+                f"{esc(history.get('satisfactionTrajectory', ''))}</div>\n"
+                f'  <div class="conv-detail">Scenario satisfaction trajectory</div>\n'
+                f'  <div class="conv-card-detail">'
+                f"{esc(history.get('satisfactionDetail', ''))}</div>\n"
+                f"</div>"
+            ),
+        ]
+    )
 
 
 def render_history_timeline(events: list[dict]) -> str:
@@ -913,18 +878,18 @@ def render_history_timeline(events: list[dict]) -> str:
         # orchestrator. Contains structured HTML for timeline expansion.
         rendered.append(
             f'<div class="history-event {ev_class}" '
-            f'onclick="this.classList.toggle(\'open\')">\n'
+            f"onclick=\"this.classList.toggle('open')\">\n"
             f'  <div class="history-event-header">\n'
             f'    <div class="history-event-title">{esc(ev["title"])}</div>\n'
             f'    <span class="event-agent {agent_class}">'
-            f'{esc(agent.get("label", ""))}</span>\n'
+            f"{esc(agent.get('label', ''))}</span>\n"
             f"  </div>\n"
             f'  <div class="history-event-detail-summary">'
-            f'{esc(ev.get("detail", ""))}</div>\n'
+            f"{esc(ev.get('detail', ''))}</div>\n"
             f'  <div class="history-event-meta">'
-            f'{esc(ev.get("meta", ""))}</div>\n'
+            f"{esc(ev.get('meta', ''))}</div>\n"
             f'  <div class="history-event-detail">'
-            f'{ev.get("expandedDetail", "")}</div>\n'
+            f"{ev.get('expandedDetail', '')}</div>\n"
             f"</div>"
         )
     return "\n        ".join(rendered)
@@ -933,10 +898,7 @@ def render_history_timeline(events: list[dict]) -> str:
 def _escape_popover(text: str) -> str:
     """Escape popover text for safe embedding in onclick JS attribute."""
     return (
-        text.replace("\\", "\\\\")
-        .replace("'", "\\'")
-        .replace('"', "&quot;")
-        .replace("\n", "\\n")
+        text.replace("\\", "\\\\").replace("'", "\\'").replace('"', "&quot;").replace("\n", "\\n")
     )
 
 
@@ -951,17 +913,15 @@ def render_gate_findings_rows(findings: list[dict]) -> str:
             css_map = {"pass": "pass", "fail": "fail", "advisory": "info"}
             css = css_map.get(status, "")
             click = (
-                f" class=\"gate-clickable\" "
-                f"onclick=\"showGatePopover(event, '{popover}')\""
+                f' class="gate-clickable" onclick="showGatePopover(event, \'{popover}\')"'
                 if popover
                 else ""
             )
-            return f"<td{click}><span class=\"badge {css}\">{esc(label)}</span></td>"
+            return f'<td{click}><span class="badge {css}">{esc(label)}</span></td>'
 
         phase_popover = _escape_popover(row.get("phasePopover", ""))
         phase_click = (
-            f" class=\"gate-clickable\" "
-            f"onclick=\"showGatePopover(event, '{phase_popover}')\""
+            f' class="gate-clickable" onclick="showGatePopover(event, \'{phase_popover}\')"'
             if phase_popover
             else ""
         )
@@ -993,10 +953,14 @@ def render_sidebar_pr_meta(header: dict) -> str:
     files = header.get("filesChanged", 0)
     commits = header.get("commits", 0)
     pr_link = (
-        f'<a href="{esc(pr_url)}" target="_blank" '
-        f'style="color:var(--blue);text-decoration:none">'
-        f'PR #{pr_num}</a>'
-    ) if pr_url else f'PR #{pr_num}'
+        (
+            f'<a href="{esc(pr_url)}" target="_blank" '
+            f'style="color:var(--blue);text-decoration:none">'
+            f"PR #{pr_num}</a>"
+        )
+        if pr_url
+        else f"PR #{pr_num}"
+    )
     sha_short = esc(head_sha[:7]) if head_sha else "?"
     return (
         f'<div class="sb-pr-meta">\n'
@@ -1005,15 +969,15 @@ def render_sidebar_pr_meta(header: dict) -> str:
         f'  <div class="sb-pr-stats">'
         f'<span style="color:#166534">+{adds}</span> / '
         f'<span style="color:#991b1b">&minus;{dels}</span> &middot; '
-        f'{files} files &middot; '
-        f'{commits} commit{"s" if commits != 1 else ""}'
-        f'</div>\n'
+        f"{files} files &middot; "
+        f"{commits} commit{'s' if commits != 1 else ''}"
+        f"</div>\n"
         f'  <div style="font-size:10px;color:var(--text-muted);'
         f'margin-top:4px">'
-        f'{esc(head_branch)} &rarr; {esc(base_branch)}</div>\n'
+        f"{esc(head_branch)} &rarr; {esc(base_branch)}</div>\n"
         f'  <div style="font-size:10px;color:var(--text-muted);'
         f'font-family:var(--mono)">HEAD: {sha_short}</div>\n'
-        f'</div>'
+        f"</div>"
     )
 
 
@@ -1033,15 +997,13 @@ def render_sidebar_status_badges(header: dict, has_scenarios: bool = True) -> st
         badges.append(
             f'<span class="status-badge {badge_type}" '
             f'style="font-size:10px;padding:2px 8px">'
-            f'{icon} {esc(label)}</span>'
+            f"{icon} {esc(label)}</span>"
         )
     if not badges:
         return ""
     return (
         '<div style="display:flex;flex-wrap:wrap;gap:4px;'
-        'margin-bottom:12px">\n'
-        + "\n".join(badges)
-        + "\n</div>"
+        'margin-bottom:12px">\n' + "\n".join(badges) + "\n</div>"
     )
 
 
@@ -1176,7 +1138,7 @@ def render_sidebar_refresh_button(data: dict) -> str:
         f'<button class="sb-refresh-btn" id="sb-refresh-btn" '
         f'onclick="copyRefreshCmd()" '
         f'title="Copy refresh command to clipboard">'
-        f'&#x21BB; Copy Refresh Command</button>'
+        f"&#x21BB; Copy Refresh Command</button>"
         f'<input type="hidden" id="refresh-cmd-value" value="{esc(cmd)}"/>'
     )
 
@@ -1203,15 +1165,11 @@ def render_sidebar_gate_pills(convergence: dict, has_scenarios: bool = True) -> 
             f'<span class="sb-gate-pill {pill_class}" '
             f"onclick=\"scrollToGate('{esc(name)}')\" "
             f'title="{esc(name)}">'
-            f'{icon} {esc(short)}</span>'
+            f"{icon} {esc(short)}</span>"
         )
     if not pills:
         return ""
     return f'<div class="sb-gate-pills">{"".join(pills)}</div>'
-
-
-
-
 
 
 def _nav_icon(icon_type: str, value: object = None) -> str:
@@ -1292,20 +1250,27 @@ def render_sidebar_section_nav(data: dict, has_scenarios: bool = True) -> str:
 
     # Tier 1: Architecture & Changes
     sections.append(("__group__", "Architecture &amp; Changes", ""))
-    sections.append((
-        "section-architecture", "Architecture",
-        _nav_icon("count", modified_zones) if modified_zones > 0
-        else _nav_icon("empty"),
-    ))
-    sections.append((
-        "section-what-changed", "What Changed",
-        _nav_icon("present") if has_wc else _nav_icon("empty"),
-    ))
-    sections.append((
-        "section-key-decisions", "Key Decisions",
-        _nav_icon("count", len(decisions)) if decisions
-        else _nav_icon("empty"),
-    ))
+    sections.append(
+        (
+            "section-architecture",
+            "Architecture",
+            _nav_icon("count", modified_zones) if modified_zones > 0 else _nav_icon("empty"),
+        )
+    )
+    sections.append(
+        (
+            "section-what-changed",
+            "What Changed",
+            _nav_icon("present") if has_wc else _nav_icon("empty"),
+        )
+    )
+    sections.append(
+        (
+            "section-key-decisions",
+            "Key Decisions",
+            _nav_icon("count", len(decisions)) if decisions else _nav_icon("empty"),
+        )
+    )
 
     # Tier 2: Factory
     if has_scenarios or fh:
@@ -1322,70 +1287,102 @@ def render_sidebar_section_nav(data: dict, has_scenarios: bool = True) -> str:
             sc_icon = _nav_icon("present") if specs_list else _nav_icon("empty")
         sections.append(("section-specs-scenarios", specs_label, sc_icon))
         if has_scenarios:
-            sections.append((
-                "section-convergence", "Convergence",
-                _nav_icon("pass") if conv_status == "passing"
-                else _nav_icon("fail"),
-            ))
+            sections.append(
+                (
+                    "section-convergence",
+                    "Convergence",
+                    _nav_icon("pass") if conv_status == "passing" else _nav_icon("fail"),
+                )
+            )
         if fh:
-            sections.append((
-                "section-factory-history", "Factory History",
-                _nav_icon("count", iteration_count) if iteration_count > 0
-                else _nav_icon("empty"),
-            ))
+            sections.append(
+                (
+                    "section-factory-history",
+                    "Factory History",
+                    _nav_icon("count", iteration_count)
+                    if iteration_count > 0
+                    else _nav_icon("empty"),
+                )
+            )
 
     # Tier 3: Review & Evidence
     sections.append(("__group__", "Review &amp; Evidence", ""))
-    sections.append((
-        "section-review-gates", "Review Gates",
-        _nav_icon("pass") if all_gates_pass else _nav_icon("fail"),
-    ))
+    sections.append(
+        (
+            "section-review-gates",
+            "Review Gates",
+            _nav_icon("pass") if all_gates_pass else _nav_icon("fail"),
+        )
+    )
     aa_icon_map = {
         "healthy": _nav_icon("pass"),
         "needs-attention": _nav_icon("warn"),
         "action-required": _nav_icon("fail"),
         "missing": _nav_icon("warn"),
     }
-    sections.append((
-        "section-arch-assessment", "Arch Assessment",
-        aa_icon_map.get(aa_health, _nav_icon("warn")),
-    ))
-    sections.append((
-        "section-code-review", "Code Review",
-        _nav_icon("count-fail", cf_count) if cf_count > 0
-        else _nav_icon("pass") if findings else _nav_icon("empty"),
-    ))
-    sections.append((
-        "section-ci-performance", "CI Performance",
-        _nav_icon("pass") if ci and ci_all_pass
-        else _nav_icon("fail") if ci and not ci_all_pass
-        else _nav_icon("empty"),
-    ))
+    sections.append(
+        (
+            "section-arch-assessment",
+            "Arch Assessment",
+            aa_icon_map.get(aa_health, _nav_icon("warn")),
+        )
+    )
+    # Key Findings nav icon
+    kf_icon_type, kf_icon_val = render_key_findings_nav(data)
+    sections.append(
+        (
+            "section-key-findings",
+            "Key Findings",
+            _nav_icon(kf_icon_type, kf_icon_val),
+        )
+    )
+    sections.append(
+        (
+            "section-file-coverage",
+            "File Coverage",
+            _nav_icon("count-fail", cf_count)
+            if cf_count > 0
+            else _nav_icon("pass")
+            if findings
+            else _nav_icon("empty"),
+        )
+    )
+    sections.append(
+        (
+            "section-ci-performance",
+            "CI Performance",
+            _nav_icon("pass")
+            if ci and ci_all_pass
+            else _nav_icon("fail")
+            if ci and not ci_all_pass
+            else _nav_icon("empty"),
+        )
+    )
 
     # Tier 4: Follow-ups
     sections.append(("__group__", "Follow-ups", ""))
-    sections.append((
-        "section-post-merge", "Post-Merge Items",
-        _nav_icon("count-warn", len(pm)) if pm
-        else _nav_icon("empty"),
-    ))
+    sections.append(
+        (
+            "section-post-merge",
+            "Post-Merge Items",
+            _nav_icon("count-warn", len(pm)) if pm else _nav_icon("empty"),
+        )
+    )
 
     items = []
     for section_id, label, icon_html in sections:
         if section_id == "__group__":
-            items.append(
-                f'<div class="sb-nav-group-label">{label or ""}</div>'
-            )
+            items.append(f'<div class="sb-nav-group-label">{label or ""}</div>')
             continue
         if label is None:
             items.append('<div class="sb-nav-separator"></div>')
             continue
         items.append(
             f'<div class="sb-nav-item" data-section="{section_id}" '
-            f'onclick="scrollToSection(\'{section_id}\')">\n'
-            f'  {icon_html}\n'
-            f'  <span>{label}</span>\n'
-            f'</div>'
+            f"onclick=\"scrollToSection('{section_id}')\">\n"
+            f"  {icon_html}\n"
+            f"  <span>{label}</span>\n"
+            f"</div>"
         )
     return "\n".join(items)
 
@@ -1417,6 +1414,309 @@ def render_review_gates_cards(convergence: dict, has_scenarios: bool = True) -> 
     return "\n          ".join(cards)
 
 
+# ── Agent paradigm descriptions (for tooltips) ──────────────────────
+AGENT_PARADIGM_DESC = {
+    "CH": "Code Health: code quality, complexity, dead code",
+    "SE": "Security: vulnerabilities beyond bandit",
+    "TI": "Test Integrity: test quality beyond AST scanner",
+    "AD": "Adversarial: gaming, spec violations, architecture",
+    "AR": "Architecture: zone coverage, coupling, structural changes",
+    "MA": "Main Agent: primary review agent",
+}
+
+AGENT_SHORT_NAME = {
+    "CH": "Code Health",
+    "SE": "Security",
+    "TI": "Test Integrity",
+    "AD": "Adversarial",
+    "AR": "Architecture",
+    "MA": "Main Agent",
+}
+
+
+def _detect_corroboration(findings: list[dict]) -> dict[int, list[int]]:
+    """Detect corroborated findings across agents.
+
+    Two findings are corroborated if they share overlapping files AND
+    have similar titles (case-insensitive substring match).
+
+    Returns mapping: finding_index -> list of corroborating finding indices.
+    """
+    corroboration: dict[int, list[int]] = {}
+    for i, f1 in enumerate(findings):
+        corroboration[i] = []
+        f1_files = set((f1.get("file") or "").split())
+        f1_title = (f1.get("notable") or f1.get("title") or "").lower()
+        f1_agent = f1.get("agent", "")
+        for j, f2 in enumerate(findings):
+            if i == j:
+                continue
+            if f2.get("agent", "") == f1_agent:
+                continue
+            f2_files = set((f2.get("file") or "").split())
+            f2_title = (f2.get("notable") or f2.get("title") or "").lower()
+            # Overlapping files check
+            if not f1_files.intersection(f2_files):
+                continue
+            # Similar title check: one title contains a significant portion of the other
+            if len(f1_title) > 5 and len(f2_title) > 5:
+                shorter = f1_title if len(f1_title) <= len(f2_title) else f2_title
+                longer = f2_title if len(f1_title) <= len(f2_title) else f1_title
+                # Check if first few meaningful words overlap
+                words1 = set(shorter.split()[:4])
+                words2 = set(longer.split()[:4])
+                if len(words1.intersection(words2)) >= 2:
+                    corroboration[i].append(j)
+    return corroboration
+
+
+def render_key_findings(data: dict) -> str:
+    """Render the Key Findings section (Proposal B: Corroboration Lens).
+
+    Groups findings by severity (F -> C -> B -> B+ -> A).
+    Within same severity, sorted by corroboration count (descending).
+    A-grade findings collapsed behind toggle by default.
+    """
+    review = data.get("agenticReview", {})
+    findings = review.get("findings", [])
+    if not findings:
+        return '<p style="color:var(--text-muted);font-size:13px">No review findings.</p>'
+
+    zone_categories = {
+        z["id"]: z.get("category", "product") for z in data.get("architecture", {}).get("zones", [])
+    }
+
+    # Detect corroboration
+    corroboration = _detect_corroboration(findings)
+
+    # Sort: severity first (F=0, C=1, B=2, B+=3, A=4), then corroboration desc
+    indexed = list(enumerate(findings))
+    indexed.sort(
+        key=lambda pair: (
+            GRADE_SORT.get(pair[1].get("grade", "N/A"), 5),
+            -len(corroboration.get(pair[0], [])),
+        )
+    )
+
+    # Grade distribution for heatbar
+    grade_counts: dict[str, int] = {}
+    for f in findings:
+        g = f.get("grade", "N/A")
+        grade_counts[g] = grade_counts.get(g, 0) + 1
+
+    total = len(findings)
+    parts: list[str] = []
+
+    # Severity heatbar
+    heatbar = '<div class="kf-heatbar">'
+    for grade_key in ("F", "C", "B", "B+", "A"):
+        count = grade_counts.get(grade_key, 0)
+        if count > 0:
+            pct = max(count / total * 100, 2)
+            css = GRADE_CLASS.get(grade_key, "na")
+            heatbar += f'<div class="kf-heatbar-seg {css}" style="width:{pct:.1f}%"></div>'
+    heatbar += "</div>"
+    # Heatbar legend
+    heatbar += (
+        '<div class="kf-heatbar-legend">'
+        '<span class="legend-item"><span class="swatch f"></span> F</span>'
+        '<span class="legend-item"><span class="swatch c"></span> C</span>'
+        '<span class="legend-item"><span class="swatch b"></span> B</span>'
+        '<span class="legend-item"><span class="swatch b"></span> B+</span>'
+        '<span class="legend-item"><span class="swatch a"></span> A</span>'
+        "</div>"
+    )
+    parts.append(heatbar)
+
+    # Agent filter pills
+    seen_agents: dict[str, str] = {}  # abbrev -> agent name
+    for f in findings:
+        agent_name = f.get("agent", "") or "main"
+        abbrev = AGENT_ABBREV.get(agent_name, agent_name[:2].upper() if agent_name else "?")
+        if abbrev not in seen_agents:
+            seen_agents[abbrev] = agent_name
+    pills = '<div class="kf-agent-pills">'
+    for abbrev, agent_name in seen_agents.items():
+        tooltip = AGENT_PARADIGM_DESC.get(abbrev, agent_name)
+        short_name = AGENT_SHORT_NAME.get(abbrev, agent_name)
+        pills += (
+            f'<span class="kf-agent-pill" data-agent="{esc(abbrev)}" '
+            f'title="{esc(tooltip)}" '
+            f"onclick=\"filterKFByAgent(this, '{esc(abbrev)}')\">"
+            f"{esc(abbrev)} {esc(short_name)}</span>"
+        )
+    pills += "</div>"
+    parts.append(pills)
+
+    # No match message
+    parts.append(
+        '<div id="kf-no-match" class="kf-no-match">No findings match the current filter.</div>'
+    )
+
+    # Build table
+    parts.append('<table class="kf-table">')
+    parts.append(
+        "<thead><tr>"
+        "<th>Grade</th>"
+        "<th>Finding</th>"
+        "<th>Agent</th>"
+        "<th>Zone</th>"
+        "<th>Corr.</th>"
+        "</tr></thead>"
+    )
+
+    # Separate A-grade findings
+    non_a_rows: list[str] = []
+    a_rows: list[str] = []
+
+    for orig_idx, f in indexed:
+        grade = f.get("grade", "N/A")
+        grade_css = GRADE_CLASS.get(grade, "na")
+        agent_name = f.get("agent", "") or "main"
+        abbrev = AGENT_ABBREV.get(agent_name, agent_name[:2].upper() if agent_name else "?")
+        zones = f.get("zones", "")
+        zones_list = zones.split() if zones else []
+        notable = f.get("notable", "") or f.get("title", "")
+        file_path = f.get("file", "")
+        detail_text = f.get("detail", "") or notable
+        corr_indices = corroboration.get(orig_idx, [])
+        corr_count = len(corr_indices) + 1  # Including self
+
+        # Agents involved: self + corroborating
+        agent_abbrevs = [abbrev]
+        for ci in corr_indices:
+            c_agent = findings[ci].get("agent", "") or "main"
+            c_abbrev = AGENT_ABBREV.get(c_agent, c_agent[:2].upper() if c_agent else "?")
+            if c_abbrev not in agent_abbrevs:
+                agent_abbrevs.append(c_abbrev)
+
+        # Zone tags
+        zone_html = ""
+        if zones_list:
+            zone_html = " ".join(_zone_tag(z, zone_categories) for z in zones_list)
+
+        # Agent tags with tooltips
+        agent_tags = ""
+        for a in agent_abbrevs:
+            a_tooltip = AGENT_PARADIGM_DESC.get(a, a)
+            agent_tags += f'<span class="kf-agent-tag" title="{esc(a_tooltip)}">{esc(a)}</span>'
+
+        # Corroboration badge
+        if corr_count > 1:
+            corr_html = f'<span class="kf-corroboration">{corr_count}x</span>'
+        else:
+            corr_html = '<span class="kf-corroboration kf-corroboration-1">1x</span>'
+
+        zones_data = " ".join(zones_list)
+        agents_data = " ".join(agent_abbrevs)
+
+        # Main row
+        row_html = (
+            f'<tr class="kf-row" data-zones="{esc(zones_data)}" '
+            f'data-agents="{esc(agents_data)}" '
+            f'data-grade="{esc(grade)}" '
+            f'onclick="toggleKFDetail(this)">'
+            f'<td><span class="grade {grade_css}">{esc(grade)}</span></td>'
+            f"<td>{esc(notable)}</td>"
+            f'<td><span class="kf-agent-tags">{agent_tags}</span></td>'
+            f"<td>{zone_html}</td>"
+            f"<td>{corr_html}</td>"
+            f"</tr>\n"
+        )
+
+        # Detail row
+        detail_html = (
+            f'<tr class="kf-detail-row" data-zones="{esc(zones_data)}">'
+            f'<td colspan="5">'
+            f'<div class="kf-detail-summary">{detail_text}</div>'
+        )
+        if file_path:
+            detail_html += (
+                f'<div class="kf-detail-files">'
+                f'<code class="file-path-link" '
+                f'onclick="event.stopPropagation();'
+                f"openFileModal('{esc(file_path)}')\">"
+                f"{esc(file_path)}</code></div>"
+            )
+        if len(agent_abbrevs) > 1:
+            detail_html += (
+                '<div class="kf-detail-agents">'
+                '<strong style="font-size:10px;color:var(--text-muted)">'
+                "Corroborated by:</strong> "
+            )
+            for a in agent_abbrevs:
+                a_tooltip = AGENT_PARADIGM_DESC.get(a, a)
+                detail_html += (
+                    f'<span class="kf-agent-tag" title="{esc(a_tooltip)}">{esc(a)}</span>'
+                )
+            detail_html += "</div>"
+        detail_html += "</td></tr>\n"
+
+        if grade == "A":
+            a_rows.append(row_html + detail_html)
+        else:
+            non_a_rows.append(row_html + detail_html)
+
+    # Non-A rows
+    parts.append("<tbody>")
+    parts.append("".join(non_a_rows))
+
+    # A-grade toggle + rows
+    a_count = len(a_rows)
+    if a_count > 0:
+        parts.append("</tbody></table>")
+        parts.append(
+            f'<div class="kf-a-toggle collapsed" id="kf-a-toggle" '
+            f'onclick="toggleKFAGrade()">'
+            f'<span class="kf-a-chevron">&#x25BC;</span>'
+            f"<span>Show {a_count} A-grade finding"
+            f"{'s' if a_count != 1 else ''}</span>"
+            f"</div>"
+        )
+        parts.append(
+            '<div class="kf-a-rows collapsed" id="kf-a-rows"><table class="kf-table"><tbody>'
+        )
+        parts.append("".join(a_rows))
+        parts.append("</tbody></table></div>")
+    else:
+        parts.append("</tbody></table>")
+
+    return "\n".join(parts)
+
+
+def render_key_findings_method_badge(review: dict) -> str:
+    """Render method badge for Key Findings header."""
+    return render_agentic_method_badge(review)
+
+
+def render_key_findings_nav(data: dict) -> tuple[str, str]:
+    """Compute sidebar nav icon for Key Findings section.
+
+    Returns (icon_type, value) tuple:
+      - Any F -> ("count-fail", F_count)
+      - Worst C -> ("count-warn", C+F_count)
+      - Worst B/B+ -> ("count", non_A_count)
+      - All A -> ("pass", None)
+      - No findings -> ("empty", None)
+    """
+    findings = data.get("agenticReview", {}).get("findings", [])
+    if not findings:
+        return ("empty", None)
+
+    f_count = sum(1 for f in findings if f.get("grade") == "F")
+    c_count = sum(1 for f in findings if f.get("grade") == "C")
+    b_count = sum(1 for f in findings if f.get("grade") in ("B", "B+"))
+    non_a = f_count + c_count + b_count
+
+    if f_count > 0:
+        return ("count-fail", f_count)
+    if c_count > 0:
+        return ("count-warn", c_count + f_count)
+    if b_count > 0:
+        return ("count", non_a)
+    return ("pass", None)
+
+
 # ── v2 Tier 3 section renderers ─────────────────────────────────────
 
 
@@ -1427,8 +1727,7 @@ def render_code_diffs_list(data: dict) -> str:
         return '<p style="color:var(--text-muted);font-size:13px">No files changed.</p>'
     # Build zone ID → category lookup from architecture data
     zone_categories = {
-        z["id"]: z.get("category", "product")
-        for z in data.get("architecture", {}).get("zones", [])
+        z["id"]: z.get("category", "product") for z in data.get("architecture", {}).get("zones", [])
     }
     items = []
     for cd in code_diffs:
@@ -1438,10 +1737,7 @@ def render_code_diffs_list(data: dict) -> str:
         status = cd.get("status", "modified")
         zones = cd.get("zones", [])
         zones_str = " ".join(zones)
-        zone_tags = " ".join(
-            _zone_tag(z, zone_categories)
-            for z in zones
-        )
+        zone_tags = " ".join(_zone_tag(z, zone_categories) for z in zones)
         items.append(
             f'<div class="cd-file-item" data-path="{esc(path)}" '
             f'data-zones="{esc(zones_str)}">\n'
@@ -1452,19 +1748,19 @@ def render_code_diffs_list(data: dict) -> str:
             f'<span class="cd-del">&minus;{dels}</span></span>\n'
             f'    <span class="cd-file-status {status}">{esc(status)}</span>\n'
             f'    <span class="cd-file-zones">{zone_tags}</span>\n'
-            f'  </div>\n'
+            f"  </div>\n"
             f'  <div class="cd-file-body">\n'
             f'    <div class="cd-file-toolbar">\n'
             f'      <button class="cd-file-tab active" '
-            f'onclick="event.stopPropagation();setCodeDiffTab(this,this.closest(\'.cd-file-item\'),\'side-by-side\')">Side-by-side</button>\n'
+            f"onclick=\"event.stopPropagation();setCodeDiffTab(this,this.closest('.cd-file-item'),'side-by-side')\">Side-by-side</button>\n"
             f'      <button class="cd-file-tab" '
-            f'onclick="event.stopPropagation();setCodeDiffTab(this,this.closest(\'.cd-file-item\'),\'integrated\')">Unified</button>\n'
+            f"onclick=\"event.stopPropagation();setCodeDiffTab(this,this.closest('.cd-file-item'),'integrated')\">Unified</button>\n"
             f'      <button class="cd-file-tab" '
-            f'onclick="event.stopPropagation();setCodeDiffTab(this,this.closest(\'.cd-file-item\'),\'raw\')">Raw</button>\n'
-            f'    </div>\n'
+            f"onclick=\"event.stopPropagation();setCodeDiffTab(this,this.closest('.cd-file-item'),'raw')\">Raw</button>\n"
+            f"    </div>\n"
             f'    <div class="cd-file-diff-content"></div>\n'
-            f'  </div>\n'
-            f'</div>'
+            f"  </div>\n"
+            f"</div>"
         )
     return "\n".join(items)
 
@@ -1480,10 +1776,18 @@ def render_code_review_list(data: dict) -> str:
     findings = data.get("agenticReview", {}).get("findings", [])
     code_diffs = data.get("codeDiffs", [])
 
+    # Build fileCoverage lookup: path → {agent_name: grade}
+    # fileCoverage.files is a list of {file, grades: {agent: grade}, ...}
+    fc_grades_by_file: dict[str, dict[str, str]] = {}
+    fc_summaries_by_file: dict[str, dict[str, str]] = {}
+    for fc_entry in data.get("fileCoverage", {}).get("files", []):
+        fp = fc_entry.get("file", "")
+        fc_grades_by_file[fp] = fc_entry.get("grades", {})
+        fc_summaries_by_file[fp] = fc_entry.get("summaries", {})
+
     # Build zone ID → category lookup from architecture data
     zone_categories = {
-        z["id"]: z.get("category", "product")
-        for z in data.get("architecture", {}).get("zones", [])
+        z["id"]: z.get("category", "product") for z in data.get("architecture", {}).get("zones", [])
     }
 
     # All agent paradigms in display order
@@ -1494,7 +1798,17 @@ def render_code_review_list(data: dict) -> str:
         ("AD", "adversarial", "Adversarial"),
         ("AR", "architecture", "Architecture"),
     ]
-    # Build findings lookup by file path
+
+    # Map agent keys in fileCoverage to abbreviations
+    _FC_AGENT_TO_ABBREV = {
+        "code-health": "CH",
+        "security": "SE",
+        "test-integrity": "TI",
+        "adversarial": "AD",
+        "architecture": "AR",
+    }
+
+    # Build findings lookup by file path (for detail expansion)
     findings_by_file: dict[str, list[dict]] = {}
     for f in findings:
         path = f.get("file", "")
@@ -1528,8 +1842,8 @@ def render_code_review_list(data: dict) -> str:
         "<thead><tr>"
         "<th>File</th>"
         f"{header_cols}"
-        "<th>+/&minus;</th>"
-        "<th>Zone</th>"
+        '<th class="cr-stats-col">+/&minus;</th>'
+        '<th class="cr-zone-col">Zone</th>'
         "</tr></thead><tbody>"
     )
 
@@ -1540,19 +1854,26 @@ def render_code_review_list(data: dict) -> str:
         additions = cd.get("additions", 0)
         deletions = cd.get("deletions", 0)
 
-        # Build agent → grade + detail maps
+        # Build agent → grade maps from fileCoverage (primary source)
         agent_grades: dict[str, str] = {}
         agent_details: dict[str, list[dict]] = {}
+
+        # Primary: grades from fileCoverage (FileReviewOutcome data)
+        fc_grades = fc_grades_by_file.get(path, {})
+        for agent_key, grade in fc_grades.items():
+            abbrev = _FC_AGENT_TO_ABBREV.get(agent_key, agent_key[:2].upper())
+            if grade:
+                agent_grades[abbrev] = grade
+
+        # Secondary: overlay findings (ReviewConcept data) for detail expansion
         for ff in file_findings:
             agent_name = ff.get("agent", "")
-            abbrev = AGENT_ABBREV.get(
-                agent_name, agent_name[:2].upper() if agent_name else "?"
-            )
+            abbrev = AGENT_ABBREV.get(agent_name, agent_name[:2].upper() if agent_name else "?")
             grade = ff.get("grade", "N/A")
-            # Keep worst grade
-            if abbrev not in agent_grades or GRADE_SORT.get(
-                grade, 5
-            ) < GRADE_SORT.get(agent_grades[abbrev], 5):
+            # Only override if findings show a worse grade than fileCoverage
+            if abbrev not in agent_grades or GRADE_SORT.get(grade, 5) < GRADE_SORT.get(
+                agent_grades[abbrev], 5
+            ):
                 agent_grades[abbrev] = grade
             agent_details.setdefault(abbrev, []).append(ff)
 
@@ -1570,18 +1891,14 @@ def render_code_review_list(data: dict) -> str:
                 )
             else:
                 grade_cells += (
-                    '<td class="cr-agent-col">'
-                    '<span class="cr-grade-dash">&mdash;</span></td>'
+                    '<td class="cr-agent-col"><span class="cr-grade-dash">&mdash;</span></td>'
                 )
 
         # Zone tags
         zone_html = ""
         if zones:
             zone_list = zones if isinstance(zones, list) else zones.split()
-            zone_html = " ".join(
-                _zone_tag(z, zone_categories)
-                for z in zone_list
-            )
+            zone_html = " ".join(_zone_tag(z, zone_categories) for z in zone_list)
 
         # File row
         html += (
@@ -1589,7 +1906,7 @@ def render_code_review_list(data: dict) -> str:
             f'onclick="toggleCRDetail(this)">'
             f"<td>"
             f'<code class="file-path-link" '
-            f"onclick=\"event.stopPropagation();"
+            f'onclick="event.stopPropagation();'
             f"openFileModal('{esc(path)}')\">"
             f"{esc(path)}</code></td>"
             f"{grade_cells}"
@@ -1611,8 +1928,7 @@ def render_code_review_list(data: dict) -> str:
                 # detail is HTML-safe: sanitized at ingestion by the Gate 0
                 # review agents. Contains structured HTML from agent analysis.
                 detail_text = " ".join(
-                    ff.get("detail", "") or ff.get("notable", "")
-                    for ff in agent_findings
+                    ff.get("detail", "") or ff.get("notable", "") for ff in agent_findings
                 )
                 detail_parts.append(
                     f'<div class="agent-detail-entry">'
@@ -1626,25 +1942,42 @@ def render_code_review_list(data: dict) -> str:
                     f"</div>"
                 )
             else:
-                detail_parts.append(
-                    f'<div class="agent-detail-entry cr-no-comment">'
-                    f'<span class="agent-detail-header">'
-                    f'<span class="agent-abbrev">{esc(abbrev)}</span>'
-                    f'<span class="grade na">&mdash;</span>'
-                    f'<span class="agent-detail-name">'
-                    f"{esc(agent_name)}</span>"
-                    f"</span>"
-                    f'<div class="agent-detail-body">'
-                    f"<em>No comments on this file.</em></div>"
-                    f"</div>"
-                )
+                # Use FileReviewOutcome summary if available (A-grade files)
+                fc_summary = fc_summaries_by_file.get(path, {}).get(_agent_key, "")
+                fc_grade = fc_grades_by_file.get(path, {}).get(_agent_key, "")
+                if fc_summary:
+                    gc = GRADE_CLASS.get(fc_grade, "na") if fc_grade else "na"
+                    grade_display = esc(fc_grade) if fc_grade else "&mdash;"
+                    detail_parts.append(
+                        f'<div class="agent-detail-entry">'
+                        f'<span class="agent-detail-header">'
+                        f'<span class="agent-abbrev">{esc(abbrev)}</span>'
+                        f'<span class="grade {gc}">{grade_display}</span>'
+                        f'<span class="agent-detail-name">'
+                        f"{esc(agent_name)}</span>"
+                        f"</span>"
+                        f'<div class="agent-detail-body">'
+                        f"<em>{esc(fc_summary)}</em></div>"
+                        f"</div>"
+                    )
+                else:
+                    detail_parts.append(
+                        f'<div class="agent-detail-entry cr-no-comment">'
+                        f'<span class="agent-detail-header">'
+                        f'<span class="agent-abbrev">{esc(abbrev)}</span>'
+                        f'<span class="grade na">&mdash;</span>'
+                        f'<span class="agent-detail-name">'
+                        f"{esc(agent_name)}</span>"
+                        f"</span>"
+                        f'<div class="agent-detail-body">'
+                        f"<em>No comments on this file.</em></div>"
+                        f"</div>"
+                    )
 
         ncols = len(agent_paradigms) + 3  # file + agents + stats + zone
         html += (
             f'<tr class="cr-detail-row" data-zones="{esc(zones_str)}">'
-            f'<td colspan="{ncols}">'
-            + "".join(detail_parts)
-            + "</td></tr>\n"
+            f'<td colspan="{ncols}">' + "".join(detail_parts) + "</td></tr>\n"
         )
 
     html += "</tbody></table>"
@@ -1662,22 +1995,22 @@ def render_factory_history_section(data: dict) -> str:
     return (
         f'<div class="section">\n'
         f'  <div class="section-header"'
-        f' onclick="this.parentElement.classList.toggle(\'collapsed\')">\n'
-        f'    <h2>Factory History</h2>\n'
+        f" onclick=\"this.parentElement.classList.toggle('collapsed')\">\n"
+        f"    <h2>Factory History</h2>\n"
         f'    <span class="chevron">&#x25BC;</span>\n'
-        f'  </div>\n'
+        f"  </div>\n"
         f'  <div class="section-body">\n'
         f'    <div class="convergence-grid" style="margin-bottom:20px">{summary}</div>\n'
         f'    <h3 style="font-size:13px;font-weight:700;margin-bottom:12px">Timeline</h3>\n'
         f'    <div class="history-timeline">{timeline}</div>\n'
         f'    <h3 style="font-size:13px;font-weight:700;margin:20px 0 12px">Gate Findings</h3>\n'
-        f'    <table>\n'
-        f'      <thead><tr><th>Phase</th><th>Gate 1</th>'
-        f'<th>Gate 2</th><th>Gate 3</th><th>Action</th></tr></thead>\n'
-        f'      <tbody>{gate_rows}</tbody>\n'
-        f'    </table>\n'
-        f'  </div>\n'
-        f'</div>'
+        f"    <table>\n"
+        f"      <thead><tr><th>Phase</th><th>Gate 1</th>"
+        f"<th>Gate 2</th><th>Gate 3</th><th>Action</th></tr></thead>\n"
+        f"      <tbody>{gate_rows}</tbody>\n"
+        f"    </table>\n"
+        f"  </div>\n"
+        f"</div>"
     )
 
 
@@ -1822,8 +2155,7 @@ def render(
             render_what_changed_zones(data.get("whatChanged", {}))
         ),
         "<!-- INJECT: adversarial review method badge -->": (
-            render_agentic_method_badge(data.get("agenticReview", {}))
-            + render_agentic_legend()
+            render_agentic_method_badge(data.get("agenticReview", {})) + render_agentic_legend()
         ),
         "<!-- INJECT: adversarial finding rows from DATA.agenticReview.findings -->": (
             render_agentic_rows(
@@ -1871,11 +2203,9 @@ def render(
         replacements["<!-- INJECT: sidebar.verdictBadge -->"] = render_sidebar_verdict(data)
         replacements["<!-- INJECT: sidebar.commitScope -->"] = render_sidebar_commit_scope(data)
         replacements["<!-- INJECT: sidebar.mergeButton -->"] = render_sidebar_merge_button(data)
-        replacements["<!-- INJECT: sidebar.refreshButton -->"] = (
-            render_sidebar_refresh_button(data)
-        )
-        replacements["<!-- INJECT: sidebar.statusBadges -->"] = (
-            render_sidebar_status_badges(header, has_scenarios=has_scenarios)
+        replacements["<!-- INJECT: sidebar.refreshButton -->"] = render_sidebar_refresh_button(data)
+        replacements["<!-- INJECT: sidebar.statusBadges -->"] = render_sidebar_status_badges(
+            header, has_scenarios=has_scenarios
         )
         replacements["<!-- INJECT: sidebar.gatePills -->"] = render_sidebar_gate_pills(
             data.get("convergence", {}), has_scenarios=has_scenarios
@@ -1883,18 +2213,20 @@ def render(
         replacements["<!-- INJECT: sidebar.sectionNav -->"] = render_sidebar_section_nav(
             data, has_scenarios=has_scenarios
         )
-        replacements["<!-- INJECT: review gates cards -->"] = (
-            render_review_gates_cards(
-                data.get("convergence", {}), has_scenarios=has_scenarios
-            )
+        replacements["<!-- INJECT: review gates cards -->"] = render_review_gates_cards(
+            data.get("convergence", {}), has_scenarios=has_scenarios
         )
         replacements["<!-- INJECT: architecture assessment section -->"] = (
             render_architecture_assessment(data)
         )
+        replacements["<!-- INJECT: key findings section -->"] = render_key_findings(data)
+        replacements["<!-- INJECT: key findings method badge -->"] = (
+            render_key_findings_method_badge(data.get("agenticReview", {}))
+        )
         replacements["<!-- INJECT: code diff file list -->"] = render_code_diffs_list(data)
         replacements["<!-- INJECT: code review file list -->"] = render_code_review_list(data)
-        replacements["<!-- INJECT: factory history section -->"] = (
-            render_factory_history_section(data)
+        replacements["<!-- INJECT: factory history section -->"] = render_factory_history_section(
+            data
         )
         # Conditional specs/scenarios section title and scenarios block
         replacements["<!-- INJECT: specsScenarios.title -->"] = (
@@ -1906,11 +2238,11 @@ def render(
             replacements["<!-- INJECT: specsScenarios.scenariosBlock -->"] = (
                 '<h3 style="font-size:13px;margin:14px 0 8px">Scenarios</h3>\n'
                 f'          <div class="scenario-legend" id="scenario-legend">\n'
-                f'            {scenario_legend}\n'
-                f'          </div>\n'
+                f"            {scenario_legend}\n"
+                f"          </div>\n"
                 f'          <div class="scenario-grid" id="scenario-grid">\n'
-                f'            {scenario_cards}\n'
-                f'          </div>'
+                f"            {scenario_cards}\n"
+                f"          </div>"
             )
         else:
             replacements["<!-- INJECT: specsScenarios.scenariosBlock -->"] = ""
@@ -1928,9 +2260,9 @@ def render(
     else:
         # v1: individual factory history markers
         if history:
-            replacements[
-                "<!-- INJECT: iteration count + satisfaction trajectory cards -->"
-            ] = render_history_summary_cards(history)
+            replacements["<!-- INJECT: iteration count + satisfaction trajectory cards -->"] = (
+                render_history_summary_cards(history)
+            )
             replacements[
                 "<!-- INJECT: factory history events from DATA.factoryHistory.timeline -->"
             ] = render_history_timeline(history.get("timeline", []))
@@ -1944,14 +2276,14 @@ def render(
 
     # Clean up sub-comment hints (not injection points, just guidance)
     for hint in (
-        '<!-- Row labels -->',
+        "<!-- Row labels -->",
         '<!-- Zone boxes (rect.zone-box[data-zone="..."]) -->',
-        '<!-- Zone labels (text.zone-label) -->',
-        '<!-- Zone sublabels (text.zone-sublabel) -->',
-        '<!-- File count circles (circle.zone-count-bg + text.zone-file-count) -->',
-        '<!-- Flow arrows (line with marker-end) -->',
+        "<!-- Zone labels (text.zone-label) -->",
+        "<!-- Zone sublabels (text.zone-sublabel) -->",
+        "<!-- File count circles (circle.zone-count-bg + text.zone-file-count) -->",
+        "<!-- Flow arrows (line with marker-end) -->",
         '<!-- Each row: tr.adv-row[data-zones="..."][data-grade-sort="N"] + tr.adv-detail-row -->',
-        '<!-- Each: tr.expandable + tr.detail-row with sub-checks -->',
+        "<!-- Each: tr.expandable + tr.detail-row with sub-checks -->",
     ):
         template = template.replace(hint, "")
 
@@ -1975,8 +2307,7 @@ def render(
     zone_file_sum = sum(z.get("fileCount", 0) for z in arch_data.get("zones", []))
     if unzoned:
         print(
-            f"WARNING: {len(unzoned)} file(s) not mapped to any "
-            f"architecture zone: {unzoned}",
+            f"WARNING: {len(unzoned)} file(s) not mapped to any architecture zone: {unzoned}",
             file=sys.stderr,
         )
     if total_files > 0 and (zone_file_sum + len(unzoned)) < total_files:
@@ -2003,9 +2334,7 @@ def render(
 
     # ── Fix PR URL href ──
     pr_url = header.get("prUrl", "#")
-    template = template.replace(
-        'id="pr-url" href="#"', f'id="pr-url" href="{esc(pr_url)}"'
-    )
+    template = template.replace('id="pr-url" href="#"', f'id="pr-url" href="{esc(pr_url)}"')
 
     # ── Embed reference file content for non-diff files ──
     # Spec files, scenario files, etc. aren't in the diff data but users
@@ -2076,8 +2405,7 @@ def render(
         # Replace fetch-based loading with inline data
         template = template.replace(
             "fetch('pr_diff_data.json')",
-            "Promise.resolve(new Response(JSON.stringify("
-            "DIFF_DATA_INLINE)))",
+            "Promise.resolve(new Response(JSON.stringify(DIFF_DATA_INLINE)))",
         )
 
     # ── Write output ──
@@ -2113,17 +2441,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Render PR review pack HTML from template + data (Pass 3)."
     )
-    parser.add_argument(
-        "--data", required=True, help="Path to ReviewPackData JSON file"
-    )
+    parser.add_argument("--data", required=True, help="Path to ReviewPackData JSON file")
     parser.add_argument("--output", required=True, help="Output HTML file path")
     parser.add_argument(
         "--diff-data",
         default=None,
-        help=(
-            "Path to diff data JSON (Pass 1 output). "
-            "Embeds inline for self-contained pack."
-        ),
+        help=("Path to diff data JSON (Pass 1 output). Embeds inline for self-contained pack."),
     )
     parser.add_argument(
         "--template",
