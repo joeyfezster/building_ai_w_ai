@@ -11,4 +11,5 @@ matplotlib
 pandas
 pypdf
 requests
+pydantic
 pygame
