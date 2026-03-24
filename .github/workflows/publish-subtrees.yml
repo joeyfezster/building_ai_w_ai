@@ -30,16 +30,18 @@ jobs:
           cd packages/pr-review-pack
 
           # Rule 1: Strip self-referencing monorepo prefix (handles all current and future paths)
-          find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.yaml" -o -name "*.yml" \) \
-            -not -path './.git/*' -exec \
-            sed -i 's|packages/pr-review-pack/||g' {} +
-
-          # Rule 2: Cross-references to sibling packages → standalone repo URLs
+          # First: with trailing slash (path prefix like "packages/pr-review-pack/scripts/...")
+          # Second: without slash (bare dir like "cd packages/pr-review-pack" → "cd .")
           find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.yaml" -o -name "*.yml" \) \
             -not -path './.git/*' -exec \
             sed -i \
-              -e 's|packages/dark-factory/|https://github.com/joeyfezster/dark-factory/tree/main/|g' \
-              -e 's|packages/review-prompts/|review-prompts/|g' {} +
+              -e 's|packages/pr-review-pack/||g' \
+              -e 's|packages/pr-review-pack|.|g' {} +
+
+          # Rule 2: Cross-references to review-prompts → local (already resolved by symlink step)
+          find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.yaml" -o -name "*.yml" \) \
+            -not -path './.git/*' -exec \
+            sed -i 's|packages/review-prompts/|review-prompts/|g' {} +
 
           # Rule 2b: Skill install paths → local root
           find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.yaml" -o -name "*.yml" \) \
@@ -55,10 +57,11 @@ jobs:
       - name: Verify no stale monorepo paths
         run: |
           cd packages/pr-review-pack
-          # Match skill paths WITH trailing slash (monorepo internal refs).
-          # Clone targets like ".claude/skills/pr-review-pack" (no slash) are valid.
+          # Check for stale SELF-references (this package referring to itself via monorepo path).
+          # Cross-package refs to packages/dark-factory/ are intentional — the skill
+          # describes detecting that directory in the USER's repo, not linking to monorepo files.
+          # Clone targets like ".claude/skills/pr-review-pack" (no slash) are also valid.
           STALE=$(grep -rn \
-            -e "packages/dark-factory" \
             -e "packages/pr-review-pack" \
             -e "packages/review-prompts" \
             -e "\.claude/skills/pr-review-pack/" \
