@@ -14,3 +14,6 @@ artifacts/*/logs.jsonl
 # Factory ephemeral artifacts (feedback files ARE committed)
 artifacts/factory/scenario_results.json
 artifacts/factory/ci_output.log
+
+# Worktrees
+.claude/worktrees/
