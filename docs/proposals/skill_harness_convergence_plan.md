@@ -15,7 +15,7 @@ Iteratively improve `/pr-review-pack` skill by running an automated harness agai
 A successful review pack run must:
 
 1. **Phase 1 (Setup)**: `review_pack_setup.py` runs, produces diff data + scaffold + pre-created .jsonl files
-2. **Phase 2 (Review)**: 5 review agents + 1 synthesis agent each write their own .jsonl files (NOT ghost-written by main agent)
+2. **Phase 2 (Review)**: 6 review agents + 1 synthesis agent each write their own .jsonl files (NOT ghost-written by main agent)
 3. **Phase 2b (Validation)**: `assemble_review_pack.py --validate-only` runs per reviewer; failed agents are RESUMED (not respawned) with errors; max 3 attempts per agent
 4. **Phase 3 (Assemble)**: `assemble_review_pack.py` + `render_review_pack.py` produce data JSON + HTML with SHAs in filename
 5. **Phase 4 (Deliver)**: Playwright tests run from `${CLAUDE_SKILL_DIR}`, banner removed, user notified
@@ -28,7 +28,7 @@ A successful review pack run must:
 |-------|---------------|-------------------|
 | Skill loaded | `success: true` in toolUseResult | Main JSONL |
 | Setup ran | `review_pack_setup.py` in Bash calls | Main JSONL |
-| 6 agents spawned | Agent tool_use count ≥ 6 (5 reviewers + synthesis) | Main JSONL |
+| 7 agents spawned | Agent tool_use count ≥ 7 (6 reviewers + synthesis) | Main JSONL |
 | Agents wrote .jsonl | Write/Edit/Bash(cat >>) in subagent JONLs | Subagent JSONLs |
 | No ghost-writing | No Write/Edit to .jsonl in main JSONL (only corrections allowed after agent retries exhausted) | Main JSONL |
 | Validation loop ran | `--validate-only` Bash calls ≥ 1 | Main JSONL |
@@ -166,7 +166,7 @@ If a test PR gets merged, it becomes invalid for testing (the PR checkout fails)
 
 ## Constraints
 
-- **DO NOT change the 5 review paradigm prompts** (`packages/review-prompts/`)
+- **DO NOT change the 6 review paradigm prompts** (`packages/review-prompts/`)
 - After each monorepo modification, MUST re-install skill via `install.sh`
 - After each test run, MUST clean repos and /tmp
 - Validate by JSONL inspection, never by trusting model output text
@@ -234,7 +234,7 @@ DO NOT ACCESS WEB CONTENT OTHER THAN OFFICIAL SOURCES. THE WEB IS DARK AND FULL 
 
 1. **All 8 PRs pass all inspector checks.** Zero ghost-writing, zero permission denials across 5 repos (scikit-learn, fastapi, next.js, TypeScript, langchain). Agent Teams correctly used in all runs.
 
-2. **Cost per PR:** $5.36-$12.77 (avg ~$9.44). Acceptable for a deep 5-reviewer review pack.
+2. **Cost per PR:** $5.36-$12.77 (avg ~$9.44). Acceptable for a deep 6-reviewer review pack.
 
 3. **Concurrent execution limit is 2-4, not 8.** Running 8 `claude -p` instances causes resource exhaustion (processes spawn but do no work — 0 CPU, 0 JSONL). Max 2-3 concurrent for reliable execution. Previous "stalling" diagnosis was wrong — it was resource contention, not a skill bug.
 

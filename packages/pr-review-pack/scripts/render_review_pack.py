@@ -15,6 +15,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import re
@@ -33,6 +34,22 @@ LAYER_COLORS = {
     "infra": {"fill": "#f3e8ff", "stroke": "#8b5cf6", "text": "#6d28d9"},
 }
 
+
+def _category_colors(category: str) -> dict[str, str]:
+    """Return fill/stroke/text colors for a category.
+
+    Provides sensible defaults for unknown categories.
+    """
+    if category in LAYER_COLORS:
+        return LAYER_COLORS[category]
+    # Deterministic colors from category name hash
+    h = int(hashlib.md5(category.encode()).hexdigest()[:8], 16) % 360
+    return {
+        "fill": f"hsl({h}, 70%, 92%)",
+        "stroke": f"hsl({h}, 60%, 50%)",
+        "text": f"hsl({h}, 60%, 30%)",
+    }
+
 GRADE_CLASS = {"A": "a", "B+": "b", "B": "b", "C": "c", "F": "f", "N/A": "na"}
 
 # Agent abbreviations for compact badges
@@ -49,6 +66,8 @@ AGENT_ABBREV = {
     "architecture-reviewer": "AR",
     "main": "MA",
     "main-agent": "MA",
+    "rbe": "RB",
+    "rbe-reviewer": "RB",
 }
 
 GRADE_SORT = {"F": 0, "C": 1, "B": 2, "B+": 3, "A": 4, "N/A": 5}
@@ -170,7 +189,7 @@ def render_architecture_svg(arch: dict) -> str:
     for zone in arch.get("zones", []):
         pos = zone["position"]
         cat = zone.get("category", "product")
-        colors = LAYER_COLORS.get(cat, LAYER_COLORS["product"])
+        colors = _category_colors(cat)
         x, y, w, h = pos["x"], pos["y"], pos["width"], pos["height"]
         cx = x + w / 2
         opacity = "1" if zone.get("isModified") else "0.6"
@@ -261,6 +280,35 @@ def render_architecture_svg(arch: dict) -> str:
     return "\n          ".join(parts)
 
 
+def render_architecture_legend(zones: list[dict]) -> str:
+    """Render architecture legend from zone categories in the data."""
+    seen: list[str] = []
+    for z in zones:
+        cat = z.get("category", "product")
+        if cat not in seen:
+            seen.append(cat)
+
+    items: list[str] = []
+    items.append(
+        '<div class="arch-legend-item">'
+        '<div class="arch-legend-circle" style="background:#3b82f6">3</div> '
+        "Blue circle = files changed in zone</div>"
+    )
+    for cat in seen:
+        colors = _category_colors(cat)
+        label = cat.replace("-", " ").replace("_", " ").title()
+        items.append(
+            f'<div class="arch-legend-item">'
+            f'<div class="arch-legend-swatch" style="background:{colors["fill"]};'
+            f'border-color:{colors["stroke"]}"></div> {esc(label)}</div>'
+        )
+    items.append(
+        '<div class="arch-legend-item" style="margin-left:auto;font-style:italic">'
+        "Click zone to filter &bull; click background to reset</div>"
+    )
+    return "\n          ".join(items)
+
+
 def render_architecture_assessment(data: dict) -> str:
     """Render the Architecture Assessment section from architect agent output.
 
@@ -306,8 +354,6 @@ def render_architecture_assessment(data: dict) -> str:
     has_core = bool(narrative or unverified)
 
     if has_core:
-        pill_css = "failing" if health == "action-required" else "warning"
-        pill_label = "Action Required" if health == "action-required" else "Needs Attention"
         core_body: list[str] = []
         if narrative:
             core_body.append(f'<div class="arch-narrative">{narrative}</div>')
@@ -320,12 +366,29 @@ def render_architecture_assessment(data: dict) -> str:
                     f"zones {esc(', '.join(v.get('claimedZones', [])))} "
                     f"&mdash; {esc(v.get('reason', ''))}</div>"
                 )
+
+        # Use explicit boolean flag; fall back to health inference for legacy data
+        needs_attention = assessment.get("coreIssuesNeedAttention")
+        if needs_attention is None:
+            needs_attention = health in ("needs-attention", "action-required") or bool(
+                unverified
+            )
+
+        pill_html = ""
+        if needs_attention:
+            pill_css = "failing" if health == "action-required" else "warning"
+            pill_label = (
+                "Action Required" if health == "action-required" else "Needs Attention"
+            )
+            pill_html = (
+                f'<span class="arch-issue-pill {pill_css}">{esc(pill_label)}</span>'
+            )
+
         parts.append(
             '<div class="arch-section collapsed">'
             '<div class="arch-section-header" '
             "onclick=\"this.parentElement.classList.toggle('collapsed')\">"
-            f'<h4>Core Issues <span class="arch-issue-pill {pill_css}">'
-            f"{esc(pill_label)}</span></h4>"
+            f"<h4>Core Issues {pill_html}</h4>"
             '<span class="chevron">&#x25BC;</span>'
             "</div>"
             '<div class="arch-section-body">' + "\n".join(core_body) + "</div></div>"
@@ -542,6 +605,7 @@ def render_agentic_legend() -> str:
         ("TI", "Test Integrity", "test quality beyond AST scanner"),
         ("AD", "Adversarial", "gaming, spec violations, architecture"),
         ("AR", "Architecture", "zone coverage, coupling, structural changes"),
+        ("RB", "RBE", "responsibility boundaries, naming, type clarity"),
     ]
     items = []
     for abbrev, name, desc in entries:
@@ -992,6 +1056,12 @@ def render_sidebar_status_badges(header: dict, has_scenarios: bool = True) -> st
         # Skip scenario badge when there are no scenarios
         if not has_scenarios and "scenario" in label.lower():
             continue
+        # Skip CI badge — covered by Gate 1 pill
+        if label.startswith("CI"):
+            continue
+        # Skip Gate 0 badge — covered by Gate 0 pill
+        if "Gate 0" in label:
+            continue
         icon = b.get("icon", "")
         badge_type = b.get("type", "info")
         badges.append(
@@ -1159,12 +1229,19 @@ def render_sidebar_gate_pills(convergence: dict, has_scenarios: bool = True) -> 
         st = gate.get("status", "failing")
         pill_class = "pass" if st == "passing" else "fail"
         icon = "&#x2713;" if st == "passing" else "&#x2717;"
-        # Short label: extract gate number or use full name
-        short = name.split("\u2014")[0].strip() if "\u2014" in name else name
+        # Short label: "Gate 1 — CI" → "Gate 1 CI", include descriptor
+        if "\u2014" in name:
+            parts = name.split("\u2014", 1)
+            short = f"{parts[0].strip()} {parts[1].strip()}"
+        else:
+            short = name
+        # Tooltip: full gate name + status text (e.g. "Gate 1 — CI: 4/4 checks passing")
+        status_text = gate.get("statusText", "")
+        tooltip = f"{name}: {status_text}" if status_text else name
         pills.append(
             f'<span class="sb-gate-pill {pill_class}" '
             f"onclick=\"scrollToGate('{esc(name)}')\" "
-            f'title="{esc(name)}">'
+            f'title="{esc(tooltip)}">'
             f"{icon} {esc(short)}</span>"
         )
     if not pills:
@@ -1422,6 +1499,7 @@ AGENT_PARADIGM_DESC = {
     "AD": "Adversarial: gaming, spec violations, architecture",
     "AR": "Architecture: zone coverage, coupling, structural changes",
     "MA": "Main Agent: primary review agent",
+    "RB": "RBE: responsibility boundaries, naming, type clarity",
 }
 
 AGENT_SHORT_NAME = {
@@ -1431,6 +1509,7 @@ AGENT_SHORT_NAME = {
     "AD": "Adversarial",
     "AR": "Architecture",
     "MA": "Main Agent",
+    "RB": "RBE",
 }
 
 
@@ -1547,6 +1626,9 @@ def render_key_findings(data: dict) -> str:
         )
     pills += "</div>"
     parts.append(pills)
+
+    # Agent team legend
+    parts.append(render_agentic_legend())
 
     # No match message
     parts.append(
@@ -1797,6 +1879,7 @@ def render_code_review_list(data: dict) -> str:
         ("TI", "test-integrity", "Test Integrity"),
         ("AD", "adversarial", "Adversarial"),
         ("AR", "architecture", "Architecture"),
+        ("RB", "rbe", "Rules-Based Evaluation"),
     ]
 
     # Map agent keys in fileCoverage to abbreviations
@@ -1806,6 +1889,7 @@ def render_code_review_list(data: dict) -> str:
         "test-integrity": "TI",
         "adversarial": "AD",
         "architecture": "AR",
+        "rbe": "RB",
     }
 
     # Build findings lookup by file path (for detail expansion)
@@ -2138,6 +2222,9 @@ def render(
         ),
         "<!-- INJECT: architecture zones, labels, arrows from DATA.architecture -->": (
             render_architecture_svg(data.get("architecture", {}))
+        ),
+        "<!-- INJECT: architecture.legend -->": render_architecture_legend(
+            data.get("architecture", {}).get("zones", [])
         ),
         "<!-- INJECT: specification items from DATA.specs -->": render_spec_list(
             data.get("specs", [])

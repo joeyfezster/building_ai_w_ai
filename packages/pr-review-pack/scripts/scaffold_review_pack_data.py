@@ -21,6 +21,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import html as html_mod
 import json
 import subprocess
 import sys
@@ -47,12 +48,9 @@ def _get_repo_slug(override: str | None = None) -> str:
 
 # ── Zone position layout ────────────────────────────────────────────
 # Deterministic: category → row, sequential x within row.
-ROW_Y = {"factory": 30, "product": 160, "infra": 290}
-ROW_LABELS = [
-    {"text": "INFRASTRUCTURE", "position": {"x": -95, "y": ROW_Y["factory"] + 5}},
-    {"text": "PRODUCT CODE", "position": {"x": -95, "y": ROW_Y["product"] + 5}},
-    {"text": "INFRA", "position": {"x": -95, "y": ROW_Y["infra"] + 5}},
-]
+# Row Y positions and labels are derived dynamically from zone registry categories.
+ROW_HEIGHT_SPACING = 130
+ROW_START_Y = 30
 ZONE_WIDTH = 120
 ZONE_HEIGHT = 70
 ZONE_GAP = 10
@@ -124,8 +122,9 @@ def build_header(
     repo_slug: str = "",
 ) -> dict:
     """Build the header section from deterministic sources."""
-    # Gate 0 badge
-    if gate0_data:
+    # Gate 0 badge — factory-only, omit entirely for non-factory repos
+    g0_badge = None
+    if gate0_data is not None:
         summary = gate0_data.get("summary", {})
         has_critical = summary.get("has_critical", False)
         g0_type = "fail" if has_critical else "pass"
@@ -133,10 +132,7 @@ def build_header(
         warn = summary.get("warning_findings", 0)
         g0_label = f"Gate 0: {crit} critical, {warn} warn"
         g0_icon = "\u2717" if has_critical else "\u2713"
-    else:
-        g0_type = "warn"
-        g0_label = "Gate 0 NOT RUN"
-        g0_icon = "\u26a0"
+        g0_badge = {"label": g0_label, "type": g0_type, "icon": g0_icon}
 
     # CI badge
     ci_total = len(ci_checks)
@@ -179,8 +175,8 @@ def build_header(
         "deletions": diff_data.get("total_deletions", pr_meta.get("deletions", 0)),
         "filesChanged": diff_data.get("total_files", pr_meta.get("changedFiles", 0)),
         "commits": num_commits,
-        "statusBadges": [
-            {"label": g0_label, "type": g0_type, "icon": g0_icon},
+        "statusBadges": [b for b in [
+            g0_badge,
             {
                 "label": f"CI {ci_pass}/{ci_total}",
                 "type": ci_type,
@@ -198,7 +194,7 @@ def build_header(
                 "type": cm_type,
                 "icon": "\u2713" if cm_type == "pass" else "\u26a0",
             },
-        ],
+        ] if b is not None],
         "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "generatedBy": "dark factory review agent",
     }
@@ -226,13 +222,31 @@ def build_architecture(zones_registry: dict, diff_data: dict) -> dict:
         for f in unzoned_files:
             print(f"  - {f}", file=sys.stderr)
 
+    # Discover distinct categories in order of first appearance
+    seen_categories: list[str] = []
+    for zone_def in zones_registry.values():
+        cat = zone_def.get("category", "product")
+        if cat not in seen_categories:
+            seen_categories.append(cat)
+
+    # Build dynamic row_y mapping and row_labels from categories
+    row_y: dict[str, int] = {}
+    row_labels: list[dict] = []
+    for idx, cat in enumerate(seen_categories):
+        y = ROW_START_Y + idx * ROW_HEIGHT_SPACING
+        row_y[cat] = y
+        label_text = cat.upper().replace("-", " ").replace("_", " ")
+        row_labels.append(
+            {"text": label_text, "position": {"x": -95, "y": y + 5}}
+        )
+
     # Layout: group by category row, sequential x placement
     category_x: dict[str, int] = {}
     arch_zones = []
     for zone_id, zone_def in zones_registry.items():
         cat = zone_def.get("category", "product")
         x = category_x.get(cat, X_START)
-        y = ROW_Y.get(cat, ROW_Y["product"])
+        y = row_y.get(cat, ROW_START_Y)
         arch_zones.append(
             {
                 "id": zone_id,
@@ -247,34 +261,24 @@ def build_architecture(zones_registry: dict, diff_data: dict) -> dict:
         )
         category_x[cat] = x + ZONE_WIDTH + ZONE_GAP
 
-    # Simple arrow: factory → first product zone (if both exist)
+    # Chain zones left-to-right within each category row
     arrows = []
-    factory_zones = [z for z in arch_zones if z["category"] == "factory"]
-    product_zones = [z for z in arch_zones if z["category"] == "product"]
-    if factory_zones and product_zones:
-        fz = factory_zones[0]["position"]
-        pz = product_zones[0]["position"]
-        arrows.append(
-            {
-                "from": {"x": fz["x"] + fz["width"] // 2, "y": fz["y"] + fz["height"]},
-                "to": {"x": pz["x"] + pz["width"] // 2, "y": pz["y"]},
-            }
-        )
-    # Chain product zones left-to-right
-    for i in range(len(product_zones) - 1):
-        p1 = product_zones[i]["position"]
-        p2 = product_zones[i + 1]["position"]
-        arrows.append(
-            {
-                "from": {"x": p1["x"] + p1["width"], "y": p1["y"] + p1["height"] // 2},
-                "to": {"x": p2["x"], "y": p2["y"] + p2["height"] // 2},
-            }
-        )
+    for cat in seen_categories:
+        cat_zones = [z for z in arch_zones if z["category"] == cat]
+        for i in range(len(cat_zones) - 1):
+            p1 = cat_zones[i]["position"]
+            p2 = cat_zones[i + 1]["position"]
+            arrows.append(
+                {
+                    "from": {"x": p1["x"] + p1["width"], "y": p1["y"] + p1["height"] // 2},
+                    "to": {"x": p2["x"], "y": p2["y"] + p2["height"] // 2},
+                }
+            )
 
     return {
         "zones": arch_zones,
         "arrows": arrows,
-        "rowLabels": ROW_LABELS,
+        "rowLabels": row_labels,
         "unzonedFiles": unzoned_files,
     }
 
@@ -543,6 +547,20 @@ def build_convergence(
         gate1_pass = False
         gate1_text = "No CI checks found"
 
+    # Build Gate 1 detail: list CI check names + link to CI section
+    if ci_checks:
+        ci_names = [html_mod.escape(c.get("name", "unknown")) for c in ci_checks]
+        gate1_detail = (
+            '<div class="gate-detail-content">'
+            '<p><a onclick="scrollToSection(\'section-ci-performance\')" '
+            'style="cursor:pointer;color:var(--blue);text-decoration:underline">'
+            "View full CI details below</a></p>"
+            "<ul>" + "".join(f"<li>{n}</li>" for n in ci_names) + "</ul>"
+            "</div>"
+        )
+    else:
+        gate1_detail = "<p>No CI checks found.</p>"
+
     # --- Gate 2: Deterministic Review ---
     if deterministic_review_data:
         det_status = deterministic_review_data.get("overall_status", "pass")
@@ -560,13 +578,38 @@ def build_convergence(
         gate2_detail = "Run: python run_deterministic_review.py --repo ."
         gate2_tool_results = []
 
+    # Build Gate 2 detail: describe static analysis tools
+    gate2_detail_html = (
+        '<div class="gate-detail-content">'
+        "<p>Static analysis tools: vulture (dead code), bandit (security), "
+        "ruff (lint), mypy (types), test quality scanner.</p>"
+        "<p>" + html_mod.escape(gate2_detail) + "</p>"
+        "<p>Run <code>python run_deterministic_review.py --repo .</code> "
+        "to execute locally.</p>"
+        "</div>"
+    )
+
     # --- Gate 3: Agentic Review (placeholder — filled by assembler) ---
     gate3_pass = True  # assembler updates this based on reviewer grades
     gate3_text = "Pending"
+    gate3_detail = (
+        '<div class="gate-detail-content">'
+        "<p>6 specialized review agents analyze the diff in parallel.</p>"
+        '<p><a onclick="scrollToSection(\'section-agentic-review\')" '
+        'style="cursor:pointer;color:var(--blue);text-decoration:underline">'
+        "View review findings below</a></p>"
+        "</div>"
+    )
 
     # --- Gate 4: PR Comments (placeholder — filled by prerequisite check) ---
     gate4_pass = True  # prerequisite check updates this
     gate4_text = "Pending"
+    gate4_detail = (
+        '<div class="gate-detail-content">'
+        "<p>All PR review threads must be resolved before merge.</p>"
+        "<p>Check the PR page on GitHub for unresolved threads.</p>"
+        "</div>"
+    )
 
     # Universal gates (always present)
     gates = [
@@ -575,28 +618,30 @@ def build_convergence(
             "status": "passing" if gate1_pass else "failing",
             "statusText": gate1_text,
             "summary": "Repo CI checks on PR HEAD",
-            "detail": "",
+            "detail": gate1_detail,
         },
         {
             "name": "Gate 2 \u2014 Deterministic",
             "status": "passing" if gate2_pass else "failing",
             "statusText": gate2_text,
             "summary": gate2_detail,
-            "detail": json.dumps(gate2_tool_results) if gate2_tool_results else "",
+            "detail": (
+                json.dumps(gate2_tool_results) if gate2_tool_results else gate2_detail_html
+            ),
         },
         {
             "name": "Gate 3 \u2014 Agentic Review",
             "status": "passing" if gate3_pass else "failing",
             "statusText": gate3_text,
-            "summary": "5 reviewers + synthesis",
-            "detail": "",
+            "summary": "6 reviewers + synthesis",
+            "detail": gate3_detail,
         },
         {
             "name": "Gate 4 \u2014 Comments",
             "status": "passing" if gate4_pass else "failing",
             "statusText": gate4_text,
             "summary": "All PR review threads resolved",
-            "detail": "",
+            "detail": gate4_detail,
         },
     ]
 
