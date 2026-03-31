@@ -58,6 +58,8 @@ This matters because both humans and agents have finite attention. Well-defined 
 
 ## Output Format
 
+**FileReviewOutcome files must be EXACT paths** — one per file in the diff. No glob patterns (`*`, `?`), no directory paths (`src/`), no "(N files)" summaries. The validator will reject them.
+
 Use the standard review concept output format. For each finding:
 - `grade`: A/B/B+/C/F based on severity above
 - `notable`: one-line summary of the boundary issue

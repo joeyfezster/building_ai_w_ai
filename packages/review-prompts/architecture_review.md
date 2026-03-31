@@ -78,6 +78,8 @@ Your output is **hybrid** — three parts, all written to your .jsonl file at `{
 
 Every file in the diff MUST get a FileReviewOutcome line. Grade from the architecture perspective:
 
+**FileReviewOutcome files must be EXACT paths** — one per file in the diff. No glob patterns (`*`, `?`), no directory paths (`src/`), no "(N files)" summaries. The validator will reject them.
+
 ```json
 {"_type": "file_review", "file": "src/new_module/core.py", "grade": "C", "summary": "Unzoned file in new directory — needs zone-registry.yaml update"}
 {"_type": "file_review", "file": "src/agents/dqn.py", "grade": "A", "summary": "Well-placed in agent zone, no structural concerns"}
