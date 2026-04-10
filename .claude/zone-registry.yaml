@@ -1,6 +1,6 @@
 zones:
   environment:
-    paths: ["src/envs/**"]
+    paths: ["src/__init__.py", "src/envs/**"]
     specs: ["specs/env.md"]
     category: product
     label: "Environment"
@@ -42,13 +42,32 @@ zones:
     label: "Tests"
     sublabel: "pytest suite"
   config:
-    paths: ["configs/**", "pyproject.toml", "Makefile", "requirements*.in", "requirements*.txt"]
+    paths:
+      - "configs/**"
+      - "pyproject.toml"
+      - "Makefile"
+      - "requirements*.in"
+      - "requirements*.txt"
+      - ".pre-commit-config.yaml"
+      - ".gitignore"
+      - ".gitattributes"
+      - ".githooks/**"
     specs: []
     category: infra
     label: "Config"
     sublabel: "Build, deps, project config"
   repo-infra:
-    paths: [".github/**", ".claude/skills/**", ".claude/zone-registry.yaml", "docs/proposals/**", "docs/factory_validation_strategy.md", "CLAUDE.md"]
+    paths:
+      - ".github/**"
+      - ".claude/skills/**"
+      - ".claude/zone-registry.yaml"
+      - ".claude/launch.json"
+      - "CLAUDE.md"
+      - "README.md"
+      - "LICENSE"
+      - "NOTICE"
+      - "ProjectLeadAsks.md"
+      - "agents/**"
     specs: []
     category: factory
     label: "Repo Infra"
@@ -66,7 +85,11 @@ zones:
     label: "Docker/Infra"
     sublabel: "Containers, compute"
   review-pack:
-    paths: ["packages/pr-review-pack/**", "docs/pr*_review_pack.html", "docs/pr*_diff_data.json"]
+    paths:
+      - "packages/pr-review-pack/**"
+      - "docs/pr*_review_pack*.html"
+      - "docs/pr*_diff_data.json"
+      - "docs/reviews/**"
     specs: ["packages/pr-review-pack/references/build-spec.md"]
     category: factory
     label: "Review Pack"
@@ -85,7 +108,14 @@ zones:
     label: "Dark Factory"
     sublabel: "Factory convergence loop, gate artifacts"
   docs:
-    paths: ["docs/*.md", "docs/*.html", "docs/*.py", "docs/decisions/**", "docs/whitepapers/**"]
+    paths:
+      - "docs/*.md"
+      - "docs/*.html"
+      - "docs/*.py"
+      - "docs/decisions/**"
+      - "docs/whitepapers/**"
+      - "docs/proposals/**"
+      - "docs/research/**"
     specs: []
     category: infra
     label: "Documentation"
@@ -102,3 +132,9 @@ zones:
     category: product
     label: "Interactive Play"
     sublabel: "Human vs agent gameplay"
+  demo-packs:
+    paths: ["demo_pack/**", "demo_packs/**"]
+    specs: []
+    category: product
+    label: "Demo Packs"
+    sublabel: "Packaged demos and milestone artifacts"
