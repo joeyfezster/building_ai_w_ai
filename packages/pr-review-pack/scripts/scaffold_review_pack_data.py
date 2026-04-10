@@ -23,28 +23,19 @@ from __future__ import annotations
 import argparse
 import html as html_mod
 import json
-import subprocess
 import sys
 import time
-from datetime import UTC, datetime
-from fnmatch import fnmatch
 from pathlib import Path
 
 import yaml
-
-
-def _get_repo_slug(override: str | None = None) -> str:
-    """Return owner/repo from CLI flag or git remote origin."""
-    if override:
-        return override
-    url = subprocess.check_output(["git", "remote", "get-url", "origin"], text=True).strip()
-    # SCP-style (git@host:owner/repo.git) has no scheme prefix
-    if ":" in url and not url.startswith(("https://", "http://", "ssh://")):
-        slug = url.split(":")[-1]
-    else:
-        slug = "/".join(url.split("/")[-2:])
-    return slug.removesuffix(".git")
-
+from _utils import (
+    _get_repo_slug,
+    format_time,
+    health_tag,
+    match_file_to_zones,
+    parse_ci_time,
+    run_gh,
+)
 
 # ── Zone position layout ────────────────────────────────────────────
 # Deterministic: category → row, sequential x within row.
@@ -55,57 +46,6 @@ ZONE_WIDTH = 120
 ZONE_HEIGHT = 70
 ZONE_GAP = 10
 X_START = 20
-
-
-# ── Helpers ─────────────────────────────────────────────────────────
-
-
-def run_gh(args: list[str]) -> str:
-    """Run a gh CLI command and return stdout."""
-    result = subprocess.run(["gh"] + args, capture_output=True, text=True, timeout=30)
-    if result.returncode != 0:
-        print(f"WARNING: gh {' '.join(args)} failed: {result.stderr}", file=sys.stderr)
-        return ""
-    return result.stdout.strip()
-
-
-def match_file_to_zones(filepath: str, zones: dict) -> list[str]:
-    """Match a file path to zone IDs using glob patterns."""
-    matched = []
-    for zone_id, zone_def in zones.items():
-        for pattern in zone_def.get("paths", []):
-            if fnmatch(filepath, pattern):
-                matched.append(zone_id)
-                break
-    return matched
-
-
-def health_tag(seconds: float) -> str:
-    if seconds < 60:
-        return "normal"
-    if seconds < 300:
-        return "acceptable"
-    if seconds < 600:
-        return "watch"
-    return "refactor"
-
-
-def format_time(seconds: float) -> str:
-    if seconds < 60:
-        return f"{seconds:.0f}s"
-    m, s = divmod(int(seconds), 60)
-    return f"{m}m {s}s"
-
-
-def parse_ci_time(started: str, completed: str) -> float:
-    """Parse ISO timestamps and return duration in seconds."""
-    fmt = "%Y-%m-%dT%H:%M:%SZ"
-    try:
-        start = datetime.strptime(started, fmt).replace(tzinfo=UTC)
-        end = datetime.strptime(completed, fmt).replace(tzinfo=UTC)
-        return max((end - start).total_seconds(), 0)
-    except (ValueError, TypeError):
-        return 0
 
 
 # ── Builders ────────────────────────────────────────────────────────

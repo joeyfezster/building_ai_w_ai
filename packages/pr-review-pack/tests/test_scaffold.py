@@ -13,6 +13,7 @@ from pathlib import Path
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
+from _utils import health_tag, match_file_to_zones
 from scaffold_review_pack_data import (
     build_architecture,
     build_category_zone_map,
@@ -22,8 +23,6 @@ from scaffold_review_pack_data import (
     build_scenarios,
     compute_status,
     compute_verdict,
-    health_tag,
-    match_file_to_zones,
 )
 
 _HEALTHY_AA = {"overallHealth": "healthy"}
