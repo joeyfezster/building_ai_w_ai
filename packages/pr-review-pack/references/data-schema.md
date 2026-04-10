@@ -89,6 +89,16 @@ interface PRHeader {
   statusBadges: StatusBadge[];      // top-level status indicators
   generatedAt: string;              // ISO 8601 timestamp
   generatedBy: string;              // "dark factory review agent"
+  realWorkStats: RealWorkStats | null;  // null when no self-artifacts in diff
+}
+
+// Real-work stats exclude review-pack self-artifacts (docs/pr*_review_pack*,
+// docs/pr*_diff_data*, docs/reviews/**, zone-registry.yaml) so the reviewer
+// sees actual code changes. Only present when numbers differ from totals.
+interface RealWorkStats {
+  additions: number;                // lines added (excluding self-artifacts)
+  deletions: number;                // lines deleted (excluding self-artifacts)
+  filesChanged: number;             // files changed (excluding self-artifacts)
 }
 
 interface StatusBadge {
