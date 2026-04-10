@@ -17,6 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from render_review_pack import (
+    render_architecture_svg,
     render_sidebar_commit_scope,
     render_sidebar_gate_pills,
     render_sidebar_merge_button,
@@ -123,7 +124,11 @@ class TestRenderSidebarStatusBadges:
         header = sample_review_pack_data["header"]
         result = render_sidebar_status_badges(header)
         for badge in header.get("statusBadges", []):
-            assert badge["label"] in result
+            label = badge["label"]
+            # CI and Gate 0 badges are filtered (covered by gate pills)
+            if label.startswith("CI") or "Gate 0" in label:
+                continue
+            assert label in result
 
     def test_badge_types(self, sample_review_pack_data):
         header = sample_review_pack_data["header"]
@@ -328,7 +333,7 @@ class TestRenderSidebarGatePills:
     def test_pills_rendered(self, sample_review_pack_data):
         convergence = sample_review_pack_data["convergence"]
         result = render_sidebar_gate_pills(convergence)
-        assert result.count('class="sb-gate-pill ') == 4
+        assert result.count('class="sb-gate-pill ') == 5
 
     def test_passing_pill_class(self, sample_review_pack_data):
         convergence = sample_review_pack_data["convergence"]
@@ -599,3 +604,161 @@ class TestRenderSidebarSectionNav:
         result = render_sidebar_section_nav(data)
         # 3 iterations → count badge with "3"
         assert ">3<" in result
+
+
+# ── Sidebar pill dedup, tooltips, descriptive names ────────────────
+
+
+class TestSidebarPillDedup:
+    def test_no_ci_in_status_badges(self):
+        """CI badge should NOT appear in status badges — covered by Gate 1 pill."""
+        header = {
+            "statusBadges": [
+                {"label": "CI 4/4", "type": "pass", "icon": "✓"},
+                {"label": "3/3 comments resolved", "type": "pass", "icon": "✓"},
+            ]
+        }
+        result = render_sidebar_status_badges(header)
+        assert "CI 4/4" not in result
+        assert "comments resolved" in result
+
+    def test_no_gate0_in_status_badges(self):
+        """Gate 0 badge should NOT appear in status badges — covered by Gate 0 pill."""
+        header = {
+            "statusBadges": [
+                {"label": "Gate 0: 0 critical, 2 warn", "type": "pass", "icon": "✓"},
+                {"label": "CI 4/4", "type": "pass", "icon": "✓"},
+                {"label": "3/3 comments resolved", "type": "pass", "icon": "✓"},
+            ]
+        }
+        result = render_sidebar_status_badges(header)
+        assert "Gate 0" not in result
+
+    def test_gate_pills_have_descriptive_names(self):
+        """Gate pills should include the descriptor, not just 'Gate 1'."""
+        convergence = {
+            "gates": [
+                {
+                    "name": "Gate 1 \u2014 CI",
+                    "status": "passing",
+                    "statusText": "4/4 checks passing",
+                },
+                {
+                    "name": "Gate 2 \u2014 Deterministic",
+                    "status": "passing",
+                    "statusText": "Not run",
+                },
+            ]
+        }
+        result = render_sidebar_gate_pills(convergence)
+        assert "CI" in result
+        assert "Deterministic" in result
+
+    def test_gate_pills_have_tooltips_with_status(self):
+        """Gate pills should have title attribute with gate name and status text."""
+        convergence = {
+            "gates": [
+                {
+                    "name": "Gate 1 \u2014 CI",
+                    "status": "passing",
+                    "statusText": "4/4 checks passing",
+                },
+            ]
+        }
+        result = render_sidebar_gate_pills(convergence)
+        assert "title=" in result
+        assert "4/4 checks passing" in result
+
+
+# ── Unzoned file signal reconciliation with architecture assessment ──
+
+
+class TestUnzonedSignalReconciliation:
+    """When the architecture assessment says 'healthy' but unzoned files exist,
+    the SVG warning should render in amber (#d97706) instead of red (#ef4444).
+    The sidebar chip class is handled in template JS, tested here via SVG proxy.
+    """
+
+    _ARCH_WITH_UNZONED = {
+        "zones": [
+            {
+                "id": "core",
+                "category": "product",
+                "label": "Core",
+                "sublabel": "Core module",
+                "isModified": True,
+                "fileCount": 3,
+                "position": {"x": 10, "y": 10, "width": 120, "height": 50},
+            },
+        ],
+        "unzonedFiles": ["zone-registry.yaml"],
+        "arrows": [],
+    }
+
+    def test_unzoned_svg_amber_when_healthy(self):
+        """SVG unzoned warning uses amber color when assessment is healthy."""
+        result = render_architecture_svg(
+            self._ARCH_WITH_UNZONED, assessment_health="healthy"
+        )
+        assert "1 file(s) not in any zone" in result
+        assert 'fill="#d97706"' in result
+        assert 'fill="#ef4444"' not in result
+
+    def test_unzoned_svg_red_when_needs_attention(self):
+        """SVG unzoned warning uses red color when assessment needs attention."""
+        result = render_architecture_svg(
+            self._ARCH_WITH_UNZONED, assessment_health="needs-attention"
+        )
+        assert "1 file(s) not in any zone" in result
+        assert 'fill="#ef4444"' in result
+        assert 'fill="#d97706"' not in result
+
+    def test_unzoned_svg_red_when_action_required(self):
+        """SVG unzoned warning uses red color when assessment is action-required."""
+        result = render_architecture_svg(
+            self._ARCH_WITH_UNZONED, assessment_health="action-required"
+        )
+        assert 'fill="#ef4444"' in result
+
+    def test_unzoned_svg_red_when_no_assessment(self):
+        """SVG unzoned warning defaults to red when no assessment provided."""
+        result = render_architecture_svg(self._ARCH_WITH_UNZONED)
+        assert 'fill="#ef4444"' in result
+
+    def test_no_unzoned_no_warning_regardless_of_health(self):
+        """No unzoned files means no warning text at all."""
+        arch = {
+            "zones": [
+                {
+                    "id": "core",
+                    "category": "product",
+                    "label": "Core",
+                    "sublabel": "Core module",
+                    "isModified": True,
+                    "fileCount": 3,
+                    "position": {"x": 10, "y": 10, "width": 120, "height": 50},
+                },
+            ],
+            "unzonedFiles": [],
+            "arrows": [],
+        }
+        result = render_architecture_svg(arch, assessment_health="healthy")
+        assert "not in any zone" not in result
+
+    def test_template_has_unzoned_info_css_class(self):
+        """The v2 template includes the unzoned-info CSS class for healthy state."""
+        template_path = (
+            Path(__file__).parent.parent / "assets" / "template_v2.html"
+        )
+        content = template_path.read_text()
+        assert ".sb-arch-chip.unzoned-info" in content
+
+    def test_template_js_checks_overall_health(self):
+        """The v2 template JS selects unzoned-info class when health is healthy."""
+        template_path = (
+            Path(__file__).parent.parent / "assets" / "template_v2.html"
+        )
+        content = template_path.read_text()
+        assert "overallHealth" in content
+        assert "unzoned-info" in content
+        assert "'healthy'" in content

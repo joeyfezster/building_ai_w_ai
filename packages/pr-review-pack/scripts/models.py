@@ -64,6 +64,7 @@ class FindingCategory(StrEnum):
     ADVERSARIAL = "adversarial"
     ARCHITECTURE = "architecture"
     CROSS_CUTTING = "cross-cutting"  # synthesis agent
+    RBE = "rbe"
 
 
 # ---------------------------------------------------------------------------
@@ -103,6 +104,23 @@ class FileReviewOutcome(BaseModel):
         default=True,
         description="Whether the reviewer actually examined this file (false for skip/N/A)",
     )
+
+    @field_validator("file")
+    @classmethod
+    def validate_exact_file_path(cls, v: str) -> str:
+        """Reject glob patterns and directory paths — must be exact file path."""
+        glob_chars = {"*", "?", "[", "]"}
+        if any(c in v for c in glob_chars):
+            raise ValueError(
+                f"File path '{v}' contains glob characters. "
+                "FileReviewOutcome requires exact file paths, not patterns."
+            )
+        if v.endswith("/"):
+            raise ValueError(
+                f"File path '{v}' is a directory path. "
+                "FileReviewOutcome requires exact file paths."
+            )
+        return v
 
 
 # ---------------------------------------------------------------------------
@@ -565,6 +583,12 @@ class ArchitectureAssessmentOutput(BaseModel):
     decision_zone_verification: list[DecisionVerification] = Field(
         default_factory=list,
         alias="decisionZoneVerification",
+    )
+
+    core_issues_need_attention: bool = Field(
+        default=False,
+        alias="coreIssuesNeedAttention",
+        description="Explicit flag controlling the 'Needs Attention' pill in Core Issues",
     )
 
     overall_health: Literal["healthy", "needs-attention", "action-required"] = Field(

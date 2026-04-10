@@ -78,6 +78,8 @@ Your output is **hybrid** — two parts, both written to your .jsonl file at `{o
 
 Every file in the diff MUST get a FileReviewOutcome line. This provides exhaustive per-file coverage.
 
+**FileReviewOutcome files must be EXACT paths** — one per file in the diff. No glob patterns (`*`, `?`), no directory paths (`src/`), no "(N files)" summaries. The validator will reject them.
+
 ```json
 {"_type": "file_review", "file": "src/module/core.py", "grade": "A", "summary": "Clean implementation, no code health issues"}
 {"_type": "file_review", "file": "src/module/utils.py", "grade": "C", "summary": "God function at line 45 with CC=14 and 5 levels of nesting"}

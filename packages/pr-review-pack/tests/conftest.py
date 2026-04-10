@@ -206,6 +206,9 @@ def sample_review_pack_data() -> dict:
                     "zones": "zone-alpha",
                     "notable": "Clean implementation, good separation of concerns.",
                     "detail": "No issues found.",
+                    "locations": [
+                        {"file": "src/alpha/core.py", "lines": "1-30", "comment": None},
+                    ],
                 },
                 {
                     "file": "src/alpha/core.py",
@@ -215,6 +218,26 @@ def sample_review_pack_data() -> dict:
                     "zones": "zone-alpha",
                     "notable": "Unsanitized input in handler.",
                     "detail": "Input validation missing on line 45.",
+                    # 3 locations: 2 different files, one file with 2 line ranges
+                    "locations": [
+                        {"file": "src/alpha/core.py", "lines": "45-62", "comment": None},
+                        {"file": "src/middleware/validate.py", "lines": "12-18", "comment": None},
+                        {"file": "src/alpha/core.py", "lines": "120-135", "comment": None},
+                    ],
+                },
+                {
+                    "file": "src/models.py",
+                    "agent": "rbe",
+                    "grade": "B",
+                    "gradeSortOrder": 3,
+                    "zones": "zone-alpha",
+                    "notable": "Generic dict return type",
+                    "detail": "Return type should be a Pydantic model or TypedDict.",
+                    # 2 locations in different files
+                    "locations": [
+                        {"file": "src/models.py", "lines": "10-25", "comment": None},
+                        {"file": "src/alpha/core.py", "lines": "80-85", "comment": None},
+                    ],
                 },
             ],
         },
@@ -276,28 +299,49 @@ def sample_review_pack_data() -> dict:
                     "status": "passing",
                     "statusText": "Tier 1: 5/5 checks, 0 critical, 2 warn",
                     "summary": "All deterministic checks passed.",
-                    "detail": "",
+                    "detail": (
+                        "<p>Tier 1 ran 5 deterministic"
+                        " tool checks. Tier 2 ran 6 LLM"
+                        " review agents. No critical"
+                        " findings.</p>"
+                    ),
                 },
                 {
-                    "name": "Gate 1 \u2014 Deterministic",
+                    "name": "Gate 1 \u2014 CI",
                     "status": "passing",
-                    "statusText": "PASSING",
+                    "statusText": "4/4 checks green",
                     "summary": "Lint, type, test all green.",
-                    "detail": "",
+                    "detail": (
+                        '<p>All CI checks passed. See '
+                        '<a href="#section-ci-performance">'
+                        "CI Performance</a> for"
+                        " details.</p>"
+                    ),
                 },
                 {
-                    "name": "Gate 2 \u2014 NFR",
+                    "name": "Gate 2 \u2014 Deterministic Tools",
                     "status": "passing",
                     "statusText": "PASS",
                     "summary": "Non-functional requirements met.",
-                    "detail": "",
+                    "detail": "<p>5 deterministic tool checks ran. All passed.</p>",
                 },
                 {
-                    "name": "Gate 3 \u2014 Scenarios",
+                    "name": "Gate 3 \u2014 Agentic Review",
                     "status": "passing",
-                    "statusText": "5/5 (100%)",
-                    "summary": "5 of 5 holdout scenarios pass.",
-                    "detail": "",
+                    "statusText": "6 reviewers, all clear",
+                    "summary": "6 LLM review agents found no critical issues.",
+                    "detail": (
+                        "<p>6 agents reviewed the diff."
+                        ' See <a href="#section-key-findings">'
+                        "Key Findings</a> for details.</p>"
+                    ),
+                },
+                {
+                    "name": "Gate 4 \u2014 Comments",
+                    "status": "passing",
+                    "statusText": "3/3 comments resolved",
+                    "summary": "All PR comments addressed and resolved.",
+                    "detail": '<p>3 comment threads on the PR, all resolved.</p>',
                 },
             ],
             "overall": {
@@ -350,6 +394,7 @@ def sample_review_pack_data() -> dict:
             ],
             "overallHealth": "needs-attention",
             "summary": "<p>1 unzoned file and 1 registry warning.</p>",
+            "coreIssuesNeedAttention": True,
         },
         "status": {
             "value": "ready",

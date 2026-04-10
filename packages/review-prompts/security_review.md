@@ -85,6 +85,8 @@ Your output is **hybrid** — two parts, both written to your .jsonl file at `{o
 
 Every file in the diff MUST get a FileReviewOutcome line.
 
+**FileReviewOutcome files must be EXACT paths** — one per file in the diff. No glob patterns (`*`, `?`), no directory paths (`src/`), no "(N files)" summaries. The validator will reject them.
+
 ```json
 {"_type": "file_review", "file": "src/auth/handler.py", "grade": "F", "summary": "SQL injection via unsanitized user input in query builder"}
 {"_type": "file_review", "file": "src/utils/config.py", "grade": "A", "summary": "No security concerns in configuration loader"}

@@ -71,6 +71,8 @@ Your output is **hybrid** — two parts, both written to your .jsonl file at `{o
 
 Every file in the diff MUST get a FileReviewOutcome line.
 
+**FileReviewOutcome files must be EXACT paths** — one per file in the diff. No glob patterns (`*`, `?`), no directory paths (`src/`), no "(N files)" summaries. The validator will reject them.
+
 ```json
 {"_type": "file_review", "file": "src/agents/dqn.py", "grade": "A", "summary": "Honest implementation, no gaming patterns detected"}
 {"_type": "file_review", "file": "tests/test_agent.py", "grade": "F", "summary": "Test mocks the DQN forward pass — tests the mock, not the network"}

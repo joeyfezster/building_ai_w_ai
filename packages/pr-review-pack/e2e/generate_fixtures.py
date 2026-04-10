@@ -154,6 +154,9 @@ BASE_DATA: dict = {
                 "zones": "zone-alpha",
                 "notable": "Clean implementation, good separation of concerns.",
                 "detail": "No issues found.",
+                "locations": [
+                    {"file": "src/alpha/core.py", "lines": "1-30", "comment": None},
+                ],
             },
             {
                 "file": "src/alpha/core.py",
@@ -163,6 +166,12 @@ BASE_DATA: dict = {
                 "zones": "zone-alpha",
                 "notable": "Unsanitized input in handler.",
                 "detail": "Input validation missing on line 45.",
+                # 3 locations: 2 different files, one file with 2 line ranges
+                "locations": [
+                    {"file": "src/alpha/core.py", "lines": "45-62", "comment": None},
+                    {"file": "src/middleware/validate.py", "lines": "12-18", "comment": None},
+                    {"file": "src/alpha/core.py", "lines": "120-135", "comment": None},
+                ],
             },
             {
                 "file": "src/alpha/core.py",
@@ -172,6 +181,9 @@ BASE_DATA: dict = {
                 "zones": "zone-alpha",
                 "notable": "Test coverage adequate but edge cases missing.",
                 "detail": "Missing edge case test for null input on line 52.",
+                "locations": [
+                    {"file": "src/alpha/core.py", "lines": "52-55", "comment": None},
+                ],
             },
             {
                 "file": "src/alpha/core.py",
@@ -181,6 +193,9 @@ BASE_DATA: dict = {
                 "zones": "zone-alpha",
                 "notable": "No adversarial concerns.",
                 "detail": "Code is clean.",
+                "locations": [
+                    {"file": "src/alpha/core.py", "lines": "1-100", "comment": None},
+                ],
             },
             {
                 "file": "src/alpha/core.py",
@@ -190,6 +205,36 @@ BASE_DATA: dict = {
                 "zones": "zone-alpha",
                 "notable": "Properly scoped within zone-alpha.",
                 "detail": "No architectural issues.",
+                "locations": [
+                    {"file": "src/alpha/core.py", "lines": "1-100", "comment": None},
+                ],
+            },
+            {
+                "file": "src/alpha/core.py",
+                "agent": "rbe",
+                "grade": "B",
+                "gradeSortOrder": 3,
+                "zones": "zone-alpha",
+                "notable": "Generic dict return type could be stricter.",
+                "detail": "Consider using TypedDict or a dataclass for the return value.",
+                "locations": [
+                    {"file": "src/alpha/core.py", "lines": "80-95", "comment": None},
+                ],
+            },
+            # ── src/models.py ──
+            {
+                "file": "src/models.py",
+                "agent": "rbe",
+                "grade": "B",
+                "gradeSortOrder": 3,
+                "zones": "zone-alpha",
+                "notable": "Generic dict return type",
+                "detail": "Return type should be a Pydantic model or TypedDict.",
+                # 2 locations in different files
+                "locations": [
+                    {"file": "src/models.py", "lines": "10-25", "comment": None},
+                    {"file": "src/alpha/core.py", "lines": "80-85", "comment": None},
+                ],
             },
             # ── infra/deploy.sh ──
             {
@@ -200,6 +245,9 @@ BASE_DATA: dict = {
                 "zones": "zone-gamma",
                 "notable": "Script follows conventions.",
                 "detail": "Clean bash script.",
+                "locations": [
+                    {"file": "infra/deploy.sh", "lines": "1-50", "comment": None},
+                ],
             },
             {
                 "file": "infra/deploy.sh",
@@ -209,6 +257,9 @@ BASE_DATA: dict = {
                 "zones": "zone-gamma",
                 "notable": "Credentials handled safely.",
                 "detail": "Uses env vars for secrets, which is acceptable.",
+                "locations": [
+                    {"file": "infra/deploy.sh", "lines": "30-42", "comment": None},
+                ],
             },
             {
                 "file": "infra/deploy.sh",
@@ -218,6 +269,9 @@ BASE_DATA: dict = {
                 "zones": "zone-gamma",
                 "notable": "Infrastructure scripts excluded from coverage.",
                 "detail": "N/A for infrastructure.",
+                "locations": [
+                    {"file": "infra/deploy.sh", "lines": None, "comment": None},
+                ],
             },
             {
                 "file": "infra/deploy.sh",
@@ -227,6 +281,9 @@ BASE_DATA: dict = {
                 "zones": "zone-gamma",
                 "notable": "Deployment script lacks rollback.",
                 "detail": "No rollback mechanism if deployment fails. Add `set -e` and trap.",
+                "locations": [
+                    {"file": "infra/deploy.sh", "lines": "1-10", "comment": None},
+                ],
             },
             {
                 "file": "infra/deploy.sh",
@@ -236,6 +293,9 @@ BASE_DATA: dict = {
                 "zones": "zone-gamma",
                 "notable": "Properly placed in infra zone.",
                 "detail": "No zone issues.",
+                "locations": [
+                    {"file": "infra/deploy.sh", "lines": None, "comment": None},
+                ],
             },
         ],
     },
@@ -297,28 +357,64 @@ BASE_DATA: dict = {
                 "status": "passing",
                 "statusText": "Tier 1: 5/5 checks, 0 critical, 2 warn",
                 "summary": "All deterministic checks passed.",
-                "detail": "",
+                "detail": (
+                    "<p>Tier 1 ran 5 deterministic tool checks"
+                    " (ruff, mypy, dead-code, complexity, security)."
+                    " Tier 2 ran 6 LLM review agents."
+                    " No critical findings.</p>"
+                ),
             },
             {
-                "name": "Gate 1 \u2014 Deterministic",
+                "name": "Gate 1 \u2014 CI",
                 "status": "passing",
-                "statusText": "PASSING",
+                "statusText": "4/4 checks green",
                 "summary": "Lint, type, test all green.",
-                "detail": "",
+                "detail": (
+                    '<p>All CI checks passed. See '
+                    '<a href="#section-ci-performance">'
+                    "CI Performance</a> for details:"
+                    " lint-and-type-check, test-suite.</p>"
+                ),
             },
             {
-                "name": "Gate 2 \u2014 NFR",
+                "name": "Gate 2 \u2014 Deterministic Tools",
                 "status": "passing",
                 "statusText": "PASS",
                 "summary": "Non-functional requirements met.",
-                "detail": "",
+                "detail": (
+                    "<p>5 deterministic tool checks ran:"
+                    " ruff linting, mypy type checking,"
+                    " dead code detection, cyclomatic complexity,"
+                    " dependency vulnerability scan."
+                    " All passed.</p>"
+                ),
             },
             {
-                "name": "Gate 3 \u2014 Scenarios",
+                "name": "Gate 3 \u2014 Agentic Review",
                 "status": "passing",
-                "statusText": "5/5 (100%)",
-                "summary": "5 of 5 holdout scenarios pass.",
-                "detail": "",
+                "statusText": "6 reviewers, all clear",
+                "summary": "6 LLM review agents found no critical issues.",
+                "detail": (
+                    "<p>6 agents reviewed the diff:"
+                    " Code Health, Security, Test Integrity,"
+                    " Adversarial, Architecture, RBE. See "
+                    '<a href="#section-key-findings">'
+                    "Key Findings</a> for details.</p>"
+                ),
+            },
+            {
+                "name": "Gate 4 \u2014 Comments",
+                "status": "passing",
+                "statusText": "3/3 comments resolved",
+                "summary": "All PR comments addressed and resolved.",
+                "detail": (
+                    "<p>3 comment threads on the PR,"
+                    " all resolved. See "
+                    '<a href="https://github.com/'
+                    'test-org/test-repo/pull/42">'
+                    "PR #42</a> for the full"
+                    " discussion.</p>"
+                ),
             },
         ],
         "overall": {
@@ -395,6 +491,7 @@ BASE_DATA: dict = {
         ],
         "overallHealth": "needs-attention",
         "summary": "<p>1 unzoned file and 1 registry warning.</p>",
+        "coreIssuesNeedAttention": True,
     },
     "verdict": {"status": "ready", "text": "READY"},
     "codeDiffs": [
@@ -527,6 +624,21 @@ def main() -> None:
     gap["commitGap"] = 3
     gap["packMode"] = "live"
     gap["factoryHistory"] = FACTORY_HISTORY
+    # Add an RBE C-grade finding to test status impact
+    gap["agenticReview"]["findings"].append(
+        {
+            "file": "infra/deploy.sh",
+            "agent": "rbe",
+            "grade": "C",
+            "gradeSortOrder": 1,
+            "zones": "zone-gamma",
+            "notable": "Shell script lacks error handling patterns.",
+            "detail": "Missing set -euo pipefail and trap for cleanup.",
+            "locations": [
+                {"file": "infra/deploy.sh", "lines": "1-5", "comment": None},
+            ],
+        }
+    )
     _render_variant(gap, DIFF_DATA, "/tmp/pr26_review_pack_v2_gap.html")
 
     # ── BLOCKED ──
@@ -574,6 +686,18 @@ def main() -> None:
     no_factory["packMode"] = "live"
     no_factory["factoryHistory"] = None
     no_factory["scenarios"] = []
+    # Remove Gate 0 from statusBadges (non-factory packs don't have Gate 0)
+    no_factory["header"]["statusBadges"] = [
+        b
+        for b in no_factory["header"]["statusBadges"]
+        if "Gate 0" not in b["label"]
+    ]
+    # Remove Gate 0 from convergence gates
+    no_factory["convergence"]["gates"] = [
+        g
+        for g in no_factory["convergence"]["gates"]
+        if "Gate 0" not in g["name"]
+    ]
     _render_variant(no_factory, DIFF_DATA, "/tmp/pr26_review_pack_v2_nofactory.html")
 
     print("All 4 E2E fixtures generated.")

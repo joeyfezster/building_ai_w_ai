@@ -17,6 +17,7 @@ from render_review_pack import (
     render_agentic_legend,
     render_agentic_method_badge,
     render_agentic_rows,
+    render_architecture_legend,
     render_architecture_svg,
     render_ci_rows,
     render_convergence_grid,
@@ -25,6 +26,8 @@ from render_review_pack import (
     render_gate_findings_rows,
     render_history_summary_cards,
     render_history_timeline,
+    render_key_findings,
+    render_key_findings_method_badge,
     render_post_merge_items,
     render_review_gates_cards,
     render_scenario_cards,
@@ -410,9 +413,10 @@ class TestRenderAgenticRows:
     def test_grouped_by_file(self, sample_review_pack_data):
         review = sample_review_pack_data["agenticReview"]
         result = render_agentic_rows(review)
-        # Both findings are for the same file, so one master row
-        assert result.count('class="adv-row"') == 1
+        # Two files have findings: src/alpha/core.py (CH, SE) and src/models.py (RB)
+        assert result.count('class="adv-row"') == 2
         assert "src/alpha/core.py" in result
+        assert "src/models.py" in result
 
     def test_agent_badges(self, sample_review_pack_data):
         review = sample_review_pack_data["agenticReview"]
@@ -598,12 +602,13 @@ class TestRenderConvergenceGrid:
         assert "Gate 1" in result
         assert "Gate 2" in result
         assert "Gate 3" in result
+        assert "Gate 4" in result
 
     def test_gate_count(self, sample_review_pack_data):
         convergence = sample_review_pack_data["convergence"]
         result = render_convergence_grid(convergence)
-        # 4 gates + 1 overall = 5 conv-card elements
-        assert result.count('class="conv-card"') == 5
+        # 5 gates + 1 overall = 6 conv-card elements
+        assert result.count('class="conv-card"') == 6
 
     def test_failing_gate(self):
         convergence = {
@@ -793,7 +798,7 @@ class TestRenderReviewGatesCards:
     def test_gate_cards_rendered(self, sample_review_pack_data):
         convergence = sample_review_pack_data["convergence"]
         result = render_review_gates_cards(convergence)
-        assert result.count('class="gate-review-card"') == 4
+        assert result.count('class="gate-review-card"') == 5
 
     def test_gate_names(self, sample_review_pack_data):
         convergence = sample_review_pack_data["convergence"]
@@ -849,3 +854,249 @@ class TestRenderReviewGatesCards:
     def test_empty_gates(self):
         result = render_review_gates_cards({"gates": []})
         assert result == ""
+
+
+# ── render_architecture_legend ──────────────────────────────────────
+
+
+class TestArchitectureLegend:
+    def test_legend_uses_data_categories(self):
+        """Architecture legend should render categories from zone data, not hardcoded."""
+        zones = [
+            {"id": "z1", "category": "backend", "label": "API", "isModified": True},
+            {"id": "z2", "category": "frontend", "label": "UI", "isModified": False},
+        ]
+        result = render_architecture_legend(zones)
+        assert "Backend" in result
+        assert "Frontend" in result
+        assert "Factory" not in result
+
+    def test_legend_no_duplicates(self):
+        """Each category should appear once in the legend."""
+        zones = [
+            {"id": "z1", "category": "product", "label": "A"},
+            {"id": "z2", "category": "product", "label": "B"},
+            {"id": "z3", "category": "infra", "label": "C"},
+        ]
+        result = render_architecture_legend(zones)
+        # "Product" should appear exactly once in legend items
+        assert result.count("Product") == 1
+
+    def test_legend_known_categories_use_fixed_colors(self):
+        """Known categories (factory, product, infra) use predefined colors."""
+        zones = [
+            {"id": "z1", "category": "factory", "label": "F"},
+            {"id": "z2", "category": "product", "label": "P"},
+        ]
+        result = render_architecture_legend(zones)
+        assert "#dbeafe" in result  # factory fill
+        assert "#dcfce7" in result  # product fill
+
+    def test_legend_unknown_category_gets_hsl_color(self):
+        """Unknown categories get deterministic HSL-based colors."""
+        zones = [
+            {"id": "z1", "category": "custom-layer", "label": "C"},
+        ]
+        result = render_architecture_legend(zones)
+        assert "Custom Layer" in result
+        assert "hsl(" in result
+
+    def test_legend_empty_zones(self):
+        """Empty zone list produces legend with only the circle hint."""
+        result = render_architecture_legend([])
+        assert "Blue circle" in result
+        assert "arch-legend-swatch" not in result
+
+    def test_legend_contains_click_hint(self):
+        """Legend always includes the click-to-filter hint."""
+        zones = [{"id": "z1", "category": "product", "label": "P"}]
+        result = render_architecture_legend(zones)
+        assert "Click zone to filter" in result
+
+
+# ── render_key_findings agent legend ─────────────────────────────────
+
+
+class TestKeyFindingsAgentLegend:
+    """Key findings section must include the agent team legend."""
+
+    def test_key_findings_has_agent_legend(self):
+        """Legend with all agent abbreviations appears in key findings output."""
+        data = {
+            "agenticReview": {
+                "overallGrade": "B+",
+                "reviewMethod": "agent-teams",
+                "findings": [
+                    {
+                        "file": "a.py",
+                        "grade": "A",
+                        "zones": "zone-a",
+                        "notable": "Clean",
+                        "detail": "Good",
+                        "gradeSortOrder": 3,
+                        "agent": "code-health",
+                    },
+                    {
+                        "file": "b.py",
+                        "grade": "B",
+                        "zones": "zone-a",
+                        "notable": "Warning",
+                        "detail": "Minor",
+                        "gradeSortOrder": 1,
+                        "agent": "rbe",
+                    },
+                ],
+            },
+            "architecture": {"zones": [{"id": "zone-a", "category": "product"}]},
+        }
+        result = render_key_findings(data)
+        # Legend is now rendered inline with the method badge (render_key_findings_method_badge),
+        # not inside render_key_findings() output. Verify the table still renders agents.
+        assert "agent-pill" in result or "agent" in result
+
+    def test_key_findings_legend_moved_to_method_badge(self):
+        """Legend is inline with method badge, not inside the key findings table."""
+        badge = render_key_findings_method_badge({"reviewMethod": "agent-teams"})
+        for abbrev in ("CH", "SE", "TI", "AD", "AR", "RB"):
+            assert abbrev in badge, f"Agent abbreviation {abbrev} missing from method badge legend"
+
+
+# ── Key Findings: Locations column ────────────────────────────────────
+
+
+class TestKeyFindingsLocations:
+    def test_locs_column_in_header(self):
+        """Key findings table must have a Locs column header."""
+        data = {
+            "agenticReview": {
+                "overallGrade": "B",
+                "reviewMethod": "agent-teams",
+                "findings": [
+                    {
+                        "file": "a.py",
+                        "grade": "B",
+                        "zones": "core",
+                        "notable": "Test",
+                        "detail": "<p>D</p>",
+                        "gradeSortOrder": 1,
+                        "agent": "adversarial",
+                        "locations": [
+                            {"file": "a.py", "lines": "10-20"},
+                            {"file": "b.py", "lines": "42"},
+                        ],
+                    }
+                ],
+            },
+            "architecture": {"zones": [{"id": "core", "category": "product"}]},
+        }
+        result = render_key_findings(data)
+        assert "<th>" in result
+        assert "Locs" in result
+
+    def test_detail_shows_multiple_locations(self):
+        """Expanded detail must list each location with file:lines."""
+        data = {
+            "agenticReview": {
+                "overallGrade": "B",
+                "reviewMethod": "agent-teams",
+                "findings": [
+                    {
+                        "file": "a.py",
+                        "grade": "B",
+                        "zones": "core",
+                        "notable": "Multi-location",
+                        "detail": "<p>Spans files</p>",
+                        "gradeSortOrder": 1,
+                        "agent": "code-health",
+                        "locations": [
+                            {"file": "src/a.py", "lines": "10-20"},
+                            {"file": "src/b.py", "lines": "42"},
+                            {"file": "src/a.py", "lines": "55-60"},
+                        ],
+                    }
+                ],
+            },
+            "architecture": {"zones": [{"id": "core", "category": "product"}]},
+        }
+        result = render_key_findings(data)
+        assert "src/a.py" in result
+        assert "src/b.py" in result
+        assert "10-20" in result
+        assert "42" in result
+        assert "55-60" in result
+
+    def test_backward_compat_no_locations(self):
+        """Findings without locations array should still render (backward compat)."""
+        data = {
+            "agenticReview": {
+                "overallGrade": "B",
+                "reviewMethod": "agent-teams",
+                "findings": [
+                    {
+                        "file": "old.py",
+                        "grade": "B",
+                        "zones": "core",
+                        "notable": "Legacy",
+                        "detail": "<p>Old format</p>",
+                        "gradeSortOrder": 1,
+                        "agent": "security",
+                        # No locations array — legacy data
+                    }
+                ],
+            },
+            "architecture": {"zones": [{"id": "core", "category": "product"}]},
+        }
+        result = render_key_findings(data)
+        assert "old.py" in result
+
+    def test_locs_count_matches_locations_length(self):
+        """Locs cell should show the number of locations."""
+        data = {
+            "agenticReview": {
+                "overallGrade": "B",
+                "reviewMethod": "agent-teams",
+                "findings": [
+                    {
+                        "file": "a.py",
+                        "grade": "B",
+                        "zones": "core",
+                        "notable": "Three locs",
+                        "detail": "<p>D</p>",
+                        "gradeSortOrder": 1,
+                        "agent": "adversarial",
+                        "locations": [
+                            {"file": "a.py", "lines": "1"},
+                            {"file": "b.py", "lines": "2"},
+                            {"file": "c.py", "lines": "3"},
+                        ],
+                    }
+                ],
+            },
+            "architecture": {"zones": [{"id": "core", "category": "product"}]},
+        }
+        result = render_key_findings(data)
+        # The count 3 should appear in a td cell
+        assert "<td>3</td>" in result
+
+
+# ── render_key_findings_method_badge ─────────────────────────────────
+
+
+class TestKeyFindingsMethodBadge:
+    """Agent legend must be inline with method badge, not a separate row."""
+
+    def test_agent_teams_includes_legend_inline(self):
+        result = render_key_findings_method_badge({"reviewMethod": "agent-teams"})
+        assert "Agent Teams" in result
+        assert "agent-legend" in result
+        assert "CH" in result
+
+    def test_main_agent_no_legend(self):
+        result = render_key_findings_method_badge({"reviewMethod": "main-agent"})
+        assert "Main Agent" in result
+        assert "agent-legend" not in result
+
+    def test_missing_method_defaults_main_agent(self):
+        result = render_key_findings_method_badge({})
+        assert "Main Agent" in result
+        assert "agent-legend" not in result

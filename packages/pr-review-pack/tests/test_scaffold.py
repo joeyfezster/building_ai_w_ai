@@ -17,6 +17,8 @@ from scaffold_review_pack_data import (
     build_architecture,
     build_category_zone_map,
     build_code_diffs,
+    build_convergence,
+    build_header,
     build_scenarios,
     compute_status,
     compute_verdict,
@@ -132,6 +134,55 @@ class TestComputeVerdict:
         }
         result = compute_verdict(convergence, agentic_review)
         assert result["status"] == "blocked"
+
+
+# ── Dynamic row labels ───────────────────────────────────────────────
+
+
+class TestDynamicRowLabels:
+    def test_dynamic_row_labels_from_zone_registry(self):
+        """Row labels should come from zone registry categories, not hardcoded."""
+        zones_registry = {
+            "api-routes": {
+                "paths": ["src/api/**"],
+                "category": "backend",
+                "label": "API",
+                "sublabel": "routes",
+            },
+            "ui-components": {
+                "paths": ["src/ui/**"],
+                "category": "frontend",
+                "label": "UI",
+                "sublabel": "React",
+            },
+            "database": {
+                "paths": ["src/db/**"],
+                "category": "data",
+                "label": "Database",
+                "sublabel": "models",
+            },
+        }
+        diff_data = {"files": {"src/api/routes.py": {}, "src/ui/App.tsx": {}}}
+        arch = build_architecture(zones_registry, diff_data)
+
+        row_texts = [r["text"] for r in arch["rowLabels"]]
+        assert "BACKEND" in row_texts
+        assert "FRONTEND" in row_texts
+        assert "DATA" in row_texts
+        assert "INFRASTRUCTURE" not in row_texts
+
+    def test_no_duplicate_row_labels(self):
+        """Each category should produce exactly one row label."""
+        zones_registry = {
+            "z1": {"paths": ["a/**"], "category": "product", "label": "Z1", "sublabel": ""},
+            "z2": {"paths": ["b/**"], "category": "product", "label": "Z2", "sublabel": ""},
+            "z3": {"paths": ["c/**"], "category": "infra", "label": "Z3", "sublabel": ""},
+        }
+        diff_data = {"files": {}}
+        arch = build_architecture(zones_registry, diff_data)
+        row_texts = [r["text"] for r in arch["rowLabels"]]
+        assert len(row_texts) == len(set(row_texts)), f"Duplicate row labels: {row_texts}"
+        assert len(row_texts) == 2  # product and infra
 
 
 # ── compute_status ───────────────────────────────────────────────────
@@ -635,3 +686,151 @@ class TestComputeVerdictNoScenarios:
         agentic_review = {"findings": []}
         result = compute_verdict(convergence, agentic_review)
         assert result["status"] == "blocked"
+
+
+# ── build_header (Gate 0 badge visibility) ────────────────────────────
+
+
+class TestBuildHeaderGate0Badge:
+    def test_no_gate0_badge_for_non_factory(self):
+        """Gate 0 badge must not appear when gate0_data is None (non-factory repo)."""
+        header = build_header(
+            pr_number=42,
+            diff_data={
+                "total_additions": 10,
+                "total_deletions": 5,
+                "total_files": 2,
+                "head_sha": "abc1234",
+            },
+            pr_meta={
+                "title": "Test PR",
+                "headRefOid": "abc1234def5678",
+                "commits": [{"oid": "a"}],
+            },
+            scenario_data=None,
+            ci_checks=[{
+                "state": "SUCCESS",
+                "name": "test",
+                "startedAt": "",
+                "completedAt": "",
+            }],
+            comment_counts={"total": 0, "unresolved": 0},
+            gate0_data=None,
+            repo_slug="test/repo",
+        )
+        badge_labels = [
+            b["label"] for b in header["statusBadges"]
+        ]
+        assert not any(
+            "Gate 0" in label for label in badge_labels
+        ), (
+            "Gate 0 badge should not appear"
+            f" for non-factory repos, got: {badge_labels}"
+        )
+
+    def test_gate0_badge_present_for_factory(self):
+        """Gate 0 badge must appear when gate0_data is provided (factory repo)."""
+        header = build_header(
+            pr_number=42,
+            diff_data={
+                "total_additions": 10,
+                "total_deletions": 5,
+                "total_files": 2,
+                "head_sha": "abc1234",
+            },
+            pr_meta={
+                "title": "Test PR",
+                "headRefOid": "abc1234def5678",
+                "commits": [{"oid": "a"}],
+            },
+            scenario_data=None,
+            ci_checks=[{
+                "state": "SUCCESS",
+                "name": "test",
+                "startedAt": "",
+                "completedAt": "",
+            }],
+            comment_counts={"total": 0, "unresolved": 0},
+            gate0_data={
+                "summary": {
+                    "has_critical": False,
+                    "critical_findings": 0,
+                    "warning_findings": 2,
+                },
+            },
+            repo_slug="test/repo",
+        )
+        badge_labels = [b["label"] for b in header["statusBadges"]]
+        assert any("Gate 0" in label for label in badge_labels), \
+            f"Gate 0 badge should appear for factory repos, got: {badge_labels}"
+
+
+# ── Gate detail content ──────────────────────────────────────────────
+
+
+class TestGateDetailContent:
+    def test_gate1_has_ci_detail(self):
+        """Gate 1 detail should contain CI check names and link to CI section."""
+        ci_checks = [
+            {
+                "state": "SUCCESS",
+                "name": "lint",
+                "startedAt": "2026-01-01T00:00:00Z",
+                "completedAt": "2026-01-01T00:01:00Z",
+            },
+            {
+                "state": "SUCCESS",
+                "name": "test",
+                "startedAt": "2026-01-01T00:00:00Z",
+                "completedAt": "2026-01-01T00:02:00Z",
+            },
+        ]
+        result = build_convergence(None, ci_checks, None)
+        gate1 = result["gates"][0]
+        assert gate1["detail"], "Gate 1 should have detail content"
+        assert "lint" in gate1["detail"]
+        assert "test" in gate1["detail"]
+        assert "section-ci-performance" in gate1["detail"]  # link to CI section
+
+    def test_gate1_no_checks_has_detail(self):
+        """Gate 1 detail should note missing checks when none provided."""
+        result = build_convergence(None, [], None)
+        gate1 = result["gates"][0]
+        assert gate1["detail"], "Gate 1 should have detail even with no checks"
+        assert "No CI checks" in gate1["detail"]
+
+    def test_gate2_has_deterministic_detail(self):
+        """Gate 2 detail should explain what deterministic checks do."""
+        result = build_convergence(None, [], None)
+        gate2 = result["gates"][1]
+        assert gate2["detail"], "Gate 2 should have detail content"
+        assert "vulture" in gate2["detail"] or "static analysis" in gate2["detail"].lower()
+
+    def test_gate3_has_agentic_detail(self):
+        """Gate 3 detail should link to agentic review section."""
+        result = build_convergence(None, [], None)
+        gate3 = result["gates"][2]
+        assert gate3["detail"], "Gate 3 should have detail content"
+        assert "section-agentic-review" in gate3["detail"]
+
+    def test_gate4_has_comments_detail(self):
+        """Gate 4 detail should describe comment resolution requirement."""
+        result = build_convergence(None, [], None)
+        gate4 = result["gates"][3]
+        assert gate4["detail"], "Gate 4 should have detail content"
+        assert "resolved" in gate4["detail"].lower()
+
+    def test_gate1_escapes_check_names(self):
+        """Gate 1 should HTML-escape CI check names to prevent XSS."""
+        ci_checks = [
+            {
+                "state": "SUCCESS",
+                "name": '<script>alert("xss")</script>',
+                "startedAt": "2026-01-01T00:00:00Z",
+                "completedAt": "2026-01-01T00:01:00Z",
+            },
+        ]
+        result = build_convergence(None, ci_checks, None)
+        gate1 = result["gates"][0]
+        assert "<script>" not in gate1["detail"]
+        assert "&lt;script&gt;" in gate1["detail"]
