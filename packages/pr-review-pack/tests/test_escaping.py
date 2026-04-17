@@ -67,6 +67,27 @@ class TestEscapeScriptClosing:
         result = _escape_script_closing(text)
         assert r"<\/script" in result
 
+    def test_html_comment_opener_escaped(self):
+        """<!-- in embedded JSON must be escaped to prevent script-data-escaped state."""
+        text = '{"diff": "<!-- some HTML comment -->"}'
+        result = _escape_script_closing(text)
+        assert "<!--" not in result
+        assert r"<\!--" in result
+
+    def test_multiple_comment_openers_escaped(self):
+        """Multiple <!-- occurrences all escaped."""
+        text = "a <!-- b <!-- c"
+        result = _escape_script_closing(text)
+        assert "<!--" not in result
+        assert result.count(r"<\!--") == 2
+
+    def test_comment_and_script_both_escaped(self):
+        """Both <!-- and </script> in same text are escaped."""
+        text = '<!-- comment --></script>'
+        result = _escape_script_closing(text)
+        assert "<!--" not in result
+        assert "</script" not in result
+
 
 # ── esc (HTML entity escaping) ────────────────────────────────────────
 

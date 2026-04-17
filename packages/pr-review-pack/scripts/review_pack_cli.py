@@ -27,8 +27,8 @@ from pathlib import Path
 # Ensure sibling scripts are importable
 sys.path.insert(0, str(Path(__file__).parent))
 
+from _utils import _get_repo_slug, run_gh
 from generate_diff_data import main as generate_diff_data_main
-from scaffold_review_pack_data import _get_repo_slug, run_gh
 
 
 def get_auth_token() -> str:
