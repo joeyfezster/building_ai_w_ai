@@ -2161,20 +2161,27 @@ def render_factory_history_section(data: dict) -> str:
 
 
 def _escape_script_closing(text: str) -> str:
-    """Escape </script> sequences so embedded JSON doesn't break HTML parsing.
+    r"""Escape sequences that break HTML parsing inside <script> blocks.
 
-    The HTML parser scans for </script> to close <script> blocks regardless
-    of JavaScript string context. If raw file content (e.g., template.html)
-    contains </script>, the browser closes the <script> tag prematurely,
-    corrupting the page. Replacing </script with <\\/script is safe — the
-    JS engine interprets \\/ as / but the HTML parser no longer sees a
-    closing tag.
+    Two dangerous patterns:
+    1. </script> — the HTML parser closes the <script> tag prematurely.
+       Fix: replace </script with <\/script (JS interprets \/ as /).
+    2. <!-- — triggers "script data escaped" state in the HTML parser,
+       causing it to look for --> and potentially merging script blocks.
+       Fix: replace <!-- with <\!-- (breaks the comment-open pattern).
+
+    Both fixes are safe — the JS engine produces identical string values,
+    but the HTML parser no longer misinterprets the content.
     """
-    return re.sub(
+    # Escape </script> closing tags
+    text = re.sub(
         r"</([Ss][Cc][Rr][Ii][Pp][Tt])",
         lambda m: r"<\/" + m.group(1),
         text,
     )
+    # Escape <!-- comment openers (breaks script-data-escaped state)
+    text = text.replace("<!--", r"<\!--")
+    return text
 
 
 def _calculate_viewbox(arch: dict) -> str:
