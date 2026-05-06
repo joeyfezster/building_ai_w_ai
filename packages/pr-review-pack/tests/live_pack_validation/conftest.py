@@ -29,6 +29,22 @@ REPO_ROOT = PACKAGE_DIR.parent.parent
 
 BASELINE_PACK = REPO_ROOT / "docs" / "pr36_review_pack_514497a0-3e1e11d3.html"
 
+PLAYWRIGHT_AVAILABLE = (PACKAGE_DIR / "node_modules" / "@playwright" / "test").exists()
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    if PLAYWRIGHT_AVAILABLE:
+        return
+    skip_marker = pytest.mark.skip(
+        reason=(
+            "Playwright not installed in packages/pr-review-pack/node_modules. "
+            "These tests run in the pr-review-pack-skill-check CI job, not the "
+            "generic test job. Run `npm ci` in packages/pr-review-pack/ to enable."
+        )
+    )
+    for item in items:
+        item.add_marker(skip_marker)
+
 
 def baseline_pack_exists() -> bool:
     return BASELINE_PACK.exists()
