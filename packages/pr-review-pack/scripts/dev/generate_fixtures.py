@@ -4,8 +4,21 @@
 Renders four variants of a review pack (READY, GAP, BLOCKED, NO_FACTORY)
 using the v2 template and abstract fixture data.
 
+This is a skill-internal CI tool used to feed the `renderer-fixtures`
+Playwright project. Users running `/pr-review-pack` against real PRs
+do NOT need to run this script.
+
+Output path contract:
+    The four fixtures are written to `/tmp/pr26_review_pack_v2_<variant>.html`
+    where variant is one of `ready`, `gap`, `blocked`, `nofactory`. The
+    spec file `e2e/renderer-fixtures.spec.ts` hard-codes the same paths
+    via its READY_PACK / GAP_PACK / BLOCKED_PACK / NOFACTORY_PACK
+    constants. Changing this path requires editing both files. The
+    `/tmp/` location is intentional: it is ephemeral, OS-cleaned, and
+    matches the existing CI environment convention.
+
 Usage:
-    cd packages/pr-review-pack && python3 e2e/generate_fixtures.py
+    cd packages/pr-review-pack && python3 scripts/dev/generate_fixtures.py
 """
 
 from __future__ import annotations
@@ -16,7 +29,9 @@ import sys
 import tempfile
 from pathlib import Path
 
-PACKAGE_DIR = Path(__file__).parent.parent
+# This file lives at packages/pr-review-pack/scripts/dev/generate_fixtures.py.
+# PACKAGE_DIR points at packages/pr-review-pack/.
+PACKAGE_DIR = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PACKAGE_DIR / "scripts"))
 
 from render_review_pack import render  # noqa: E402

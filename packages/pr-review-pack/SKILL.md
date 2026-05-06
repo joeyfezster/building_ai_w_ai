@@ -443,37 +443,113 @@ The `--template v2` flag selects the Mission Control layout (sidebar + main pane
 > Running `npx playwright test` from the target repo's directory will resolve a different `@playwright/test` version from that repo's own `node_modules`, causing a "two different versions" crash.
 > Every command below starts with `cd "${CLAUDE_SKILL_DIR}"`. This is non-negotiable. Do NOT run Playwright from the PR repo directory under any circumstances.
 
+### Banner Rule (Non-Negotiable)
+
+The banner-strip step is the **terminal test** in `e2e/live-pack-validation.spec.ts` and only fires when every preceding live-pack assertion passes in the same Playwright run. The split-spec architecture (renderer-fixtures vs live-pack-validation) and `test.describe.configure({ mode: 'serial' })` enforce this — do not refactor either without preserving the causal chain. Banner-removal must remain causally downstream of the full live-pack validation.
+
 ### Step 1: Install Playwright (if needed)
 
 ```bash
 cd "${CLAUDE_SKILL_DIR}" && npm install && npx playwright install chromium
 ```
 
-### Step 2: Run Playwright Tests
+### Step 2: Run Live-Pack Validation
 
-Set `PACK_PATH` to the **absolute path** of the review pack HTML:
+Set `PACK_PATH` to the **absolute path** of the review pack HTML, and select the `live-pack-validation` Playwright project:
 
 ```bash
-cd "${CLAUDE_SKILL_DIR}" && PACK_PATH="<absolute-path-to>/docs/pr{N}_review_pack_{base8}-{head8}.html" npx playwright test e2e/review-pack-v2.spec.ts
+cd "${CLAUDE_SKILL_DIR}" && \
+  PACK_PATH="<absolute-path>/docs/pr{N}_review_pack_{base8}-{head8}.html" \
+  npx playwright test --project=live-pack-validation
 ```
 
-The test suite does two things:
-1. Validates all structural, functional, and visual elements against fixture data
-2. **When `PACK_PATH` is set**: removes the self-review banner from the HTML file as the final test (banner removal is the trust signal — its removal means "this pack was machine-validated")
+This project runs `e2e/live-pack-validation.spec.ts`, which validates the live pack against the source `.jsonl` files, the diff data, and the zone registry — content correctness, rendering invariants, and interactivity. The terminal test strips the self-review banner only when every preceding assertion has passed.
 
-If tests fail, fix the issue in the review pack data and re-render (Phase 3), then re-run tests. Iterate until green.
+**Do NOT** select `--project=renderer-fixtures` here — that project runs the renderer regression suite against pre-built fixture HTML at `/tmp/pr26_review_pack_v2_*.html` and is not relevant to live-pack validation.
 
-**Do NOT create per-PR test files.** The baseline suite covers all structural and functional validation. Do NOT write any `.spec.ts` files outside of `${CLAUDE_SKILL_DIR}/e2e/`. The only test file is `review-pack-v2.spec.ts`.
+**Do NOT create per-PR test files.** The baseline suites cover all validation. Do NOT write any `.spec.ts` files outside of `${CLAUDE_SKILL_DIR}/e2e/`.
 
-**Do NOT manually edit the review pack HTML to remove the banner.** The Playwright test suite handles banner removal automatically when all tests pass.
+**Do NOT manually edit the review pack HTML to remove the banner.** The Playwright suite handles banner removal automatically as the terminal test, gated by every prior live-pack assertion passing.
+
+### Step 2b: Live-Pack Validation Feedback Loop
+
+Mirrors Phase 2 Step 1b. The live-pack spec emits structured failure diagnostics on stderr:
+
+```
+LIVE_PACK_FAIL {"code":"<code>","details":{...}}
+```
+
+Every code is registered in `${CLAUDE_SKILL_DIR}/references/live-pack-failure-codes.md` with an auto-correctable flag and a handler (a specific reviewer agent or pipeline step). The CI grep-check enforces parity between the spec and the registry — no orphaned codes on either side.
+
+**Iteration cap:** `PHASE4_MAX_ITERS` env var, default `3`. Set `PHASE4_MAX_ITERS=0` to disable auto-correction entirely — the loop runs validation once and stops on any failure with the banner intact. Default (`3`) means up to 3 correction attempts before giving up and leaving the banner.
+
+```
+ITER=0
+MAX=${PHASE4_MAX_ITERS:-3}
+
+LOOP:
+  ── VALIDATE ──
+  Run: cd "${CLAUDE_SKILL_DIR}" && \
+       PACK_PATH="<absolute-path>" \
+       npx playwright test --project=live-pack-validation 2> live_pack_stderr.log
+  Capture exit code and stderr.
+
+  ── CHECK ──
+  If exit 0  → green; banner has been stripped; proceed to Step 3.
+  If exit != 0:
+     Parse stderr for `LIVE_PACK_FAIL {"code":"<code>",...}` lines.
+     For each unique code, look it up in references/live-pack-failure-codes.md.
+
+     If ANY matched code is flagged BLOCK:
+       Banner stays. Message becomes:
+         "live-pack validation hit a non-auto-correctable failure: <codes>. \
+          Points at <handler from registry>. Banner remains in place."
+       STOP. Do NOT iterate further.
+
+     Else (all codes auto-correctable):
+       If ITER >= MAX:
+         Banner stays. Message becomes:
+           "live-pack validation did not converge after ${MAX} iterations. \
+            Last failures: <codes>. Banner remains in place."
+         STOP.
+       For each unique auto-correctable code:
+         ── CORRECTION AGENT ──
+         Pattern A (preferred): resume the original reviewer agent
+           Agent(resume="<saved-agent-id>", prompt=<see registry handler>)
+         Pattern B (acceptable): spawn a new fix agent into the same team,
+           passing the failure code, the JSON `details`, and the registry's
+           handler instructions.
+         NEVER ghost-write — the main agent must NEVER append to the .jsonl
+         files itself.
+
+       Re-run the assembler if any handler asks for it
+         (`scripts/assemble_review_pack.py --pr {N}`),
+       then re-render
+         (`scripts/render_review_pack.py --data ... --output ... --diff-data ...`).
+
+       ITER=$((ITER+1))
+       GOTO LOOP.
+```
+
+The orchestrator must never cheat: every iteration that emits a non-empty stderr `LIVE_PACK_FAIL` line counts as a non-pass even if the suite later gets a chance and somehow returns 0. The spec is engineered so the banner-strip step is causally downstream of every prior live-pack assertion within the same Playwright run.
 
 ### Step 3: Notify User
 
-The review pack is complete. Tell the user the HTML file path and that Playwright validation passed.
+The review pack is complete. Tell the user the HTML file path and that live-pack validation passed.
 
 **Do NOT git commit automatically.** The user decides when and what to commit. If the user explicitly asks you to commit, then commit the review pack HTML and all .jsonl files in `docs/reviews/pr{N}/`.
 
 **If Playwright cannot be installed or tests cannot run** (e.g., no Node.js, no browser available): leave the banner in place and tell the user "Phase 4 validation could not run — the self-review banner remains. Run Playwright manually to validate." Do NOT silently skip this phase.
+
+### Skill Development
+
+The renderer regression suite uses pre-built fixtures under `/tmp/pr26_review_pack_v2_*.html`. Skill maintainers regenerate them with:
+
+```bash
+cd "${CLAUDE_SKILL_DIR}" && python3 scripts/dev/generate_fixtures.py
+```
+
+This script is **not** a user-facing prerequisite — `/pr-review-pack` does not need it. It is invoked by skill-internal CI to feed the `renderer-fixtures` Playwright project. The user-facing skill always uses `--project=live-pack-validation`.
 
 ---
 
