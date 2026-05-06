@@ -20,10 +20,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import pytest
-
 from .conftest import run_live_pack_spec
-
 
 # ---------------------------------------------------------------------------
 # Content correctness
@@ -124,15 +121,6 @@ def test_diff_data_missing(mutate_pack):
     """
 
     def html_mutator(html: str) -> str:
-        # Replace the entire `const DIFF_DATA_INLINE = {...};` block with
-        # an empty placeholder. We use rfind on the script-block-opening
-        # comment that the renderer emits immediately above the variable.
-        marker = "const DIFF_DATA_INLINE = "
-        idx = html.find(marker)
-        # Skip past the diff content occurrences we know aren't the real block.
-        # The actual block starts at the first occurrence followed by `{`,
-        # but for safety we just neuter every occurrence of the variable
-        # name in the HTML by renaming it.
         return html.replace(
             "const DIFF_DATA_INLINE = ",
             "const DIFF_DATA_INLINE_DISABLED_FOR_TEST = ",
@@ -440,6 +428,7 @@ def test_no_pack_path_raises_required_error(tmp_path: Path):
     skill harness misconfigures the env.
     """
     import subprocess
+
     from .conftest import PACKAGE_DIR
 
     env = {k: v for k, v in __import__("os").environ.items() if k != "PACK_PATH"}
