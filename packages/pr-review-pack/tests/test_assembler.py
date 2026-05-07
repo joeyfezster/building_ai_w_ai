@@ -692,6 +692,48 @@ class TestHybridJSONL:
             assert report.has_errors
             assert any("nonexistent-1" in e["message"] for e in report.errors)
 
+    def test_concept_update_merge_revalidates_constraints(self):
+        """Merge of ConceptUpdate into ReviewConcept must re-validate.
+
+        ConceptUpdate.summary has no min_length, but ReviewConcept.summary
+        requires min_length=1. A naive merge via Pydantic's
+        model_copy(update=...) silently accepts an empty summary because
+        model_copy bypasses validators. The assembler's fix re-validates
+        via model_validate so the merged result is enforced.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._make_jsonl(
+                tmpdir,
+                "code-health",
+                [
+                    {
+                        "concept_id": "code-health-1",
+                        "title": "Original",
+                        "grade": "B",
+                        "category": "code-health",
+                        "summary": "Original summary",
+                        "detail_html": "<p>Original</p>",
+                        "locations": [{"file": "a.py", "zones": []}],
+                    },
+                    {
+                        "_type": "concept_update",
+                        "concept_id": "code-health-1",
+                        "summary": "",
+                    },
+                ],
+            )
+            report = ValidationReport()
+            read_and_validate_jsonl(Path(tmpdir), report)
+            assert report.has_errors, (
+                "Merging an empty summary into a ReviewConcept "
+                "should fail re-validation"
+            )
+            assert any(
+                "code-health-1" in e["message"]
+                and "merge" in e["message"].lower()
+                for e in report.errors
+            )
+
 
 # ---------------------------------------------------------------------------
 # Cascading validation

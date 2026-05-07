@@ -304,8 +304,23 @@ def read_and_validate_jsonl(
                     exclude_none=True,
                 )
                 if update_data:
-                    merged = original.model_copy(update=update_data)
-                    concept_by_id[cu.concept_id] = merged
+                    # `model_copy(update=...)` skips validators in Pydantic v2,
+                    # so an update that violates field constraints (e.g. empty
+                    # `summary` when ReviewConcept requires min_length=1) would
+                    # silently produce an invalid merged concept. Re-validate
+                    # via model_validate so the merged result is enforced.
+                    try:
+                        merged_dict = {**original.model_dump(), **update_data}
+                        merged = type(original).model_validate(merged_dict)
+                        concept_by_id[cu.concept_id] = merged
+                    except ValidationError as e:
+                        report.add_error(
+                            jsonl_path.name,
+                            0,
+                            f"ConceptUpdate merge validation failed for "
+                            f"concept_id '{cu.concept_id}': "
+                            f"{e.error_count()} error(s) — {e.errors()[0]['msg']}",
+                        )
             # Rebuild list preserving order
             concepts = [
                 concept_by_id[rc.concept_id] for rc in concepts if rc.concept_id in concept_by_id
