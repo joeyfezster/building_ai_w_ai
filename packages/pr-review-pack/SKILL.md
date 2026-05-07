@@ -186,6 +186,14 @@ Then spawn 7 review agents into this team. Each agent gets **Read + Write tools 
 TeamDelete { "team_name": "pr-review-{N}" }
 ```
 
+**🚨 TeamDelete IS NOT skill completion.** Continue to Phase 3 and Phase 4 unconditionally after this step. The skill is complete only after Phase 4 returns either green-and-banner-stripped or non-convergence-with-banner-intact.
+
+**Non-interactive mode (`claude -p`) handler.** If a system-reminder fires saying *"you cannot return a response to the user until your team is shut down"*, it is constraining WHEN you emit your final user-facing text — NOT what work you must finish. After `TeamDelete`:
+- DO NOT emit a "partial completion" summary.
+- DO NOT exit.
+- DO continue running tool calls (Bash for assembler/render scripts, Playwright for live-pack validation, Edit for orchestration files). Tool calls are not user-facing responses.
+- Emit your final user-facing text only after Phase 4 has resolved (banner stripped on success, banner intact with named codes on non-convergence or BLOCK).
+
 The setup script pre-creates all 7 `.jsonl` files with a meta header line. This allows agents to Read the file first (satisfying Claude Code's Read-before-Write requirement) and then append their output.
 
 ### Quality Standards Discovery
@@ -371,6 +379,8 @@ All review agents use this grade scale — **N/A is not valid**:
 ---
 
 ## Phase 3: Assemble (Script)
+
+**HARD GATE — Phase 3 is not optional and runs after team teardown. Skipping it leaves the reviewer .jsonl outputs unvalidated and unrendered — there is no review pack at that point, only raw agent notes. The 8-of-8 skip-pattern that motivated Phase 4's hard-gate language applies here too: once a team is torn down, the orchestrator may be tempted to declare completion. Don't.**
 
 **⚠️ If skipped: no validated output, raw agent claims remain unverified. The review pack would present unvalidated LLM assertions as findings.**
 
