@@ -903,6 +903,20 @@ if (!LIVE_PACK_PATH) {
         document.body.setAttribute('data-inspected', 'true')
       );
 
+      // The renderer collapses A-grade rows behind a toggle by default
+      // (`.kf-a-rows.collapsed` hides them via CSS). They are still in the
+      // DOM and `.kf-row` returns them, but Playwright's actionability
+      // wait would time out clicking on a hidden element. Force-expand
+      // every collapsible group before iteration so `.kf-row` enumerates
+      // a uniformly clickable set. We mutate the DOM directly rather than
+      // invoking the renderer's `toggleKFAGrade()` to remain robust to
+      // future toggle-mechanism changes.
+      await page.evaluate(() => {
+        document
+          .querySelectorAll('.kf-a-rows.collapsed, .kf-a-toggle.collapsed')
+          .forEach((el) => el.classList.remove('collapsed'));
+      });
+
       const rowCount = await page.locator('.kf-row').count();
       if (rowCount === 0) {
         // Pack with zero findings is valid — nothing to check.
@@ -943,6 +957,18 @@ if (!LIVE_PACK_PATH) {
       await page.evaluate(() =>
         document.body.setAttribute('data-inspected', 'true')
       );
+
+      // Expand the A-grade collapsible group (see comment in the kf-row click
+      // test). Without this, `agentRowCounts` would include A-grade rows
+      // (counted from `.kf-row` regardless of visibility) while
+      // `visibleKfRows()` would exclude them — producing a guaranteed
+      // mismatch on any pack whose A-grade rows have the same agent as
+      // visible rows.
+      await page.evaluate(() => {
+        document
+          .querySelectorAll('.kf-a-rows.collapsed, .kf-a-toggle.collapsed')
+          .forEach((el) => el.classList.remove('collapsed'));
+      });
 
       const pillCount = await page.locator('.kf-agent-pill').count();
       if (pillCount === 0) {
