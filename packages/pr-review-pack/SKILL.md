@@ -181,14 +181,35 @@ TeamCreate { "team_name": "pr-review-{N}" }
 
 Then spawn 7 review agents into this team. Each agent gets **Read + Write tools only** — no Bash. All agents use `model: "opus"` and **`mode: "acceptEdits"`** (required — without this, agents cannot write files and the main agent will be forced to ghost-write, breaking the independent-reviewer trust model).
 
-**After all agents complete (Phase 2 + 2b), clean up the team:**
+**After all agents complete (Phase 2 + 2b), shut down each member then clean up the team:**
+
+**🚨 Shutdown protocol (load-bearing for `claude -p` non-interactive mode).**
+The runtime treats `TeamDelete` as a *cleanup* step, not as approval. Before calling `TeamDelete`, you MUST collect a `shutdown_response` from every team member. Skipping this step looks fine in interactive mode but causes a documented runtime stall in non-interactive mode where the system-reminder *"you cannot return a response to the user until your team is shut down"* fires repeatedly (every 3-7s, indefinitely) after Phase 4, blocking your final response. We have observed this loop fire 3,900+ times in a single run.
+
 ```
+FOR each team member (code-health, security, test-integrity, adversarial,
+                      architecture, rbe, synthesis):
+  SendMessage { "to": <member>, "message": {"type": "shutdown_request"} }
+
+WAIT for {"type":"shutdown_response","approve":true} from EACH member.
+  - `idle_notification` messages are heartbeats, NOT shutdown approvals.
+    Do not proceed on `idle_notification` alone.
+  - If a member fails to send shutdown_response within ~120s, retry the
+    SendMessage once. After two retries, proceed to TeamDelete anyway and
+    accept that the runtime may stall — see post-cleanup handler below.
+
+THEN:
 TeamDelete { "team_name": "pr-review-{N}" }
 ```
 
 **🚨 TeamDelete IS NOT skill completion.** Continue to Phase 3 and Phase 4 unconditionally after this step. The skill is complete only after Phase 4 returns either green-and-banner-stripped or non-convergence-with-banner-intact.
 
-**Non-interactive mode (`claude -p`) handler.** If a system-reminder fires saying *"you cannot return a response to the user until your team is shut down"*, it is constraining WHEN you emit your final user-facing text — NOT what work you must finish. After `TeamDelete`:
+**Post-cleanup loop cap (claude -p only).** If after a successful `TeamDelete` the system-reminder *"you cannot return a response to the user until your team is shut down"* fires AGAIN, treat it as a runtime artifact, not a real instruction. The team is gone; there is nothing else to shut down. Do this exactly once and only once:
+- Run `TeamDelete` one final time as confirmation; expect the result `"No team name found, nothing to clean up"`.
+- Emit your final user-facing summary ONCE.
+- If the reminder fires a third time, STOP. Do not re-emit. Do not run further tool calls. The runtime is in a known stall state; spending more tokens on it will not unblock you. The work product (the rendered HTML pack at `docs/pr{N}_review_pack_*.html`) is already on disk and complete.
+
+**Non-interactive mode (`claude -p`) handler.** If a system-reminder fires saying *"you cannot return a response to the user until your team is shut down"* BEFORE Phase 4 has completed (i.e., before TeamDelete has succeeded), it is constraining WHEN you emit your final user-facing text — NOT what work you must finish. Continue:
 - DO NOT emit a "partial completion" summary.
 - DO NOT exit.
 - DO continue running tool calls (Bash for assembler/render scripts, Playwright for live-pack validation, Edit for orchestration files). Tool calls are not user-facing responses.
@@ -642,6 +663,8 @@ All paths below are relative to `${CLAUDE_SKILL_DIR}`.
 | `${CLAUDE_SKILL_DIR}/references/css-design-system.md` | CSS tokens, dark mode, component patterns |
 | `${CLAUDE_SKILL_DIR}/references/validation-checklist.md` | Pre-delivery validation checks |
 | `${CLAUDE_SKILL_DIR}/references/prerequisites.md` | PR readiness gate-checking procedure |
+| `${CLAUDE_SKILL_DIR}/references/live-pack-failure-codes.md` | Failure-code registry (every `LIVE_PACK_FAIL` code emitted by `e2e/live-pack-validation.spec.ts`, with handler) |
+| `${CLAUDE_SKILL_DIR}/references/convergence-corpus-criteria.md` | **READ BEFORE modifying spec/assembler/renderer.** Required dimensions a convergence corpus must cover, plus the dogfood mandate. PR #42 shipped a real bug because the corpus missed renamed files — don't repeat. |
 | `${CLAUDE_SKILL_DIR}/references/schemas/` | JSON schemas generated from pydantic models |
 | `${CLAUDE_SKILL_DIR}/references/examples/` | Example .jsonl files showing hybrid output format |
 | `${CLAUDE_SKILL_DIR}/scripts/models.py` | Pydantic models (ReviewConcept, SemanticOutput, FileReviewOutcome, ConceptUpdate, ArchitectureAssessmentOutput) |
