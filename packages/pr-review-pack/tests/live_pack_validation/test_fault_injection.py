@@ -28,18 +28,25 @@ from .conftest import run_live_pack_spec
 
 
 def test_finding_location_mismatch(mutate_pack):
+    """Per-anchor mismatch: at least one anchor resolves, but another doesn't.
+
+    Setup: take a finding with one in-diff location, ADD a second location
+    pointing at a non-existent path (default context=False, i.e., anchor).
+    The finding still has a resolved anchor (so finding-without-anchor
+    does NOT fire), but the bad anchor triggers finding-location-mismatch.
+    """
+
     def mutator(data: dict) -> dict:
-        # Re-target the first finding's `file` to a path not in the diff.
         findings = data["agenticReview"]["findings"]
         assert findings, "pr36 baseline must have at least one finding"
-        # Remove all but the first finding to keep the spec output focused.
-        # We need to keep an A-grade FileReviewOutcome story intact, so we
-        # only mutate the file path, not the count.
-        findings[0]["file"] = "non/existent/path/never_in_diff.py"
-        # If the finding has a `locations` array, redirect that too.
-        if isinstance(findings[0].get("locations"), list):
-            for loc in findings[0]["locations"]:
-                loc["file"] = "non/existent/path/never_in_diff.py"
+        target = findings[0]
+        # Ensure target has at least one in-diff location to keep its anchor.
+        if not isinstance(target.get("locations"), list) or not target["locations"]:
+            target["locations"] = [{"file": target["file"], "lines": None, "comment": None}]
+        # Append a bad anchor (context defaults to False/missing).
+        target["locations"].append(
+            {"file": "non/existent/path/never_in_diff.py", "lines": None, "comment": None}
+        )
         return data
 
     pack = mutate_pack(data_mutator=mutator)
@@ -47,6 +54,82 @@ def test_finding_location_mismatch(mutate_pack):
     assert run.exit_code != 0, run.stdout
     assert run.codes() == ["finding-location-mismatch"], (
         f"got {run.codes()}, exit={run.exit_code}\nSTDOUT:\n{run.stdout}"
+    )
+
+
+def test_finding_without_anchor(mutate_pack):
+    """All anchors fail to resolve: finding-without-anchor fires.
+
+    Mutate every location of the first finding (default context=False)
+    to point at non-existent paths. Spec emits the sharper
+    `finding-without-anchor` code rather than per-anchor mismatch,
+    because the finding has zero in-diff anchors.
+    """
+
+    def mutator(data: dict) -> dict:
+        findings = data["agenticReview"]["findings"]
+        assert findings
+        target = findings[0]
+        # Force into the new-locations code path with a single anchor that
+        # cannot resolve. (The legacy `file` fallback only fires
+        # finding-location-mismatch, not finding-without-anchor — that's
+        # by design for backwards compat with pre-context packs.)
+        target["locations"] = [
+            {
+                "file": "non/existent/path/never_in_diff.py",
+                "lines": None,
+                "comment": None,
+            }
+        ]
+        target["file"] = "non/existent/path/never_in_diff.py"
+        return data
+
+    pack = mutate_pack(data_mutator=mutator)
+    run = run_live_pack_spec(pack)
+    assert run.exit_code != 0, run.stdout
+    assert run.codes() == ["finding-without-anchor"], (
+        f"got {run.codes()}, exit={run.exit_code}\nSTDOUT:\n{run.stdout}"
+    )
+
+
+def test_context_location_exempt_from_diff_check(mutate_pack):
+    """Out-of-diff location marked context=True is exempt — no failure.
+
+    Add a context=True location pointing at an out-of-diff file. Keep the
+    original (in-diff, context-false) location intact. The spec should
+    accept this without firing finding-location-mismatch or
+    finding-without-anchor.
+    """
+
+    def mutator(data: dict) -> dict:
+        findings = data["agenticReview"]["findings"]
+        assert findings
+        target = findings[0]
+        if not isinstance(target.get("locations"), list) or not target["locations"]:
+            target["locations"] = [{"file": target["file"], "lines": None, "comment": None}]
+        target["locations"].append(
+            {
+                "file": ".claude/zone-registry.yaml",
+                "lines": "1-5",
+                "comment": "Cross-reference: zone definition",
+                "context": True,
+            }
+        )
+        return data
+
+    pack = mutate_pack(data_mutator=mutator)
+    run = run_live_pack_spec(pack)
+    # Spec must NOT emit either location-related code; the suite should
+    # progress past the location tests. Other downstream tests may fail,
+    # but finding-location-mismatch and finding-without-anchor must not.
+    codes = run.codes()
+    assert "finding-location-mismatch" not in codes, (
+        f"context=True location should be exempt from in-diff check; "
+        f"got codes={codes}"
+    )
+    assert "finding-without-anchor" not in codes, (
+        f"finding still has an in-diff anchor; should not fire "
+        f"finding-without-anchor; got codes={codes}"
     )
 
 

@@ -189,7 +189,25 @@ def _validate_zone_id(zone_id: str) -> str:
 
 
 class ConceptLocation(BaseModel):
-    """A specific code location referenced by a review concept."""
+    """A specific code location referenced by a review concept.
+
+    Locations carry one of two distinct intents, distinguished by `context`:
+
+    - `context=False` (default) — the **anchor**: this code is what the
+      finding is ABOUT. The file MUST be in the PR's diff. Live-pack
+      validation rejects findings where every anchor location is
+      out-of-diff (`finding-location-mismatch`).
+
+    - `context=True` — a **cross-reference**: this is a related file the
+      reader should know about (where the fix should go, an analogous
+      pattern, a related test, a contract spec). The file does NOT need
+      to be in the diff. Live-pack validation skips these for the
+      in-diff check. Renderer marks them visually as supplementary.
+
+    Every finding must have at least one anchor location pointing into
+    the diff. Out-of-diff anchors fail validation; out-of-diff context
+    references are accepted.
+    """
 
     file: str = Field(
         ...,
@@ -206,6 +224,15 @@ class ConceptLocation(BaseModel):
     comment: str | None = Field(
         default=None,
         description="Location-specific comment or code snippet context",
+    )
+    context: bool = Field(
+        default=False,
+        description=(
+            "If True, this is a cross-reference (out-of-diff context: where "
+            "the fix should go, an analogous pattern, a related test). The "
+            "file is not validated against the PR diff. If False (default), "
+            "this is an anchor — the file MUST be in the diff."
+        ),
     )
 
     @field_validator("zones", mode="before")

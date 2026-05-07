@@ -113,6 +113,7 @@ If the orchestrator feeds back validation errors, append corrections as new line
   - `lines`: line range (e.g., `"42-58"`) or null for file-level
   - `zones`: zone IDs from zone-registry.yaml (lowercase-kebab-case)
   - `comment`: location-specific context (optional)
+  - `context`: bool, default `false`. Distinguishes **anchor** (`false`, file MUST be in diff) from **cross-reference** (`true`, file can be anywhere — for fix sites, analogous patterns, related tests, contract specs). Every finding must have at least one anchor location whose file is in the diff. See `${CLAUDE_SKILL_DIR}/references/locations-context-guide.md` for the full guide and the failure modes (`finding-location-mismatch`, `finding-without-anchor`) this prevents.
 
 ### Zone ID Rules
 - All zone IDs must be lowercase-kebab-case (e.g., `rl-core`, `review-pack`)

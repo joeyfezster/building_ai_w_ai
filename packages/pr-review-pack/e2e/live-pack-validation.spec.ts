@@ -510,6 +510,13 @@ if (!LIVE_PACK_PATH) {
       const findings = data?.agenticReview?.findings ?? [];
       const mismatches: Array<Record<string, unknown>> = [];
 
+      // Each finding's locations are partitioned by the `context` flag:
+      //   context=false (default) — ANCHOR. File MUST be in diff.
+      //   context=true            — CROSS-REFERENCE. Out-of-diff allowed.
+      // A finding is valid if at least one ANCHOR resolves to an in-diff
+      // file. Anchors that don't resolve are reported. Context references
+      // are exempt from the in-diff check.
+      const findingsWithoutAnchor: Array<Record<string, unknown>> = [];
       for (const f of findings) {
         const locations = Array.isArray(f.locations) ? f.locations : [];
         // Backwards-compat: older packs may only have `file`.
@@ -527,11 +534,21 @@ if (!LIVE_PACK_PATH) {
           }
           continue;
         }
+        let anchorsTotal = 0;
+        let anchorsResolved = 0;
         for (const loc of locations) {
           const orig = String(loc?.file ?? '');
           if (!orig) continue;
           const norm = normalizePath(orig);
-          if (!diffFileSet.has(norm)) {
+          const isContext = loc?.context === true;
+          if (isContext) {
+            // Cross-reference — not validated against diff.
+            continue;
+          }
+          anchorsTotal++;
+          if (diffFileSet.has(norm)) {
+            anchorsResolved++;
+          } else {
             mismatches.push({
               file: orig,
               normalized: norm,
@@ -540,8 +557,26 @@ if (!LIVE_PACK_PATH) {
             });
           }
         }
+        // Emit a separate, sharper signal when a finding has zero anchors
+        // resolving — the finding has no in-diff anchor at all, which means
+        // the reviewer is talking about something not in this PR.
+        if (anchorsTotal > 0 && anchorsResolved === 0) {
+          findingsWithoutAnchor.push({
+            agent: f.agent,
+            notable: String(f.notable ?? '').slice(0, 120),
+            anchorFiles: locations
+              .filter((l: any) => l?.context !== true)
+              .map((l: any) => String(l?.file ?? '')),
+          });
+        }
       }
 
+      if (findingsWithoutAnchor.length > 0) {
+        liveFail('finding-without-anchor', {
+          count: findingsWithoutAnchor.length,
+          examples: findingsWithoutAnchor.slice(0, 10),
+        });
+      }
       if (mismatches.length > 0) {
         liveFail('finding-location-mismatch', {
           count: mismatches.length,
@@ -806,9 +841,21 @@ if (!LIVE_PACK_PATH) {
       // shows raw diff content (legitimately contains "/dev/null"). We're
       // looking for renderer leaks ("undefined" rendered into a label,
       // "null" rendered as a value), not legitimate text content.
-      const visibleText = await page.evaluate(() => {
+      // The intent of this test is to catch RENDERER LEAKS — a missing
+      // field serialized as the literal string "null" or "undefined" into
+      // a label or cell value (e.g., `<td>null</td>`, `<span>undefined</span>`).
+      //
+      // We do NOT want to flag:
+      //   - Reviewer prose mentioning the keywords ("if value is null, ...")
+      //   - Source-code snippets containing language keywords (`return null;`)
+      //
+      // The strictest, lowest-false-positive detector: a leaf element whose
+      // entire trimmed textContent is exactly "null" or "undefined". A real
+      // leak from `${maybeUndefined}` in a template ends up in such a leaf;
+      // prose and code never produce a leaf with only that token.
+      const leaks = await page.evaluate(() => {
         const body = document.body;
-        if (!body) return '';
+        if (!body) return [] as Array<{ tag: string; id: string; cls: string; text: string }>;
         const skip = new Set([
           'SCRIPT',
           'STYLE',
@@ -816,47 +863,78 @@ if (!LIVE_PACK_PATH) {
           'TEMPLATE',
         ]);
         const skipIds = new Set(['file-modal-overlay']);
-        const out: string[] = [];
-        function walk(n: Node): void {
-          if (n.nodeType === Node.ELEMENT_NODE) {
-            const el = n as Element;
-            if (skip.has(el.tagName)) return;
-            if (skipIds.has(el.id)) return;
-          }
-          if (n.nodeType === Node.TEXT_NODE) {
-            out.push(n.nodeValue ?? '');
+        const found: Array<{ tag: string; id: string; cls: string; text: string }> = [];
+        function walk(el: Element): void {
+          if (skip.has(el.tagName)) return;
+          if (skipIds.has(el.id)) return;
+          const childElements = Array.from(el.children);
+          if (childElements.length === 0) {
+            const t = (el.textContent ?? '').trim();
+            if (t === 'null' || t === 'undefined') {
+              found.push({
+                tag: el.tagName.toLowerCase(),
+                id: el.id || '',
+                cls: el.className || '',
+                text: t,
+              });
+            }
             return;
           }
-          n.childNodes.forEach(walk);
+          for (const c of childElements) walk(c);
         }
         walk(body);
-        return out.join('\n');
+        return found;
       });
-
-      // Match standalone tokens, not substrings (nullable, isUndefinedFlag)
-      // and not path components (/dev/null, /undefined).
-      const undefRe = /(?<![A-Za-z_/.-])undefined(?![A-Za-z_/.-])/g;
-      const nullRe = /(?<![A-Za-z_/.-])null(?![A-Za-z_/.-])/g;
-      const undefHits = visibleText.match(undefRe) ?? [];
-      const nullHits = visibleText.match(nullRe) ?? [];
-      if (undefHits.length > 0 || nullHits.length > 0) {
+      if (leaks.length > 0) {
         liveFail('rendered-undefined-or-null', {
-          undefinedCount: undefHits.length,
-          nullCount: nullHits.length,
-          undefinedSamples: collectContexts(visibleText, undefRe, 3),
-          nullSamples: collectContexts(visibleText, nullRe, 3),
+          count: leaks.length,
+          examples: leaks.slice(0, 10),
         });
       }
     });
 
     test('no "(N files)" glob row leak in file coverage', async ({ page }) => {
       await page.goto(PACK_URL);
-      // Only flag the assembler's glob notation — it always renders as
-      // `path/* (N files)` (asterisk + space + parens). Free prose like
-      // "...applies to (5 files)" inside a finding's detail HTML is not
-      // a leak.
-      const text = (await page.locator('body').textContent()) ?? '';
-      const matches = text.match(/\*\s*\(\d+ files?\)/g) ?? [];
+      // The leak we're catching: the assembler's glob notation
+      // `path/* (N files)` rendered into a structural file-coverage or
+      // key-findings ROW (not into prose, not into source-code listings).
+      // Reviewer findings frequently MENTION this pattern in their
+      // detail_html when they write about the glob-row-leak code itself
+      // (this very PR includes such findings) — those mentions are
+      // legitimate prose, not leaks.
+      //
+      // We scope the scan to the visible `.kf-row` cells and the
+      // file-coverage table cells, explicitly excluding `.kf-detail-row`
+      // (where reviewer prose / source snippets live), `<pre>`, `<code>`,
+      // and the file modal.
+      const matches = await page.evaluate(() => {
+        const re = /\*\s*\(\d+ files?\)/g;
+        const skipParents = new Set<Element>();
+        document
+          .querySelectorAll(
+            '.kf-detail-row, pre, code, #file-modal-overlay, script, style'
+          )
+          .forEach((el) => skipParents.add(el));
+        function withinSkip(node: Node): boolean {
+          let cur: Node | null = node;
+          while (cur) {
+            if (cur instanceof Element && skipParents.has(cur)) return true;
+            cur = cur.parentNode;
+          }
+          return false;
+        }
+        const rows = document.querySelectorAll(
+          '.kf-row td, .file-coverage-row td, .file-coverage td'
+        );
+        const found: string[] = [];
+        rows.forEach((cell) => {
+          if (withinSkip(cell)) return;
+          const t = cell.textContent ?? '';
+          const m = t.match(re);
+          if (m) found.push(...m);
+        });
+        return found;
+      });
       if (matches.length > 0) {
         liveFail('glob-row-leak', {
           count: matches.length,

@@ -66,3 +66,7 @@ Use the standard review concept output format. For each finding:
 - `detail`: explain what boundary is violated, what the correct boundary should be, and a concrete rename/refactor suggestion
 - `zones`: which architecture zones are affected
 - `file`: the file(s) where the violation occurs
+- `locations`: each entry has `file`, `lines`, `zones`, `comment`, and `context` (default `false`).
+  - `context: false` (default) — **anchor**: file MUST be in the PR diff.
+  - `context: true` — **cross-reference**: where the fix should go (often a different file than the violation), an analogous pattern, a related boundary already done correctly. File does NOT need to be in the diff.
+  - Every finding must have at least one anchor whose file is in the diff. RBE findings frequently want cross-references (the "good example" file, the rename target). Mark those `context: true`. See `${CLAUDE_SKILL_DIR}/references/locations-context-guide.md`.

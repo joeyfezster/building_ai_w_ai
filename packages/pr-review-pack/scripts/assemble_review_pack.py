@@ -626,24 +626,24 @@ def transform_concept_to_finding(
         all_zones.extend(loc.zones)
     unique_zones = list(dict.fromkeys(all_zones))  # preserve order, dedupe
 
-    # Primary file is the first location's file
+    # Primary file is the first location's file. We previously generated
+    # a `dir/* (N files)` glob string when 3+ locations shared a common
+    # directory, but live-pack-validation flags such rows as
+    # `glob-row-leak` — they leak into the file-coverage table where users
+    # cannot click through to a real path. The full set of locations is
+    # already carried in `locations[]` for renderer use; the legacy
+    # `file` field just needs ONE concrete path.
     primary_file = concept.locations[0].file
 
-    # If multiple files, use glob-like notation
-    if len(concept.locations) > 1:
-        files = [loc.file for loc in concept.locations]
-        # Check if they share a common directory
-        common = Path(files[0]).parent
-        all_same_dir = all(Path(f).parent == common for f in files)
-        if all_same_dir and len(files) > 2:
-            primary_file = f"{common}/* ({len(files)} files)"
-
-    # Carry full locations array for the renderer
+    # Carry full locations array for the renderer. Includes the `context`
+    # flag so live-pack-validation can distinguish anchors from cross-
+    # references, and the renderer can style them differently.
     locations_data = [
         {
             "file": loc.file,
             "lines": loc.lines,
             "comment": loc.comment,
+            "context": loc.context,
         }
         for loc in concept.locations
     ]
