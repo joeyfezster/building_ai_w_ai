@@ -37,6 +37,10 @@ cp "$SOURCE_DIR/playwright.config.ts" "$INSTALL_DIR/" 2>/dev/null || true
 # These are skill-development infrastructure, not runtime artifacts the
 # user-facing skill needs.
 cp -RL "$SOURCE_DIR/scripts" "$INSTALL_DIR/scripts"
+# Apply the scripts/dev/ exclusion claimed in the comment above. The
+# initial cp -RL copies everything; we then remove the dev subdir so
+# the installed skill matches the documented contract.
+rm -rf "$INSTALL_DIR/scripts/dev"
 cp -RL "$SOURCE_DIR/review-prompts" "$INSTALL_DIR/review-prompts"
 cp -RL "$SOURCE_DIR/references" "$INSTALL_DIR/references"
 cp -RL "$SOURCE_DIR/assets" "$INSTALL_DIR/assets"

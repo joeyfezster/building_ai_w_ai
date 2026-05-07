@@ -566,11 +566,27 @@ The orchestrator must never cheat: every iteration that emits a non-empty stderr
 
 ### Step 3: Notify User
 
-The review pack is complete. Tell the user the HTML file path and that live-pack validation passed.
+The review pack is complete. Your final user-facing summary MUST include a Phase 4 provenance block — without this, the human reviewer cannot tell whether banner state ("intact" vs "stripped") reflects validation passing, validation cap exhausted, validation disabled, or validation never ran. All four states would otherwise look identical.
+
+**Required Phase 4 provenance (non-negotiable):**
+
+```
+Phase 4:
+  PHASE4_MAX_ITERS: <effective value, 3 by default>
+  iterations run:   <integer 0..N>
+  codes seen:       [<unique LIVE_PACK_FAIL codes, in order of first appearance>]
+  outcome:          PASSED-AND-STRIPPED | NON-CONVERGENCE-BANNER-INTACT | BLOCK-CODE-BANNER-INTACT | DISABLED-BANNER-INTACT | PLAYWRIGHT-UNAVAILABLE-BANNER-INTACT
+```
+
+The four banner-intact outcomes are NOT interchangeable:
+- `NON-CONVERGENCE-BANNER-INTACT` — auto-correction was attempted up to the cap; codes remain. Reviewer should look at the codes and decide whether to push more iterations or address upstream.
+- `BLOCK-CODE-BANNER-INTACT` — a non-auto-correctable code (BLOCK in the registry) fired; iteration is intentionally skipped. Reviewer must address the code at its source (renderer template gap, etc.).
+- `DISABLED-BANNER-INTACT` — `PHASE4_MAX_ITERS=0` was set; no auto-correction attempted. Reviewer should note this is an intentional bypass and decide whether the bypass is acceptable for this pack.
+- `PLAYWRIGHT-UNAVAILABLE-BANNER-INTACT` — environment couldn't run validation. Reviewer must run validation manually before merge.
 
 **Do NOT git commit automatically.** The user decides when and what to commit. If the user explicitly asks you to commit, then commit the review pack HTML and all .jsonl files in `docs/reviews/pr{N}/`.
 
-**If Playwright cannot be installed or tests cannot run** (e.g., no Node.js, no browser available): leave the banner in place and tell the user "Phase 4 validation could not run — the self-review banner remains. Run Playwright manually to validate." Do NOT silently skip this phase.
+**If Playwright cannot be installed or tests cannot run** (e.g., no Node.js, no browser available): leave the banner in place and emit the provenance block with `outcome: PLAYWRIGHT-UNAVAILABLE-BANNER-INTACT`. Do NOT silently skip this phase.
 
 ### Skill Development
 

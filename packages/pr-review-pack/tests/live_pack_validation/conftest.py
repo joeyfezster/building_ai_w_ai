@@ -242,10 +242,17 @@ def mutate_pack(tmp_path: Path):
     against pr36's existing faults (e.g., the glob-row-leak test itself).
     """
     if not baseline_pack_exists():
-        pytest.skip(
-            f"Baseline pack not found at {BASELINE_PACK}. Fault-injection "
-            "tests need a real generated pack to mutate; check in pr36 "
-            "or generate one before running."
+        # Fail loud, not skip. A skipped fault-injection suite reports green
+        # while exercising zero failure codes — exactly the silent-vacuous
+        # mode the F-grade adversarial finding on PR #42 called out. The
+        # baseline pack is checked into the repo at the BASELINE_PACK path;
+        # if it's missing, that's a regression in the repo state, not a
+        # local-environment quirk to skip past.
+        raise FileNotFoundError(
+            f"Baseline pack not found at {BASELINE_PACK}. The pr36 baseline "
+            "and its docs/reviews/pr36/ source jsonl files are tracked in "
+            "git and required by the fault-injection regression suite. If "
+            "they're missing, check git status and restore from origin."
         )
 
     def _mutate(
