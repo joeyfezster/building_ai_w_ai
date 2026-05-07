@@ -218,9 +218,14 @@ if (!LIVE_PACK_PATH) {
   }
 
   /**
-   * Normalize a finding-location path. Handles git compact rename notation
-   * `dir/{old.py => new.py}` by resolving to the new (post-rename) path,
-   * which is what diff_data.files keys look like.
+   * Normalize a path. Handles git compact rename notation
+   * `dir/{old.py => new.py}` by resolving to the new (post-rename) path.
+   *
+   * Apply to BOTH sides of any path comparison: `diff_data.files` keys also
+   * carry the rename notation (verified empirically — git diff --name-only
+   * with rename detection emits this exact form), so comparing raw diff keys
+   * against an already-normalized fileCoverage path produces a false
+   * `file-coverage-gap` on every PR with renamed files.
    *
    * Also strips trailing whitespace and leading "./".
    */
@@ -450,7 +455,9 @@ if (!LIVE_PACK_PATH) {
       const data = ensurePackData();
       const diff = ensureDiffData();
 
-      const diffFiles = new Set<string>(Object.keys(diff?.files ?? {}));
+      const diffFiles = new Set<string>(
+        Object.keys(diff?.files ?? {}).map((p) => normalizePath(p))
+      );
 
       const fileCoverage = data?.fileCoverage?.files ?? [];
       const coveredPaths = new Map<string, number>();
