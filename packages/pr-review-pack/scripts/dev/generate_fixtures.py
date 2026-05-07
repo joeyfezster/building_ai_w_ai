@@ -40,8 +40,7 @@ from render_review_pack import render  # noqa: E402
 # NOTE: This structure mirrors conftest.py::sample_review_pack_data.
 # The duplication is intentional — conftest serves pytest unit tests,
 # while this module serves E2E Playwright tests (full HTML rendering).
-# They have different lifecycles. TODO: consider extracting a shared
-# fixture module if the data structures diverge further.
+# They have different lifecycles and different extension points.
 
 BASE_DATA: dict = {
     "header": {

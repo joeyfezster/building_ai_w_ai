@@ -17,6 +17,7 @@ their faults are surfaced by the spec but no auto-correction is dispatched.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -138,7 +139,10 @@ def test_finding_zone_unresolved(mutate_pack):
         findings = data["agenticReview"]["findings"]
         assert findings
         # Inject a zone ID that is definitely not in the registry.
-        findings[0]["zones"] = "zone-that-does-not-exist"
+        # Use a list (production schema is list[str]); the spec's string
+        # fallback (.split(/\s+/)) is a tolerance branch that may be
+        # tightened later, so we don't couple to it.
+        findings[0]["zones"] = ["zone-that-does-not-exist"]
         return data
 
     pack = mutate_pack(data_mutator=mutator)
@@ -246,6 +250,30 @@ def test_pack_data_unparseable(mutate_pack):
     )
 
 
+def test_pack_data_unparseable_syntactic(mutate_pack):
+    """`const DATA = ` block with syntactically invalid JSON.
+
+    Forces the readPackData try/except branch by injecting an unbalanced
+    brace. Without this test, a regression that removes the JSON.parse
+    guard would let a SyntaxError propagate as an unstructured error
+    (the very failure mode that motivated `pack-data-unparseable`).
+    """
+    def html_mutator(html: str) -> str:
+        # Find the data block, mangle the inside JSON.
+        marker = "const DATA = {"
+        idx = html.rfind(marker)
+        assert idx >= 0
+        # Inject a stray `{` after the marker so JSON.parse fails before
+        # finding the close. Keep the rest of the file intact.
+        return html[: idx + len(marker)] + "{" + html[idx + len(marker):]
+
+    pack = mutate_pack(html_mutator=html_mutator)
+    run = run_live_pack_spec(pack)
+    assert run.codes() == ["pack-data-unparseable"], (
+        f"got {run.codes()}\nSTDOUT:\n{run.stdout}"
+    )
+
+
 def test_file_coverage_gap_missing_diff_file(mutate_pack):
     def mutator(data: dict) -> dict:
         # Drop the first file from the file-coverage table.
@@ -277,7 +305,12 @@ def test_grade_without_outcome(mutate_pack):
     )
 
 
-def test_architecture_assessment_schema(mutate_pack):
+def test_architecture_assessment_invalid_health(mutate_pack):
+    """`overallHealth` set to a value outside the allowed enum.
+
+    Triggers the `healthBad` branch of the architecture-assessment-invalid
+    check.
+    """
     def mutator(data: dict) -> dict:
         aa = data.get("architectureAssessment")
         if aa is None:
@@ -294,7 +327,98 @@ def test_architecture_assessment_schema(mutate_pack):
 
     pack = mutate_pack(data_mutator=mutator)
     run = run_live_pack_spec(pack)
-    assert run.codes() == ["architecture-assessment-schema"], (
+    assert run.codes() == ["architecture-assessment-invalid"], (
+        f"got {run.codes()}\nSTDOUT:\n{run.stdout}"
+    )
+
+
+def test_architecture_assessment_invalid_missing_field(mutate_pack):
+    """A required field (e.g., `summary`) is absent.
+
+    Triggers the `missing.length > 0` branch of the
+    architecture-assessment-invalid check.
+    """
+    def mutator(data: dict) -> dict:
+        aa = data.get("architectureAssessment")
+        if aa is None:
+            data["architectureAssessment"] = {}
+            aa = data["architectureAssessment"]
+        # Drop a required field. Spec checks: overallHealth, summary,
+        # unzonedFiles, registryWarnings, decisionZoneVerification.
+        aa.pop("summary", None)
+        # Keep the rest valid so we isolate the missing-field branch.
+        aa.setdefault("overallHealth", "healthy")
+        aa.setdefault("unzonedFiles", [])
+        aa.setdefault("registryWarnings", [])
+        aa.setdefault("decisionZoneVerification", [])
+        return data
+
+    pack = mutate_pack(data_mutator=mutator)
+    run = run_live_pack_spec(pack)
+    assert run.codes() == ["architecture-assessment-invalid"], (
+        f"got {run.codes()}\nSTDOUT:\n{run.stdout}"
+    )
+
+
+def test_architecture_assessment_invalid_source_mismatch(mutate_pack):
+    """Rendered `overallHealth` disagrees with source jsonl line.
+
+    Triggers the `sourceMismatch` branch of the
+    architecture-assessment-invalid check. Both rendered and source
+    values are individually valid; the failure is the disagreement.
+    """
+    def mutator(data: dict) -> dict:
+        aa = data.get("architectureAssessment")
+        if aa is None:
+            data["architectureAssessment"] = {}
+            aa = data["architectureAssessment"]
+        # Force a valid-but-different overallHealth so the only
+        # triggered branch is sourceMismatch (assuming the source jsonl
+        # line specifies a different value).
+        aa["overallHealth"] = "action-required"
+        aa.setdefault("summary", "synthetic")
+        aa.setdefault("unzonedFiles", [])
+        aa.setdefault("registryWarnings", [])
+        aa.setdefault("decisionZoneVerification", [])
+        return data
+
+    def jsonl_mutator(target_dir: Path) -> None:
+        # Replace any architecture_assessment line in the architecture
+        # reviewer's jsonl with one that has a DIFFERENT (valid)
+        # overallHealth than the rendered DATA above. We want to
+        # guarantee a deterministic mismatch independent of what the
+        # baseline jsonl happened to record.
+        target = next(target_dir.glob("pr36-architecture-*.jsonl"), None)
+        assert target is not None, "expected pr36 architecture jsonl"
+        original_lines = target.read_text(encoding="utf-8").splitlines()
+        rewritten = []
+        replaced = False
+        for raw in original_lines:
+            if not raw.strip():
+                continue
+            try:
+                obj = json.loads(raw)
+            except json.JSONDecodeError:
+                rewritten.append(raw)
+                continue
+            if obj.get("_type") == "architecture_assessment":
+                obj["overallHealth"] = "healthy"
+                replaced = True
+            rewritten.append(json.dumps(obj))
+        if not replaced:
+            rewritten.append(json.dumps({
+                "_type": "architecture_assessment",
+                "overallHealth": "healthy",
+                "summary": "synthetic source line for mismatch test",
+                "unzonedFiles": [],
+                "registryWarnings": [],
+                "decisionZoneVerification": [],
+            }))
+        target.write_text("\n".join(rewritten) + "\n", encoding="utf-8")
+
+    pack = mutate_pack(data_mutator=mutator, jsonl_mutator=jsonl_mutator)
+    run = run_live_pack_spec(pack)
+    assert run.codes() == ["architecture-assessment-invalid"], (
         f"got {run.codes()}\nSTDOUT:\n{run.stdout}"
     )
 

@@ -176,43 +176,10 @@ jobs:
         run: npx playwright test --project=renderer-fixtures
 
       # Failure-code registry parity: every code in the spec must be in
-      # the registry, and vice versa. The grep matches single-quoted,
-      # double-quoted, and backtick-quoted code literals so a future
-      # contributor cannot bypass parity by switching quote style.
+      # the registry, and vice versa. Logic lives in a standalone script
+      # so it can be run locally and is not subject to YAML escaping.
       - name: Failure-code registry parity
-        run: |
-          set -eo pipefail
-          SPEC=e2e/live-pack-validation.spec.ts
-          REG=references/live-pack-failure-codes.md
-          spec_codes=$(grep -oE "liveFail\(\s*['\"\`][a-z][a-z0-9-]*['\"\`]" "$SPEC" \
-            | sed -E "s/.*['\"\`]([a-z0-9-]+)['\"\`].*/\1/" | sort -u)
-          reg_codes=$(grep -E "^\| \`[a-z][a-z0-9-]*\` \|" "$REG" \
-            | sed -E 's/^\| `([a-z0-9-]+)`.*/\1/' | sort -u)
-          # Sanity guard: empty extraction means the regex broke and the
-          # parity check would silently pass. Fail loudly instead.
-          if [ -z "$spec_codes" ]; then
-            echo "ERROR: spec_codes extraction was empty — parity check broken."
-            echo "Inspect the regex against $SPEC."
-            exit 1
-          fi
-          if [ -z "$reg_codes" ]; then
-            echo "ERROR: reg_codes extraction was empty — parity check broken."
-            echo "Inspect the regex against $REG."
-            exit 1
-          fi
-          if [ "$spec_codes" != "$reg_codes" ]; then
-            echo "Failure-code registry mismatch."
-            echo ""
-            echo "Spec codes:"
-            echo "$spec_codes"
-            echo ""
-            echo "Registry codes:"
-            echo "$reg_codes"
-            echo ""
-            echo "Diff (spec vs registry):"
-            diff <(echo "$spec_codes") <(echo "$reg_codes") || true
-            exit 1
-          fi
+        run: bash scripts/check_failure_code_parity.sh
 
       # Per-code fault-injection regression tests.
       - name: Fault-injection regression tests

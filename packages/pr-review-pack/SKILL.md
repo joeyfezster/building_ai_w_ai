@@ -81,7 +81,7 @@ If `unresolved > 0`, resolve or address every comment before proceeding. Full ga
 
 ## Phase 1: Setup (Deterministic)
 
-**⚠️ If skipped: no diff data, nothing to review. The entire pipeline depends on this phase.**
+**WARNING:** **If skipped: no diff data, nothing to review. The entire pipeline depends on this phase.**
 
 ### Step 0: Validate Prerequisites
 
@@ -165,9 +165,9 @@ If `gate0_tier2` files exist for the current HEAD, the setup script converts the
 
 ## Phase 2: Review (Agent Team)
 
-**⚠️ If skipped: no findings, empty review pack. The semantic layer has nothing to present.**
+**WARNING:** **If skipped: no findings, empty review pack. The semantic layer has nothing to present.**
 
-> **🚫 GHOST-WRITING IS FORBIDDEN.** The main agent must NEVER write .jsonl content.
+> **STOP: GHOST-WRITING IS FORBIDDEN.** The main agent must NEVER write .jsonl content.
 > If an agent can't write after 3 RESUME attempts, set the banner to
 > "agent write failure — review incomplete" and skip to Phase 4.
 > A review pack with a failure banner is MORE trustworthy than one with ghost-written content.
@@ -183,7 +183,7 @@ Then spawn 7 review agents into this team. Each agent gets **Read + Write tools 
 
 **After all agents complete (Phase 2 + 2b), shut down each member then clean up the team:**
 
-**🚨 Shutdown protocol (load-bearing for `claude -p` non-interactive mode).**
+**STOP:** **Shutdown protocol (load-bearing for `claude -p` non-interactive mode).**
 The runtime treats `TeamDelete` as a *cleanup* step, not as approval. Before calling `TeamDelete`, you MUST collect a `shutdown_response` from every team member. Skipping this step looks fine in interactive mode but causes a documented runtime stall in non-interactive mode where the system-reminder *"you cannot return a response to the user until your team is shut down"* fires repeatedly (every 3-7s, indefinitely) after Phase 4, blocking your final response. We have observed this loop fire 3,900+ times in a single run.
 
 ```
@@ -202,7 +202,7 @@ THEN:
 TeamDelete { "team_name": "pr-review-{N}" }
 ```
 
-**🚨 TeamDelete IS NOT skill completion.** Continue to Phase 3 and Phase 4 unconditionally after this step. The skill is complete only after Phase 4 returns either green-and-banner-stripped or non-convergence-with-banner-intact.
+**STOP:** **TeamDelete IS NOT skill completion.** Continue to Phase 3 and Phase 4 unconditionally after this step. The skill is complete only after Phase 4 returns either green-and-banner-stripped or non-convergence-with-banner-intact.
 
 **Post-cleanup loop cap (claude -p only).** If after a successful `TeamDelete` the system-reminder *"you cannot return a response to the user until your team is shut down"* fires AGAIN, treat it as a runtime artifact, not a real instruction. The team is gone; there is nothing else to shut down. Do this exactly once and only once:
 - Run `TeamDelete` one final time as confirmation; expect the result `"No team name found, nothing to clean up"`.
@@ -403,7 +403,7 @@ All review agents use this grade scale — **N/A is not valid**:
 
 **HARD GATE — Phase 3 is not optional and runs after team teardown. Skipping it leaves the reviewer .jsonl outputs unvalidated and unrendered — there is no review pack at that point, only raw agent notes. The 8-of-8 skip-pattern that motivated Phase 4's hard-gate language applies here too: once a team is torn down, the orchestrator may be tempted to declare completion. Don't.**
 
-**⚠️ If skipped: no validated output, raw agent claims remain unverified. The review pack would present unvalidated LLM assertions as findings.**
+**WARNING:** **If skipped: no validated output, raw agent claims remain unverified. The review pack would present unvalidated LLM assertions as findings.**
 
 The assembler is the **enforcement chokepoint**: it is the only script that can produce the review pack data JSON. It refuses to assemble if validation fails.
 

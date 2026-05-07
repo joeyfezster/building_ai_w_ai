@@ -21,8 +21,14 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable, Optional
 
 import pytest
+
+PackData = dict
+DataMutator = Callable[[PackData], PackData]
+HtmlMutator = Callable[[str], str]
+JsonlMutator = Callable[[Path], None]
 
 PACKAGE_DIR = Path(__file__).resolve().parent.parent.parent
 REPO_ROOT = PACKAGE_DIR.parent.parent
@@ -256,9 +262,9 @@ def mutate_pack(tmp_path: Path):
         )
 
     def _mutate(
-        data_mutator=None,
-        html_mutator=None,
-        jsonl_mutator=None,
+        data_mutator: Optional[DataMutator] = None,
+        html_mutator: Optional[HtmlMutator] = None,
+        jsonl_mutator: Optional[JsonlMutator] = None,
         clean_baseline: bool = True,
     ) -> Path:
         """Apply mutations and return path to the mutated pack.
@@ -269,14 +275,10 @@ def mutate_pack(tmp_path: Path):
         codes whose trigger lives in the source jsonl rather than the
         rendered pack.
         """
-        if (
-            data_mutator is None
-            and html_mutator is None
-            and jsonl_mutator is None
-            and clean_baseline is False
-        ):
+        if not any([data_mutator, html_mutator, jsonl_mutator]) and not clean_baseline:
             raise ValueError(
-                "provide a data_mutator, html_mutator, jsonl_mutator, or clean_baseline"
+                "mutate_pack(): provide at least one of data_mutator, html_mutator, "
+                "jsonl_mutator, or set clean_baseline=True"
             )
         html = BASELINE_PACK.read_text(encoding="utf-8")
         if clean_baseline or data_mutator is not None:

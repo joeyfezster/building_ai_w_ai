@@ -79,6 +79,65 @@ if (!LIVE_PACK_PATH) {
 
   type DiagDetails = Record<string, unknown>;
 
+  // -------------------------------------------------------------------------
+  // Named types for pack & diff data
+  //
+  // Pre-RBE the spec used `any` everywhere, which obfuscated which fields
+  // each test depended on. These interfaces narrow to the ACCESSED shape —
+  // they intentionally use `unknown` for nested heterogeneous values so
+  // each test still has to type-assert at the access site (preserving
+  // shape-validation locality), but the top-level structure is now
+  // machine-checkable. Anything not enumerated here is a field the spec
+  // does not (yet) read.
+  // -------------------------------------------------------------------------
+
+  interface PackLocation {
+    file?: string;
+    lines?: string | null;
+    comment?: string | null;
+    /**
+     * `false` (default) — anchor: file MUST be in diff.
+     * `true` — cross-reference (out-of-diff allowed).
+     */
+    context?: boolean;
+    zones?: string[] | string | null;
+  }
+
+  interface PackFinding {
+    agent?: string;
+    file?: string;
+    notable?: string;
+    detail?: string;
+    grade?: string;
+    zones?: string | string[];
+    locations?: PackLocation[];
+  }
+
+  interface PackArchitectureZone {
+    id?: string;
+  }
+
+  interface PackData {
+    header: Record<string, unknown>;
+    agenticReview: {
+      findings?: PackFinding[];
+    } & Record<string, unknown>;
+    fileCoverage?: {
+      files?: Array<Record<string, unknown>>;
+    };
+    architecture?: {
+      zones?: PackArchitectureZone[];
+    };
+    architectureAssessment?: Record<string, unknown>;
+    convergence?: {
+      gates?: Array<Record<string, unknown>>;
+    };
+  }
+
+  interface DiffData {
+    files: Record<string, Record<string, unknown>>;
+  }
+
   /** Build the structured failure line. */
   function diagnostic(code: string, details: DiagDetails): string {
     return `LIVE_PACK_FAIL ${JSON.stringify({ code, details })}`;
@@ -151,7 +210,7 @@ if (!LIVE_PACK_PATH) {
    * Return the first occurrence that satisfies all three. Returns null if
    * nothing parses to the pack-data shape — callers emit `pack-data-unparseable`.
    */
-  function readPackData(): any | null {
+  function readPackData(): PackData | null {
     const html = fs.readFileSync(PACK_ABS_PATH, 'utf-8');
     const prefix = 'const DATA = ';
     // Collect every starting index from last to first.
@@ -177,8 +236,17 @@ if (!LIVE_PACK_PATH) {
         parsed &&
         typeof parsed === 'object' &&
         !Array.isArray(parsed) &&
-        'header' in parsed &&
-        'agenticReview' in parsed
+        // header and agenticReview must be present AND themselves be
+        // non-null, non-array objects. A degenerate `{header: null,
+        // agenticReview: null}` would otherwise pass the gate and produce
+        // a vacuously empty pack that all downstream `?.` chains would
+        // silently swallow.
+        parsed.header !== null &&
+        typeof parsed.header === 'object' &&
+        !Array.isArray(parsed.header) &&
+        parsed.agenticReview !== null &&
+        typeof parsed.agenticReview === 'object' &&
+        !Array.isArray(parsed.agenticReview)
       ) {
         return parsed;
       }
@@ -195,7 +263,7 @@ if (!LIVE_PACK_PATH) {
    * Returns null if no parseable DIFF_DATA_INLINE block is found. Callers
    * are responsible for emitting the `diff-data-missing` diagnostic.
    */
-  function readDiffData(): any | null {
+  function readDiffData(): DiffData | null {
     const html = fs.readFileSync(PACK_ABS_PATH, 'utf-8');
     const prefix = 'const DIFF_DATA_INLINE = ';
     let from = 0;
@@ -206,11 +274,25 @@ if (!LIVE_PACK_PATH) {
       if (html[objStart] === '{') {
         try {
           const objEnd = findObjectEnd(html, objStart);
-          return JSON.parse(html.slice(objStart, objEnd));
+          const parsed = JSON.parse(html.slice(objStart, objEnd));
+          // Shape gate (mirrors readPackData): require a non-null, non-
+          // array `files` object. Without this, a parse-valid object that
+          // happens to lack `files` (e.g., a future template injection
+          // landing the wrong dict at this anchor) would silently pass
+          // and every downstream `diff?.files ?? {}` would no-op.
+          if (
+            parsed &&
+            typeof parsed === 'object' &&
+            !Array.isArray(parsed) &&
+            parsed.files !== null &&
+            typeof parsed.files === 'object' &&
+            !Array.isArray(parsed.files)
+          ) {
+            return parsed;
+          }
+          // Wrong shape — keep looking.
         } catch {
           // Brace parse failed — keep looking for the next occurrence.
-          from = idx + prefix.length;
-          continue;
         }
       }
       from = idx + prefix.length;
@@ -278,6 +360,15 @@ if (!LIVE_PACK_PATH) {
         bestDist = d;
         best = c;
       }
+    }
+    // Distance threshold: if even the best candidate is wildly different
+    // from the target, returning it as a "suggestion" misleads the
+    // orchestrator's correction agent into rewriting a hallucinated path
+    // to an unrelated diff file. Reject when the best edit distance
+    // exceeds half the longest of the two strings.
+    const maxLen = Math.max(target.length, best.length);
+    if (maxLen > 0 && bestDist / maxLen > 0.5) {
+      return null;
     }
     return best;
   }
@@ -359,7 +450,7 @@ if (!LIVE_PACK_PATH) {
           }
           lines.push(parsed);
         } catch {
-          // Malformed JSON in source — flag as part of architecture-assessment-schema
+          // Malformed JSON in source — flag as part of architecture-assessment-invalid
           // or as an indirect signal via missing concept backings; skip here.
         }
       }
@@ -374,11 +465,11 @@ if (!LIVE_PACK_PATH) {
   // Module-level data caches (lazily populated)
   // -------------------------------------------------------------------------
 
-  let cachedPackData: any | null = null;
-  let cachedDiffData: any | null = null;
+  let cachedPackData: PackData | null = null;
+  let cachedDiffData: DiffData | null = null;
   let cachedJsonl: ReturnType<typeof loadSourceJsonl> | null = null;
 
-  function ensurePackData(): any {
+  function ensurePackData(): PackData {
     if (cachedPackData === null) {
       const parsed = readPackData();
       if (parsed === null) {
@@ -393,7 +484,7 @@ if (!LIVE_PACK_PATH) {
     return cachedPackData;
   }
 
-  function ensureDiffData(): any {
+  function ensureDiffData(): DiffData {
     if (cachedDiffData === null) {
       const parsed = readDiffData();
       if (parsed === null) {
@@ -418,18 +509,16 @@ if (!LIVE_PACK_PATH) {
   // -------------------------------------------------------------------------
   // Test suite — serial mode is non-negotiable (banner-strip is terminal).
   //
-  // SERIAL_MODE_REQUIRED is a sentinel. It exists so that a contributor who
-  // edits the configure() call below cannot avoid noticing it — the
-  // adjacent comment block in the file header explains why dropping
-  // serial mode breaks the banner-strip causal chain. If you change the
-  // mode here, you must also re-read the file-header comment and update
-  // the sentinel + flag accordingly. The constant is intentionally
-  // unused at runtime; its only job is to be load-bearing prose pinned
-  // to the same edit site.
+  // **DO NOT change `mode: 'serial'` below without re-reading the
+  // file-header comment block.** Dropping serial mode breaks the
+  // banner-strip causal chain: the terminal test would no longer be
+  // skipped after upstream failures, and the on-disk pack could have
+  // its banner removed even though validation reported a failure. The
+  // afterEach hook below also depends on serial mode to capture every
+  // non-passed status (failed, timedOut, interrupted, skipped). If you
+  // change this, you must also re-architect the banner-strip guard.
   // -------------------------------------------------------------------------
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const SERIAL_MODE_REQUIRED = true;
   test.describe.configure({ mode: 'serial' });
 
   test.describe('Live Pack Validation', () => {
@@ -823,7 +912,7 @@ if (!LIVE_PACK_PATH) {
       }
 
       if (missing.length > 0 || healthBad || sourceMismatch) {
-        liveFail('architecture-assessment-schema', {
+        liveFail('architecture-assessment-invalid', {
           missingFields: missing,
           invalidOverallHealth: healthBad ? aa.overallHealth : null,
           sourceMismatch: sourceMismatch ? sourceMismatchDetails : null,
@@ -1184,39 +1273,45 @@ if (!LIVE_PACK_PATH) {
 
     test('TERMINAL: strip self-review banner on full pass', async () => {
       // Defense-in-depth check. With serial mode in place this branch is
-      // unreachable (Playwright already skipped us). If serial mode is
-      // ever dropped, the afterEach hook above sets the flag from the
-      // 'skipped' status of upstream failures' siblings, and we refuse
-      // to strip the banner here.
-      if (liveValidationFailed) {
-        liveFail('renderer-template-gap', {
-          reason: 'banner-strip refused — earlier live-pack assertion failed',
-          rule: 'banner-strip is the terminal test; it only runs when every prior live-pack assertion passes',
-        });
-      }
+      // unreachable (Playwright already skipped us after the first
+      // failure). If serial mode is ever dropped, the afterEach hook
+      // above sets the flag from the 'skipped' status of upstream
+      // failures' siblings, and this expect() fails the terminal test
+      // BEFORE we touch the on-disk file — banner stays. We use a plain
+      // expect() rather than a live-pack diagnostic code because the
+      // failure mode here is "the test infrastructure changed", not "the
+      // pack data is wrong"; the orchestrator would have nothing to fix.
+      expect(liveValidationFailed).toBe(false);
 
-      let html = fs.readFileSync(PACK_ABS_PATH, 'utf-8');
+      const original = fs.readFileSync(PACK_ABS_PATH, 'utf-8');
+      let updated = original;
 
       // 1. Flip the data-inspected attribute on <body>.
-      html = html.replace(/data-inspected="false"/, 'data-inspected="true"');
+      updated = updated.replace(/data-inspected="false"/, 'data-inspected="true"');
 
       // 2. Remove the banner div.
-      html = html.replace(
+      updated = updated.replace(
         /<div id="visual-inspection-banner"[^>]*>[\s\S]*?<\/div>/,
         ''
       );
 
       // 3. Remove the spacer div.
-      html = html.replace(
+      updated = updated.replace(
         /<div id="visual-inspection-spacer"[^>]*><\/div>/,
         ''
       );
 
-      fs.writeFileSync(PACK_ABS_PATH, html, 'utf-8');
-
-      const updated = fs.readFileSync(PACK_ABS_PATH, 'utf-8');
+      // Verify the in-memory result BEFORE writing to disk. A previous
+      // implementation wrote first and verified after — if any expect()
+      // failed (regex didn't match an unexpected attribute order, etc.),
+      // the disk file already had the banner removed but Playwright
+      // recorded the test as failed. Validator state and on-disk state
+      // would disagree. Verifying first makes the write the LAST step;
+      // if any expectation fails, the original file on disk is intact.
       expect(updated).toContain('data-inspected="true"');
       expect(updated).not.toMatch(/<div id="visual-inspection-banner"/);
+
+      fs.writeFileSync(PACK_ABS_PATH, updated, 'utf-8');
     });
   });
 }

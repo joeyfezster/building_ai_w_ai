@@ -314,12 +314,18 @@ def read_and_validate_jsonl(
                         merged = type(original).model_validate(merged_dict)
                         concept_by_id[cu.concept_id] = merged
                     except ValidationError as e:
+                        error_lines = []
+                        for err in e.errors():
+                            loc = ".".join(str(p) for p in err.get("loc", []))
+                            msg = err.get("msg", "")
+                            error_lines.append(f"{loc}: {msg}" if loc else msg)
                         report.add_error(
                             jsonl_path.name,
                             0,
                             f"ConceptUpdate merge validation failed for "
                             f"concept_id '{cu.concept_id}': "
-                            f"{e.error_count()} error(s) — {e.errors()[0]['msg']}",
+                            f"{e.error_count()} error(s), "
+                            + "; ".join(error_lines),
                         )
             # Rebuild list preserving order
             concepts = [
