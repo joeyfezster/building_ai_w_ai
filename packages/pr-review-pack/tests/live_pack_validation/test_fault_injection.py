@@ -133,6 +133,36 @@ def test_diff_data_missing(mutate_pack):
     )
 
 
+def test_pack_data_unparseable(mutate_pack):
+    """Disable every shape-valid `const DATA = {...};` occurrence.
+
+    Models the failure mode discovered when /pr-review-pack reviewed
+    this very PR: the rendered HTML embedded the spec's own source as
+    a diff listing, which contains the literal `const DATA = ` — and
+    a naive `lastIndexOf` lands inside the source listing rather than
+    the actual data block. The fixed reader walks every occurrence
+    bottom-up and validates pack-data shape (top-level `header` AND
+    `agenticReview`); only an occurrence with that exact shape counts.
+
+    The mutation here renames the live data marker so it can no longer
+    be matched, which proves the spec emits the structured failure
+    code rather than crashing with an unstructured SyntaxError.
+    """
+
+    def data_mutator(_data: dict) -> dict:
+        # Replace the data block with a dict that lacks the pack-data
+        # shape markers (`header` and `agenticReview`). The reader walks
+        # every `const DATA = ` occurrence; without those keys, none
+        # qualifies, and the spec emits the structured failure code.
+        return {"unrelated": "payload", "shape": "invalid"}
+
+    pack = mutate_pack(data_mutator=data_mutator)
+    run = run_live_pack_spec(pack)
+    assert run.codes() == ["pack-data-unparseable"], (
+        f"got {run.codes()}\nSTDOUT:\n{run.stdout}"
+    )
+
+
 def test_file_coverage_gap_missing_diff_file(mutate_pack):
     def mutator(data: dict) -> dict:
         # Drop the first file from the file-coverage table.

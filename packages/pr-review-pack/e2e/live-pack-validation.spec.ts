@@ -137,24 +137,53 @@ if (!LIVE_PACK_PATH) {
    * `window.DATA` because `const` is script-scoped and never attached to
    * `window` — `page.evaluate(() => window.DATA)` always returns undefined.
    *
-   * The renderer's `rfind` logic puts the data block at the LAST occurrence
-   * of `const DATA = `, so we mirror that here.
+   * The renderer puts the data block at the LAST occurrence of `const DATA = `
+   * in the rendered HTML — but a pack reviewing this very repo will also embed
+   * the source code of THIS file as a diff listing, which contains that exact
+   * literal. `lastIndexOf` would land inside the source listing.
+   *
+   * Strategy: walk every occurrence from the bottom up. For each:
+   *   1. Locate balanced `{ ... }` after the marker.
+   *   2. Try to JSON.parse it.
+   *   3. Validate it has the pack-data shape (top-level `header` AND
+   *      `agenticReview` keys — combination that won't appear in any
+   *      serialized object the renderer might inline besides the data block).
+   * Return the first occurrence that satisfies all three. Returns null if
+   * nothing parses to the pack-data shape — callers emit `pack-data-unparseable`.
    */
-  function readPackData(): any {
+  function readPackData(): any | null {
     const html = fs.readFileSync(PACK_ABS_PATH, 'utf-8');
     const prefix = 'const DATA = ';
-    const idx = html.lastIndexOf(prefix);
-    if (idx < 0) {
-      throw new Error(
-        `could not find "${prefix}" in pack HTML at ${PACK_ABS_PATH}`
-      );
+    // Collect every starting index from last to first.
+    const starts: number[] = [];
+    let from = html.length;
+    while (true) {
+      const idx = html.lastIndexOf(prefix, from);
+      if (idx < 0) break;
+      starts.push(idx);
+      from = idx - 1;
     }
-    const objStart = idx + prefix.length;
-    if (html[objStart] !== '{') {
-      throw new Error(`expected "{" after "${prefix}"`);
+    for (const idx of starts) {
+      const objStart = idx + prefix.length;
+      if (html[objStart] !== '{') continue;
+      let parsed: any;
+      try {
+        const objEnd = findObjectEnd(html, objStart);
+        parsed = JSON.parse(html.slice(objStart, objEnd));
+      } catch {
+        continue;
+      }
+      if (
+        parsed &&
+        typeof parsed === 'object' &&
+        !Array.isArray(parsed) &&
+        'header' in parsed &&
+        'agenticReview' in parsed
+      ) {
+        return parsed;
+      }
     }
-    const objEnd = findObjectEnd(html, objStart);
-    return JSON.parse(html.slice(objStart, objEnd));
+    return null;
   }
 
   /**
@@ -346,7 +375,15 @@ if (!LIVE_PACK_PATH) {
 
   function ensurePackData(): any {
     if (cachedPackData === null) {
-      cachedPackData = readPackData();
+      const parsed = readPackData();
+      if (parsed === null) {
+        liveFail('pack-data-unparseable', {
+          packPath: PACK_ABS_PATH,
+          reason:
+            'no `const DATA = {...};` block in pack HTML had pack-data shape (top-level `header` and `agenticReview`); either the renderer emitted malformed JSON or the marker itself was not emitted',
+        });
+      }
+      cachedPackData = parsed;
     }
     return cachedPackData;
   }
