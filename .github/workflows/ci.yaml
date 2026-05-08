@@ -143,3 +143,44 @@ jobs:
       # Anti-gaming test quality check
       - name: Check test quality (anti-vacuous, anti-gaming)
         run: python ./packages/dark-factory/scripts/check_test_quality.py
+
+  # ── pr-review-pack Skill Check ──────────────────────────────
+  # Validates the pr-review-pack skill itself: the live-pack-validation
+  # spec must declare every failure code in the registry, and every
+  # registered code must be exercised by the spec. Also runs the per-code
+  # fault-injection regression tests.
+  pr-review-pack-skill-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pr-review-pack
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r ../../requirements.txt -r ../../requirements-dev.txt
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      # Build the renderer fixtures so renderer-fixtures can run.
+      - name: Generate renderer fixtures
+        run: python3 scripts/dev/generate_fixtures.py
+
+      # Renderer regression suite — fixture-bound.
+      - name: Renderer fixtures (Playwright)
+        run: npx playwright test --project=renderer-fixtures
+
+      # Failure-code registry parity: every code in the spec must be in
+      # the registry, and vice versa. Logic lives in a standalone script
+      # so it can be run locally and is not subject to YAML escaping.
+      - name: Failure-code registry parity
+        run: bash scripts/check_failure_code_parity.sh
+
+      # Per-code fault-injection regression tests.
+      - name: Fault-injection regression tests
+        run: pytest tests/live_pack_validation/ -v

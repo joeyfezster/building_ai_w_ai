@@ -119,7 +119,10 @@ If the orchestrator feeds back validation errors, append corrections as new line
 - **title**: One-line summary (max 200 chars)
 - **grade**: A | B+ | B | C | F — **N/A is NOT valid**
 - **category**: Always `"architecture"`
-- **locations**: For structural findings, zones may be empty for "unzoned" findings
+- **locations**: For structural findings, zones may be empty for "unzoned" findings. Each location has `file`, `lines`, `zones`, `comment`, and `context` (default `false`).
+  - `context: false` (default) — **anchor**: this code IS what the finding is about. File MUST be in the PR diff.
+  - `context: true` — **cross-reference**: where the fix should go (e.g. `zone-registry.yaml:NN-NN` to add a new zone or update specs), an analogous pattern, a related test, a contract spec. File does NOT need to be in the diff. **Architecture review almost always needs cross-references** (zone registry edits, related-pattern files, decision records). Use `context: true` whenever you cite a file that's not in the PR diff but is the place a reader should look or change.
+  - Every finding must have at least one anchor (`context: false`) location whose file is in the diff. If your finding is purely about an out-of-diff registry edit, anchor it with the in-diff file that motivates the registry change. See `${CLAUDE_SKILL_DIR}/references/locations-context-guide.md` for the full guide.
 
 ### Zone ID Rules
 - All zone IDs must be lowercase-kebab-case

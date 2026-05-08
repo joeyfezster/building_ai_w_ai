@@ -67,7 +67,9 @@ zones:
     sublabel: "Containers, compute"
   review-pack:
     paths: ["packages/pr-review-pack/**", "docs/pr*_review_pack.html", "docs/pr*_diff_data.json"]
-    specs: ["packages/pr-review-pack/references/build-spec.md"]
+    specs:
+      - packages/pr-review-pack/references/build-spec.md
+      - packages/pr-review-pack/references/live-pack-failure-codes.md
     category: factory
     label: "Review Pack"
     sublabel: "PR review pack skill (template, renderer, scaffold, CLI, tests)"

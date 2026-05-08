@@ -277,6 +277,12 @@
       "title": "Decisionzoneverification",
       "type": "array"
     },
+    "coreIssuesNeedAttention": {
+      "default": false,
+      "description": "Explicit flag controlling the 'Needs Attention' pill in Core Issues",
+      "title": "Coreissuesneedattention",
+      "type": "boolean"
+    },
     "overallHealth": {
       "enum": [
         "healthy",

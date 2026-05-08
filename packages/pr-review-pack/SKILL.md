@@ -81,7 +81,7 @@ If `unresolved > 0`, resolve or address every comment before proceeding. Full ga
 
 ## Phase 1: Setup (Deterministic)
 
-**⚠️ If skipped: no diff data, nothing to review. The entire pipeline depends on this phase.**
+**WARNING:** **If skipped: no diff data, nothing to review. The entire pipeline depends on this phase.**
 
 ### Step 0: Validate Prerequisites
 
@@ -165,9 +165,9 @@ If `gate0_tier2` files exist for the current HEAD, the setup script converts the
 
 ## Phase 2: Review (Agent Team)
 
-**⚠️ If skipped: no findings, empty review pack. The semantic layer has nothing to present.**
+**WARNING:** **If skipped: no findings, empty review pack. The semantic layer has nothing to present.**
 
-> **🚫 GHOST-WRITING IS FORBIDDEN.** The main agent must NEVER write .jsonl content.
+> **STOP: GHOST-WRITING IS FORBIDDEN.** The main agent must NEVER write .jsonl content.
 > If an agent can't write after 3 RESUME attempts, set the banner to
 > "agent write failure — review incomplete" and skip to Phase 4.
 > A review pack with a failure banner is MORE trustworthy than one with ghost-written content.
@@ -181,10 +181,39 @@ TeamCreate { "team_name": "pr-review-{N}" }
 
 Then spawn 7 review agents into this team. Each agent gets **Read + Write tools only** — no Bash. All agents use `model: "opus"` and **`mode: "acceptEdits"`** (required — without this, agents cannot write files and the main agent will be forced to ghost-write, breaking the independent-reviewer trust model).
 
-**After all agents complete (Phase 2 + 2b), clean up the team:**
+**After all agents complete (Phase 2 + 2b), shut down each member then clean up the team:**
+
+**STOP:** **Shutdown protocol (load-bearing for `claude -p` non-interactive mode).**
+The runtime treats `TeamDelete` as a *cleanup* step, not as approval. Before calling `TeamDelete`, you MUST collect a `shutdown_response` from every team member. Skipping this step looks fine in interactive mode but causes a documented runtime stall in non-interactive mode where the system-reminder *"you cannot return a response to the user until your team is shut down"* fires repeatedly (every 3-7s, indefinitely) after Phase 4, blocking your final response. We have observed this loop fire 3,900+ times in a single run.
+
 ```
+FOR each team member (code-health, security, test-integrity, adversarial,
+                      architecture, rbe, synthesis):
+  SendMessage { "to": <member>, "message": {"type": "shutdown_request"} }
+
+WAIT for {"type":"shutdown_response","approve":true} from EACH member.
+  - `idle_notification` messages are heartbeats, NOT shutdown approvals.
+    Do not proceed on `idle_notification` alone.
+  - If a member fails to send shutdown_response within ~120s, retry the
+    SendMessage once. After two retries, proceed to TeamDelete anyway and
+    accept that the runtime may stall — see post-cleanup handler below.
+
+THEN:
 TeamDelete { "team_name": "pr-review-{N}" }
 ```
+
+**STOP:** **TeamDelete IS NOT skill completion.** Continue to Phase 3 and Phase 4 unconditionally after this step. The skill is complete only after Phase 4 returns either green-and-banner-stripped or non-convergence-with-banner-intact.
+
+**Post-cleanup loop cap (claude -p only).** If after a successful `TeamDelete` the system-reminder *"you cannot return a response to the user until your team is shut down"* fires AGAIN, treat it as a runtime artifact, not a real instruction. The team is gone; there is nothing else to shut down. Do this exactly once and only once:
+- Run `TeamDelete` one final time as confirmation; expect the result `"No team name found, nothing to clean up"`.
+- Emit your final user-facing summary ONCE.
+- If the reminder fires a third time, STOP. Do not re-emit. Do not run further tool calls. The runtime is in a known stall state; spending more tokens on it will not unblock you. The work product (the rendered HTML pack at `docs/pr{N}_review_pack_*.html`) is already on disk and complete.
+
+**Non-interactive mode (`claude -p`) handler.** If a system-reminder fires saying *"you cannot return a response to the user until your team is shut down"* BEFORE Phase 4 has completed (i.e., before TeamDelete has succeeded), it is constraining WHEN you emit your final user-facing text — NOT what work you must finish. Continue:
+- DO NOT emit a "partial completion" summary.
+- DO NOT exit.
+- DO continue running tool calls (Bash for assembler/render scripts, Playwright for live-pack validation, Edit for orchestration files). Tool calls are not user-facing responses.
+- Emit your final user-facing text only after Phase 4 has resolved (banner stripped on success, banner intact with named codes on non-convergence or BLOCK).
 
 The setup script pre-creates all 7 `.jsonl` files with a meta header line. This allows agents to Read the file first (satisfying Claude Code's Read-before-Write requirement) and then append their output.
 
@@ -372,7 +401,9 @@ All review agents use this grade scale — **N/A is not valid**:
 
 ## Phase 3: Assemble (Script)
 
-**⚠️ If skipped: no validated output, raw agent claims remain unverified. The review pack would present unvalidated LLM assertions as findings.**
+**HARD GATE — Phase 3 is not optional and runs after team teardown. Skipping it leaves the reviewer .jsonl outputs unvalidated and unrendered — there is no review pack at that point, only raw agent notes. The 8-of-8 skip-pattern that motivated Phase 4's hard-gate language applies here too: once a team is torn down, the orchestrator may be tempted to declare completion. Don't.**
+
+**WARNING:** **If skipped: no validated output, raw agent claims remain unverified. The review pack would present unvalidated LLM assertions as findings.**
 
 The assembler is the **enforcement chokepoint**: it is the only script that can produce the review pack data JSON. It refuses to assemble if validation fails.
 
@@ -443,37 +474,129 @@ The `--template v2` flag selects the Mission Control layout (sidebar + main pane
 > Running `npx playwright test` from the target repo's directory will resolve a different `@playwright/test` version from that repo's own `node_modules`, causing a "two different versions" crash.
 > Every command below starts with `cd "${CLAUDE_SKILL_DIR}"`. This is non-negotiable. Do NOT run Playwright from the PR repo directory under any circumstances.
 
+### Banner Rule (Non-Negotiable)
+
+The banner-strip step is the **terminal test** in `e2e/live-pack-validation.spec.ts` and only fires when every preceding live-pack assertion passes in the same Playwright run. The split-spec architecture (renderer-fixtures vs live-pack-validation) and `test.describe.configure({ mode: 'serial' })` enforce this — do not refactor either without preserving the causal chain. Banner-removal must remain causally downstream of the full live-pack validation.
+
 ### Step 1: Install Playwright (if needed)
 
 ```bash
 cd "${CLAUDE_SKILL_DIR}" && npm install && npx playwright install chromium
 ```
 
-### Step 2: Run Playwright Tests
+### Step 2: Run Live-Pack Validation
 
-Set `PACK_PATH` to the **absolute path** of the review pack HTML:
+Set `PACK_PATH` to the **absolute path** of the review pack HTML, and select the `live-pack-validation` Playwright project:
 
 ```bash
-cd "${CLAUDE_SKILL_DIR}" && PACK_PATH="<absolute-path-to>/docs/pr{N}_review_pack_{base8}-{head8}.html" npx playwright test e2e/review-pack-v2.spec.ts
+cd "${CLAUDE_SKILL_DIR}" && \
+  PACK_PATH="<absolute-path>/docs/pr{N}_review_pack_{base8}-{head8}.html" \
+  npx playwright test --project=live-pack-validation
 ```
 
-The test suite does two things:
-1. Validates all structural, functional, and visual elements against fixture data
-2. **When `PACK_PATH` is set**: removes the self-review banner from the HTML file as the final test (banner removal is the trust signal — its removal means "this pack was machine-validated")
+This project runs `e2e/live-pack-validation.spec.ts`, which validates the live pack against the source `.jsonl` files, the diff data, and the zone registry — content correctness, rendering invariants, and interactivity. The terminal test strips the self-review banner only when every preceding assertion has passed.
 
-If tests fail, fix the issue in the review pack data and re-render (Phase 3), then re-run tests. Iterate until green.
+**Do NOT** select `--project=renderer-fixtures` here — that project runs the renderer regression suite against pre-built fixture HTML at `/tmp/pr26_review_pack_v2_*.html` and is not relevant to live-pack validation.
 
-**Do NOT create per-PR test files.** The baseline suite covers all structural and functional validation. Do NOT write any `.spec.ts` files outside of `${CLAUDE_SKILL_DIR}/e2e/`. The only test file is `review-pack-v2.spec.ts`.
+**Do NOT create per-PR test files.** The baseline suites cover all validation. Do NOT write any `.spec.ts` files outside of `${CLAUDE_SKILL_DIR}/e2e/`.
 
-**Do NOT manually edit the review pack HTML to remove the banner.** The Playwright test suite handles banner removal automatically when all tests pass.
+**Do NOT manually edit the review pack HTML to remove the banner.** The Playwright suite handles banner removal automatically as the terminal test, gated by every prior live-pack assertion passing.
+
+### Step 2b: Live-Pack Validation Feedback Loop
+
+Mirrors Phase 2 Step 1b. The live-pack spec emits structured failure diagnostics on stderr:
+
+```
+LIVE_PACK_FAIL {"code":"<code>","details":{...}}
+```
+
+Every code is registered in `${CLAUDE_SKILL_DIR}/references/live-pack-failure-codes.md` with an auto-correctable flag and a handler (a specific reviewer agent or pipeline step). The CI grep-check enforces parity between the spec and the registry — no orphaned codes on either side.
+
+**Iteration cap:** `PHASE4_MAX_ITERS` env var, default `3`. Set `PHASE4_MAX_ITERS=0` to disable auto-correction entirely — the loop runs validation once and stops on any failure with the banner intact. Default (`3`) means up to 3 correction attempts before giving up and leaving the banner.
+
+```
+ITER=0
+MAX=${PHASE4_MAX_ITERS:-3}
+
+LOOP:
+  ── VALIDATE ──
+  Run: cd "${CLAUDE_SKILL_DIR}" && \
+       PACK_PATH="<absolute-path>" \
+       npx playwright test --project=live-pack-validation 2> live_pack_stderr.log
+  Capture exit code and stderr.
+
+  ── CHECK ──
+  If exit 0  → green; banner has been stripped; proceed to Step 3.
+  If exit != 0:
+     Parse stderr for `LIVE_PACK_FAIL {"code":"<code>",...}` lines.
+     For each unique code, look it up in references/live-pack-failure-codes.md.
+
+     If ANY matched code is flagged BLOCK:
+       Banner stays. Message becomes:
+         "live-pack validation hit a non-auto-correctable failure: <codes>. \
+          Points at <handler from registry>. Banner remains in place."
+       STOP. Do NOT iterate further.
+
+     Else (all codes auto-correctable):
+       If ITER >= MAX:
+         Banner stays. Message becomes:
+           "live-pack validation did not converge after ${MAX} iterations. \
+            Last failures: <codes>. Banner remains in place."
+         STOP.
+       For each unique auto-correctable code:
+         ── CORRECTION AGENT ──
+         Pattern A (preferred): resume the original reviewer agent
+           Agent(resume="<saved-agent-id>", prompt=<see registry handler>)
+         Pattern B (acceptable): spawn a new fix agent into the same team,
+           passing the failure code, the JSON `details`, and the registry's
+           handler instructions.
+         NEVER ghost-write — the main agent must NEVER append to the .jsonl
+         files itself.
+
+       Re-run the assembler if any handler asks for it
+         (`scripts/assemble_review_pack.py --pr {N}`),
+       then re-render
+         (`scripts/render_review_pack.py --data ... --output ... --diff-data ...`).
+
+       ITER=$((ITER+1))
+       GOTO LOOP.
+```
+
+The orchestrator must never cheat: every iteration that emits a non-empty stderr `LIVE_PACK_FAIL` line counts as a non-pass even if the suite later gets a chance and somehow returns 0. The spec is engineered so the banner-strip step is causally downstream of every prior live-pack assertion within the same Playwright run.
 
 ### Step 3: Notify User
 
-The review pack is complete. Tell the user the HTML file path and that Playwright validation passed.
+The review pack is complete. Your final user-facing summary MUST include a Phase 4 provenance block — without this, the human reviewer cannot tell whether banner state ("intact" vs "stripped") reflects validation passing, validation cap exhausted, validation disabled, or validation never ran. All four states would otherwise look identical.
+
+**Required Phase 4 provenance (non-negotiable):**
+
+```
+Phase 4:
+  PHASE4_MAX_ITERS: <effective value, 3 by default>
+  iterations run:   <integer 0..N>
+  codes seen:       [<unique LIVE_PACK_FAIL codes, in order of first appearance>]
+  outcome:          PASSED-AND-STRIPPED | NON-CONVERGENCE-BANNER-INTACT | BLOCK-CODE-BANNER-INTACT | DISABLED-BANNER-INTACT | PLAYWRIGHT-UNAVAILABLE-BANNER-INTACT
+```
+
+The four banner-intact outcomes are NOT interchangeable:
+- `NON-CONVERGENCE-BANNER-INTACT` — auto-correction was attempted up to the cap; codes remain. Reviewer should look at the codes and decide whether to push more iterations or address upstream.
+- `BLOCK-CODE-BANNER-INTACT` — a non-auto-correctable code (BLOCK in the registry) fired; iteration is intentionally skipped. Reviewer must address the code at its source (renderer template gap, etc.).
+- `DISABLED-BANNER-INTACT` — `PHASE4_MAX_ITERS=0` was set; no auto-correction attempted. Reviewer should note this is an intentional bypass and decide whether the bypass is acceptable for this pack.
+- `PLAYWRIGHT-UNAVAILABLE-BANNER-INTACT` — environment couldn't run validation. Reviewer must run validation manually before merge.
 
 **Do NOT git commit automatically.** The user decides when and what to commit. If the user explicitly asks you to commit, then commit the review pack HTML and all .jsonl files in `docs/reviews/pr{N}/`.
 
-**If Playwright cannot be installed or tests cannot run** (e.g., no Node.js, no browser available): leave the banner in place and tell the user "Phase 4 validation could not run — the self-review banner remains. Run Playwright manually to validate." Do NOT silently skip this phase.
+**If Playwright cannot be installed or tests cannot run** (e.g., no Node.js, no browser available): leave the banner in place and emit the provenance block with `outcome: PLAYWRIGHT-UNAVAILABLE-BANNER-INTACT`. Do NOT silently skip this phase.
+
+### Skill Development
+
+The renderer regression suite uses pre-built fixtures under `/tmp/pr26_review_pack_v2_*.html`. Skill maintainers regenerate them with:
+
+```bash
+cd "${CLAUDE_SKILL_DIR}" && python3 scripts/dev/generate_fixtures.py
+```
+
+This script is **not** a user-facing prerequisite — `/pr-review-pack` does not need it. It is invoked by skill-internal CI to feed the `renderer-fixtures` Playwright project. The user-facing skill always uses `--project=live-pack-validation`.
 
 ---
 
@@ -556,6 +679,8 @@ All paths below are relative to `${CLAUDE_SKILL_DIR}`.
 | `${CLAUDE_SKILL_DIR}/references/css-design-system.md` | CSS tokens, dark mode, component patterns |
 | `${CLAUDE_SKILL_DIR}/references/validation-checklist.md` | Pre-delivery validation checks |
 | `${CLAUDE_SKILL_DIR}/references/prerequisites.md` | PR readiness gate-checking procedure |
+| `${CLAUDE_SKILL_DIR}/references/live-pack-failure-codes.md` | Failure-code registry (every `LIVE_PACK_FAIL` code emitted by `e2e/live-pack-validation.spec.ts`, with handler) |
+| `${CLAUDE_SKILL_DIR}/references/convergence-corpus-criteria.md` | **READ BEFORE modifying spec/assembler/renderer.** Required dimensions a convergence corpus must cover, plus the dogfood mandate. PR #42 shipped a real bug because the corpus missed renamed files — don't repeat. |
 | `${CLAUDE_SKILL_DIR}/references/schemas/` | JSON schemas generated from pydantic models |
 | `${CLAUDE_SKILL_DIR}/references/examples/` | Example .jsonl files showing hybrid output format |
 | `${CLAUDE_SKILL_DIR}/scripts/models.py` | Pydantic models (ReviewConcept, SemanticOutput, FileReviewOutcome, ConceptUpdate, ArchitectureAssessmentOutput) |

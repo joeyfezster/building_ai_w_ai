@@ -166,76 +166,70 @@ Replace `{N}` with the actual PR number before running.
 
 ## Stage 3: Playwright Validation (Replaces Manual Banner Removal)
 
-Playwright tests are the quality gate that controls the visual inspection banner. The banner stays visible until all Playwright tests pass. No manual banner removal — ever.
+Playwright tests are the quality gate that controls the visual inspection banner. The banner stays visible until live-pack validation passes. No manual banner removal — ever.
 
-### 3.1 Run the Baseline Suite
+The skill ships two Playwright projects, separated by responsibility:
 
-The baseline suite covers structural and layout tests that apply to ALL review packs: sidebar layout, tier collapse/expand, theme toggle, self-contained guarantees, status badge states, commit scope, merge button, architecture diagram, code diffs, expandable sections, sidebar navigation, and DATA integrity.
+| Project | Spec | Run when | Triggers banner removal? |
+|---|---|---|---|
+| `renderer-fixtures` | `e2e/renderer-fixtures.spec.ts` | Skill-internal CI; renderer regression | NO |
+| `live-pack-validation` | `e2e/live-pack-validation.spec.ts` | Phase 4 Step 2 against a real `PACK_PATH` | YES (terminal test) |
 
-```bash
-npx playwright test e2e/review-pack-v2.spec.ts
-```
-
-The baseline suite expects three test fixture files at known paths (see the spec file for current fixture paths). If the fixtures don't exist, render them first with the three status variants (ready, needs-review, blocked).
-
-### 3.2 Create the Per-PR Expansion
-
-Never modify the baseline suite for PR-specific content. Instead, create a PR-specific expansion file from the template:
+### 3.1 Live-Pack Validation Run
 
 ```bash
-cp e2e/pr-validation.template.ts e2e/pr{N}-validation.spec.ts
+cd "${CLAUDE_SKILL_DIR}" && \
+  PACK_PATH="<absolute-path-to-pack>.html" \
+  npx playwright test --project=live-pack-validation
 ```
 
-Edit the new file:
+The suite runs in `serial` mode. The banner-strip step is the **terminal test** — it only fires when every preceding live-pack assertion has passed in the same run.
 
-1. **Set `PACK_PATH`** to the absolute path of the rendered review pack HTML.
-2. **Add PR-specific assertions** covering:
+### 3.2 Live-Pack Validation Categories
 
-| What to Assert | Example |
-|----------------|---------|
-| File count in code diffs | `await expect(page.locator('.cd-file-item')).toHaveCount(12);` |
-| Zone names in architecture diagram | `expect(svgText).toContain('Orchestration');` |
-| Decision count and content | `await expect(page.locator('.decision-card')).toHaveCount(3);` |
-| Agentic review finding count | `expect(data.agenticReview.findings.length).toBe(8);` |
-| Specific zone file counts | `expect(zone.fileCount).toBe(4);` |
-| Architecture assessment health | `expect(data.architectureAssessment.overallHealth).toBe('healthy');` |
-| Scenario pass/fail counts | `expect(passing).toBe(5); expect(failing).toBe(0);` |
-| PR title renders correctly | `await expect(title).toContainText('Add dark factory loop');` |
-| Convergence gate statuses | `expect(data.convergence.gates[0].status).toBe('passing');` |
-| Post-merge item count | `await expect(page.locator('.pm-item')).toHaveCount(2);` |
+The live-pack spec validates five categories. Failures emit structured `LIVE_PACK_FAIL` diagnostics; codes are registered in `references/live-pack-failure-codes.md`.
 
-### 3.3 Run the Full Suite
+**Content correctness** (data-vs-source-of-truth):
+- [ ] Every diff file has exactly one row in the file-coverage table (`file-coverage-gap`)
+- [ ] Every finding location resolves to a real diff file, after normalizing git compact rename notation `dir/{old.py => new.py}` → `dir/new.py` (`finding-location-mismatch`)
+- [ ] Every finding zone resolves in the rendered zone registry (`finding-zone-unresolved`)
+- [ ] Every per-agent grade in the file-coverage table has a backing `FileReviewOutcome` line in the source `.jsonl` (`grade-without-outcome`)
+- [ ] Every rendered concept has a matching `ReviewConcept.title` in the source `.jsonl` (`concept-id-missing`)
+- [ ] The rendered `architectureAssessment` validates against the schema and matches the source `.jsonl` `_type: "architecture_assessment"` line (`architecture-assessment-schema`)
 
-```bash
-npx playwright test e2e/
-```
+**Rendering invariants** (no template/serialization leaks):
+- [ ] No literal `undefined` or standalone `null` tokens in visible body text (`rendered-undefined-or-null`)
+- [ ] No `(N files)` glob row leaks in the file-coverage table (`glob-row-leak`)
+- [ ] No unreplaced `<!-- INJECT: ... -->` markers in body HTML outside `<script>` (`inject-marker-leak`)
+- [ ] Every `.kf-detail-summary` has non-empty content (`empty-detail-summary`)
 
-This runs both the baseline suite and the per-PR expansion together.
+**Interactivity** (renderer JS works as advertised):
+- [ ] Clicking each `.kf-row` reveals a non-empty `.kf-detail-summary` (`interaction-no-detail`)
+- [ ] Clicking each `.kf-agent-pill` filter changes the visible row count consistently with the data (`interaction-filter-broken`)
+- [ ] Clicking each `.gate-review-card` reveals a non-empty `.gate-detail` body (`interaction-gate-empty`)
 
-### 3.4 On All-Pass: Automatic Banner Removal
+**Pipeline failure**:
+- [ ] `renderer-template-gap` — catch-all for "data is correct but rendered HTML element is missing." Banner stays; no auto-correction.
 
-The per-PR expansion file's final `describe` block ("Banner Removal") runs only after all preceding tests pass. It:
+### 3.3 Iteration
 
-1. Reads the rendered HTML file from disk
-2. Sets `data-inspected="true"` on `<body>`
-3. Removes the `#visual-inspection-banner` div
-4. Removes the `#visual-inspection-spacer` div
-5. Writes the updated HTML back to disk
-6. Verifies the banner is gone
+The orchestrator runs the spec, scrapes `LIVE_PACK_FAIL` lines from stderr, dispatches the handler from the registry, and re-runs. See SKILL.md Phase 4 Step 2b for the full iterate-to-green protocol (default cap: 3 iterations).
 
-If any test in the suite fails, Playwright stops before reaching the banner removal block. The banner stays visible — the human reviewer sees it and knows the pack was not validated.
+### 3.4 On Full Pass: Automatic Banner Removal
 
-### 3.5 On Failure: Fix and Re-Run
-
-When tests fail:
-
-1. Read the Playwright error output to identify the failure
-2. Fix the underlying issue (data, rendering, or template)
-3. Re-render if needed (`python3 scripts/render_review_pack.py ...`)
-4. Re-run: `npx playwright test e2e/`
-5. Repeat until all tests pass and the banner is automatically removed
+The terminal test reads the HTML from disk, sets `data-inspected="true"` on `<body>`, removes `#visual-inspection-banner` and `#visual-inspection-spacer`, and writes it back. If any prior test failed, serial mode skips the terminal test and a module-level `liveValidationFailed` flag check (insurance against a future drop of `serial` mode) raises `renderer-template-gap` so the banner stays.
 
 The banner is never removed manually. It is removed by passing tests or not at all.
+
+### 3.5 Renderer Regression (Skill Maintainers Only)
+
+```bash
+cd "${CLAUDE_SKILL_DIR}" && \
+  python3 scripts/dev/generate_fixtures.py && \
+  npx playwright test --project=renderer-fixtures
+```
+
+This is a skill-internal CI check. Users running `/pr-review-pack` against real PRs do NOT run this.
 
 ---
 

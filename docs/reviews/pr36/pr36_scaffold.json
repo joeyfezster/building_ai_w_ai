@@ -1,0 +1,1111 @@
+{
+  "header": {
+    "title": "PR Review Pack v3: 4-phase pipeline with agent teams, JSONL trust model, and Mission Control UI",
+    "prNumber": 36,
+    "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/36",
+    "headBranch": "feature/streamline-pr-review-pack",
+    "baseBranch": "main",
+    "headSha": "3e1e11d",
+    "additions": 13263,
+    "deletions": 1136,
+    "filesChanged": 59,
+    "commits": 16,
+    "statusBadges": [
+      {
+        "label": "Gate 0: 0 critical, 6 warn",
+        "type": "pass",
+        "icon": "\u2713"
+      },
+      {
+        "label": "CI 1/2",
+        "type": "fail",
+        "icon": "\u2717"
+      },
+      {
+        "label": "No Scenarios",
+        "type": "info",
+        "icon": "\u2014"
+      },
+      {
+        "label": "0/3 comments resolved",
+        "type": "warn",
+        "icon": "\u26a0"
+      }
+    ],
+    "generatedAt": "2026-03-18T05:07:23Z",
+    "generatedBy": "dark factory review agent"
+  },
+  "architecture": {
+    "zones": [
+      {
+        "id": "environment",
+        "label": "Environment",
+        "sublabel": "MiniPong Gymnasium env",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 20,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "specs/env.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "rl-core",
+        "label": "RL Core",
+        "sublabel": "DQN algorithm components",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 150,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "specs/rl.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "agent",
+        "label": "Agent",
+        "sublabel": "DQN agent",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 280,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "specs/rl.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "training",
+        "label": "Training",
+        "sublabel": "Pipeline, eval, video, verification",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 410,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "specs/training.md",
+          "specs/proof.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "observability",
+        "label": "Observability",
+        "sublabel": "Logging, metrics",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 540,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "sublabel": "Streamlit training dashboard",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 670,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "specs/dashboard.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "tests",
+        "label": "Tests",
+        "sublabel": "pytest suite",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 800,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "config",
+        "label": "Config",
+        "sublabel": "Build, deps, project config",
+        "category": "infra",
+        "fileCount": 0,
+        "position": {
+          "x": 20,
+          "y": 290,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "repo-infra",
+        "label": "Repo Infra",
+        "sublabel": "CI workflows, zone registry, project-level config",
+        "category": "factory",
+        "fileCount": 8,
+        "position": {
+          "x": 20,
+          "y": 30,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": true
+      },
+      {
+        "id": "repo-scripts",
+        "label": "Repo Scripts",
+        "sublabel": "Utility scripts (whitepapers, packaging, postmerge)",
+        "category": "infra",
+        "fileCount": 0,
+        "position": {
+          "x": 150,
+          "y": 290,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "docker",
+        "label": "Docker/Infra",
+        "sublabel": "Containers, compute",
+        "category": "infra",
+        "fileCount": 0,
+        "position": {
+          "x": 280,
+          "y": 290,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "review-pack",
+        "label": "Review Pack",
+        "sublabel": "PR review pack skill (template, renderer, scaffold, CLI, tests)",
+        "category": "factory",
+        "fileCount": 43,
+        "position": {
+          "x": 150,
+          "y": 30,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "packages/pr-review-pack/references/build-spec.md"
+        ],
+        "isModified": true
+      },
+      {
+        "id": "review-prompts",
+        "label": "Review Prompts",
+        "sublabel": "Gate 0 Tier 2 paradigm prompts",
+        "category": "factory",
+        "fileCount": 6,
+        "position": {
+          "x": 280,
+          "y": 30,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": true
+      },
+      {
+        "id": "dark-factory",
+        "label": "Dark Factory",
+        "sublabel": "Factory convergence loop, gate artifacts",
+        "category": "factory",
+        "fileCount": 0,
+        "position": {
+          "x": 410,
+          "y": 30,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "packages/dark-factory/docs/dark_factory.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "docs",
+        "label": "Documentation",
+        "sublabel": "Project docs, decisions, whitepapers",
+        "category": "infra",
+        "fileCount": 10,
+        "position": {
+          "x": 410,
+          "y": 290,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": true
+      },
+      {
+        "id": "specs",
+        "label": "Specs & Scenarios",
+        "sublabel": "Component specs and holdout evaluation criteria",
+        "category": "factory",
+        "fileCount": 0,
+        "position": {
+          "x": 540,
+          "y": 30,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "play",
+        "label": "Interactive Play",
+        "sublabel": "Human vs agent gameplay",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 930,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      }
+    ],
+    "arrows": [
+      {
+        "from": {
+          "x": 80,
+          "y": 100
+        },
+        "to": {
+          "x": 80,
+          "y": 160
+        }
+      },
+      {
+        "from": {
+          "x": 140,
+          "y": 195
+        },
+        "to": {
+          "x": 150,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 270,
+          "y": 195
+        },
+        "to": {
+          "x": 280,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 400,
+          "y": 195
+        },
+        "to": {
+          "x": 410,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 530,
+          "y": 195
+        },
+        "to": {
+          "x": 540,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 660,
+          "y": 195
+        },
+        "to": {
+          "x": 670,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 790,
+          "y": 195
+        },
+        "to": {
+          "x": 800,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 920,
+          "y": 195
+        },
+        "to": {
+          "x": 930,
+          "y": 195
+        }
+      }
+    ],
+    "rowLabels": [
+      {
+        "text": "INFRASTRUCTURE",
+        "position": {
+          "x": -95,
+          "y": 35
+        }
+      },
+      {
+        "text": "PRODUCT CODE",
+        "position": {
+          "x": -95,
+          "y": 165
+        }
+      },
+      {
+        "text": "INFRA",
+        "position": {
+          "x": -95,
+          "y": 295
+        }
+      }
+    ],
+    "unzonedFiles": []
+  },
+  "specs": [
+    {
+      "path": "specs/env.md",
+      "icon": "\ud83d\udccb",
+      "description": "Env"
+    },
+    {
+      "path": "specs/rl.md",
+      "icon": "\ud83d\udccb",
+      "description": "Rl"
+    },
+    {
+      "path": "specs/training.md",
+      "icon": "\ud83d\udccb",
+      "description": "Training"
+    },
+    {
+      "path": "specs/proof.md",
+      "icon": "\ud83d\udccb",
+      "description": "Proof"
+    },
+    {
+      "path": "specs/dashboard.md",
+      "icon": "\ud83d\udccb",
+      "description": "Dashboard"
+    },
+    {
+      "path": "packages/pr-review-pack/references/build-spec.md",
+      "icon": "\ud83d\udccb",
+      "description": "Build-Spec"
+    },
+    {
+      "path": "packages/dark-factory/docs/dark_factory.md",
+      "icon": "\ud83d\udccb",
+      "description": "Dark Factory"
+    }
+  ],
+  "scenarios": [],
+  "status": {
+    "value": "blocked",
+    "text": "BLOCKED",
+    "reasons": [
+      "Failing gates: Gate 1 \u2014 CI",
+      "Overall convergence failing"
+    ]
+  },
+  "reviewedCommitSHA": "3e1e11d388f1bb96662c7d971155368767a0cb68",
+  "reviewedCommitDate": "2026-03-18T05:07:23Z",
+  "headCommitSHA": "3e1e11d388f1bb96662c7d971155368767a0cb68",
+  "headCommitDate": "2026-03-18T04:47:32Z",
+  "commitGap": 0,
+  "lastRefreshed": "2026-03-18T05:07:23Z",
+  "packMode": "live",
+  "verdict": {
+    "status": "blocked",
+    "text": "BLOCKED \u2014 Failing gates: Gate 1 \u2014 CI; Overall convergence failing"
+  },
+  "codeDiffs": [
+    {
+      "path": "docs/CONVENTIONS.md",
+      "additions": 24,
+      "deletions": 0,
+      "status": "modified",
+      "zones": [
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/key_findings_proposal_a.html",
+      "additions": 562,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/key_findings_proposal_b.html",
+      "additions": 521,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/pr_review_pack_v3_changes.md",
+      "additions": 276,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/review_pack_v3_work_plan.md",
+      "additions": 311,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/skill_harness_convergence_plan.md",
+      "additions": 307,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/skill_introspection_plan.md",
+      "additions": 225,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/streamline_review_pack.md",
+      "additions": 670,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/streamline_work_plan.md",
+      "additions": 327,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/research/anthropic_skill_architecture.md",
+      "additions": 458,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "docs"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/README.md",
+      "additions": 40,
+      "deletions": 29,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/SKILL.md",
+      "additions": 392,
+      "deletions": 273,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/adversarial-reviewer.md",
+      "additions": 34,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/architecture-reviewer.md",
+      "additions": 43,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/code-health-reviewer.md",
+      "additions": 34,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/security-reviewer.md",
+      "additions": 34,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/synthesis-reviewer.md",
+      "additions": 34,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/test-integrity-reviewer.md",
+      "additions": 34,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/assets/template_v2.html",
+      "additions": 158,
+      "deletions": 7,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/docs/review-directions.md",
+      "additions": 178,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/docs/skill-flow.md",
+      "additions": 339,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/e2e/pr-validation.template.ts",
+      "additions": 0,
+      "deletions": 125,
+      "status": "deleted",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/e2e/pr34-validation.spec.ts",
+      "additions": 0,
+      "deletions": 203,
+      "status": "deleted",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/e2e/review-pack-v2.spec.ts",
+      "additions": 371,
+      "deletions": 9,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/install.sh",
+      "additions": 74,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/examples/pr5-code-health-efbf3d40-a1b2c3d4.jsonl",
+      "additions": 7,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/examples/pr5-synthesis-efbf3d40-a1b2c3d4.jsonl",
+      "additions": 4,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/schemas/ArchitectureAssessmentOutput.schema.json",
+      "additions": 300,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/schemas/ConceptUpdate.schema.json",
+      "additions": 171,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/schemas/FileReviewOutcome.schema.json",
+      "additions": 54,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/schemas/ReviewConcept.schema.json",
+      "additions": 133,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/schemas/SemanticOutput.schema.json",
+      "additions": 345,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/structured-outputs-findings.md",
+      "additions": 56,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/zone-registry.example.yaml",
+      "additions": 54,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/schemas/ArchitectureAssessmentOutput.schema.json",
+      "additions": 300,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/schemas/ConceptUpdate.schema.json",
+      "additions": 171,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/schemas/FileReviewOutcome.schema.json",
+      "additions": 54,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/schemas/ReviewConcept.schema.json",
+      "additions": 133,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/schemas/SemanticOutput.schema.json",
+      "additions": 345,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/assemble_review_pack.py",
+      "additions": 1006,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/check_prerequisites.py",
+      "additions": 114,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/generate_diff_data.py",
+      "additions": 3,
+      "deletions": 0,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/inspect_session.py",
+      "additions": 793,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/models.py",
+      "additions": 605,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/render_review_pack.py",
+      "additions": 399,
+      "deletions": 18,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/review_pack_setup.py",
+      "additions": 338,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/run_deterministic_review.py",
+      "additions": 272,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/scaffold_review_pack_data.py",
+      "additions": 116,
+      "deletions": 77,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/validate_skill.sh",
+      "additions": 290,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/tests/test_assembler.py",
+      "additions": 744,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/tests/test_models.py",
+      "additions": 489,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/tests/test_renderer_integration.py",
+      "additions": 1,
+      "deletions": 1,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/tests/test_renderer_sidebar.py",
+      "additions": 4,
+      "deletions": 2,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/adversarial_review.md",
+      "additions": 70,
+      "deletions": 55,
+      "status": "modified",
+      "zones": [
+        "review-prompts"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/architecture_review.md",
+      "additions": 87,
+      "deletions": 130,
+      "status": "modified",
+      "zones": [
+        "review-prompts"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/code_health_review.md",
+      "additions": 89,
+      "deletions": 59,
+      "status": "modified",
+      "zones": [
+        "review-prompts"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/security_review.md",
+      "additions": 81,
+      "deletions": 75,
+      "status": "modified",
+      "zones": [
+        "review-prompts"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/synthesis_review.md",
+      "additions": 105,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-prompts"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/test_integrity_review.md",
+      "additions": 84,
+      "deletions": 73,
+      "status": "modified",
+      "zones": [
+        "review-prompts"
+      ]
+    }
+  ],
+  "whatChanged": {
+    "defaultSummary": {
+      "infrastructure": "",
+      "product": ""
+    },
+    "zoneDetails": []
+  },
+  "agenticReview": {
+    "overallGrade": "",
+    "reviewMethod": "main-agent",
+    "findings": []
+  },
+  "ciPerformance": [
+    {
+      "name": "validate",
+      "trigger": "(push)",
+      "status": "fail",
+      "time": "2m 4s",
+      "timeSeconds": 124,
+      "healthTag": "acceptable",
+      "detail": {
+        "coverage": "validate job",
+        "gates": "",
+        "zones": [],
+        "specRefs": [],
+        "checks": [],
+        "notes": null
+      }
+    },
+    {
+      "name": "factory-self-test",
+      "trigger": "(push)",
+      "status": "pass",
+      "time": "16s",
+      "timeSeconds": 16,
+      "healthTag": "normal",
+      "detail": {
+        "coverage": "factory-self-test job",
+        "gates": "",
+        "zones": [],
+        "specRefs": [],
+        "checks": [],
+        "notes": null
+      }
+    }
+  ],
+  "decisions": [],
+  "convergence": {
+    "gates": [
+      {
+        "name": "Gate 1 \u2014 CI",
+        "status": "failing",
+        "statusText": "1/2 checks passing",
+        "summary": "Repo CI checks on PR HEAD",
+        "detail": ""
+      },
+      {
+        "name": "Gate 2 \u2014 Deterministic",
+        "status": "passing",
+        "statusText": "Not run",
+        "summary": "Run: python run_deterministic_review.py --repo .",
+        "detail": ""
+      },
+      {
+        "name": "Gate 3 \u2014 Agentic Review",
+        "status": "passing",
+        "statusText": "Pending",
+        "summary": "5 reviewers + synthesis",
+        "detail": ""
+      },
+      {
+        "name": "Gate 4 \u2014 Comments",
+        "status": "passing",
+        "statusText": "Pending",
+        "summary": "All PR review threads resolved",
+        "detail": ""
+      },
+      {
+        "name": "Gate 0 \u2014 Two-Tier Review",
+        "status": "passing",
+        "statusText": "Tier 1: 2/5 checks, 0 critical, 6 warn",
+        "summary": "Deterministic tool checks ran in 0.22s (parallel).",
+        "detail": ""
+      }
+    ],
+    "overall": {
+      "status": "failing",
+      "statusText": "NOT READY",
+      "summary": "Gates not all passing.",
+      "detail": ""
+    }
+  },
+  "postMergeItems": [],
+  "factoryHistory": null,
+  "architectureAssessment": null
+}

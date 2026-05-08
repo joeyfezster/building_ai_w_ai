@@ -304,8 +304,29 @@ def read_and_validate_jsonl(
                     exclude_none=True,
                 )
                 if update_data:
-                    merged = original.model_copy(update=update_data)
-                    concept_by_id[cu.concept_id] = merged
+                    # `model_copy(update=...)` skips validators in Pydantic v2,
+                    # so an update that violates field constraints (e.g. empty
+                    # `summary` when ReviewConcept requires min_length=1) would
+                    # silently produce an invalid merged concept. Re-validate
+                    # via model_validate so the merged result is enforced.
+                    try:
+                        merged_dict = {**original.model_dump(), **update_data}
+                        merged = type(original).model_validate(merged_dict)
+                        concept_by_id[cu.concept_id] = merged
+                    except ValidationError as e:
+                        error_lines = []
+                        for err in e.errors():
+                            loc = ".".join(str(p) for p in err.get("loc", []))
+                            msg = err.get("msg", "")
+                            error_lines.append(f"{loc}: {msg}" if loc else msg)
+                        report.add_error(
+                            jsonl_path.name,
+                            0,
+                            f"ConceptUpdate merge validation failed for "
+                            f"concept_id '{cu.concept_id}': "
+                            f"{e.error_count()} error(s), "
+                            + "; ".join(error_lines),
+                        )
             # Rebuild list preserving order
             concepts = [
                 concept_by_id[rc.concept_id] for rc in concepts if rc.concept_id in concept_by_id
@@ -611,24 +632,24 @@ def transform_concept_to_finding(
         all_zones.extend(loc.zones)
     unique_zones = list(dict.fromkeys(all_zones))  # preserve order, dedupe
 
-    # Primary file is the first location's file
+    # Primary file is the first location's file. We previously generated
+    # a `dir/* (N files)` glob string when 3+ locations shared a common
+    # directory, but live-pack-validation flags such rows as
+    # `glob-row-leak` — they leak into the file-coverage table where users
+    # cannot click through to a real path. The full set of locations is
+    # already carried in `locations[]` for renderer use; the legacy
+    # `file` field just needs ONE concrete path.
     primary_file = concept.locations[0].file
 
-    # If multiple files, use glob-like notation
-    if len(concept.locations) > 1:
-        files = [loc.file for loc in concept.locations]
-        # Check if they share a common directory
-        common = Path(files[0]).parent
-        all_same_dir = all(Path(f).parent == common for f in files)
-        if all_same_dir and len(files) > 2:
-            primary_file = f"{common}/* ({len(files)} files)"
-
-    # Carry full locations array for the renderer
+    # Carry full locations array for the renderer. Includes the `context`
+    # flag so live-pack-validation can distinguish anchors from cross-
+    # references, and the renderer can style them differently.
     locations_data = [
         {
             "file": loc.file,
             "lines": loc.lines,
             "comment": loc.comment,
+            "context": loc.context,
         }
         for loc in concept.locations
     ]

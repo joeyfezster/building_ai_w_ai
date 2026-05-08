@@ -1,7 +1,7 @@
 {
   "$defs": {
     "ConceptLocation": {
-      "description": "A specific code location referenced by a review concept.",
+      "description": "A specific code location referenced by a review concept.\n\nLocations carry one of two distinct intents, distinguished by `context`:\n\n- `context=False` (default) \u2014 the **anchor**: this code is what the\n  finding is ABOUT. The file MUST be in the PR's diff. Live-pack\n  validation rejects findings where every anchor location is\n  out-of-diff (`finding-location-mismatch`).\n\n- `context=True` \u2014 a **cross-reference**: this is a related file the\n  reader should know about (where the fix should go, an analogous\n  pattern, a related test, a contract spec). The file does NOT need\n  to be in the diff. Live-pack validation skips these for the\n  in-diff check. Renderer marks them visually as supplementary.\n\nEvery finding must have at least one anchor location pointing into\nthe diff. Out-of-diff anchors fail validation; out-of-diff context\nreferences are accepted.",
       "properties": {
         "file": {
           "description": "File path relative to repo root",
@@ -41,6 +41,12 @@
           "default": null,
           "description": "Location-specific comment or code snippet context",
           "title": "Comment"
+        },
+        "context": {
+          "default": false,
+          "description": "If True, this is a cross-reference (out-of-diff context: where the fix should go, an analogous pattern, a related test). The file is not validated against the PR diff. If False (default), this is an anchor \u2014 the file MUST be in the diff.",
+          "title": "Context",
+          "type": "boolean"
         }
       },
       "required": [
@@ -57,7 +63,8 @@
         "test-integrity",
         "adversarial",
         "architecture",
-        "cross-cutting"
+        "cross-cutting",
+        "rbe"
       ],
       "title": "FindingCategory",
       "type": "string"
