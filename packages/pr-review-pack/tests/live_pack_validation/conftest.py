@@ -19,9 +19,9 @@ import os
 import re
 import shutil
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional
 
 import pytest
 
@@ -262,9 +262,9 @@ def mutate_pack(tmp_path: Path):
         )
 
     def _mutate(
-        data_mutator: Optional[DataMutator] = None,
-        html_mutator: Optional[HtmlMutator] = None,
-        jsonl_mutator: Optional[JsonlMutator] = None,
+        data_mutator: DataMutator | None = None,
+        html_mutator: HtmlMutator | None = None,
+        jsonl_mutator: JsonlMutator | None = None,
         clean_baseline: bool = True,
     ) -> Path:
         """Apply mutations and return path to the mutated pack.
