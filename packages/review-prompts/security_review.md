@@ -70,6 +70,10 @@ Assess severity based on THIS system's threat model, not generic rankings.
 - **Copy-paste vulnerabilities.** Deprecated API usage or patterns from older library versions
 - **Subprocess with shell=True.** LLMs default to shell=True more often than necessary
 
+### 8. Unenforced Security Claims (claim-vs-enforcement)
+
+For every property the code or spec CLAIMS that carries a security guarantee — read-only, sandboxed, isolated, validated, least-privilege, encrypted, tenant-scoped, immutable, append-only — verify there is a NAMED ENFORCEMENT MECHANISM that makes it true, not just an annotation/name asserting it. A `readOnlyHint` tool that runs over a writable connection, a "validated" input with no validator on the actual code path, a "sandboxed" exec with no sandbox, an "isolated" tenant on a shared role — these are claims the system cannot keep, and an attacker relies on exactly that gap. If you cannot point to the enforcement (the read-only role, the running validator, the constraint, the boundary), flag the unbacked claim as a vulnerability.
+
 ## What NOT to Flag
 
 - `random` module usage for non-security purposes (seeds, environment randomness) — assess whether it's a cryptographic context

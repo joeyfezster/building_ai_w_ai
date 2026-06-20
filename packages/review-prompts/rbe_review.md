@@ -56,6 +56,12 @@ This matters because both humans and agents have finite attention. Well-defined 
   - Typed errors and exceptions: `ValidationError(field, reason)` > generic `ValueError`
   - Domain-specific types that make boundaries machine-checkable at every level
 
+## Claims Must Be Enforced (the name is a contract)
+
+A name, annotation, docstring, flag, or type that CLAIMS a property — `readOnlyHint`, `immutable`, `idempotent`, `atomic`, `validated`, `*_readonly`, `frozen`, `exactly_once`, `append_only` — is a contract. RBE's litmus has a second half: not just "what is this responsible for?" but "what MAKES that true?". For every claimed property in the diff, either point to the concrete enforcement (a read-only DB role, a validator that runs, a UNIQUE constraint, a transaction boundary, a type that makes the bad state unrepresentable) or flag the claim as UNBACKED — a name that promises what the system does not enforce is a lie, and that is a Critical RBE defect.
+
+Do NOT accept the shape of the code as proof: a `SELECT`, a `get_*`/`read_*` name, or a `readOnlyHint` annotation does NOT prove read-only — volatile functions, writable CTEs, locks, and the executing role's write capability all defeat it. The guarantee lives in the enforcement, never the name. When you cannot find the enforcement, that is the finding.
+
 ## Output Format
 
 **FileReviewOutcome files must be EXACT paths** — one per file in the diff. No glob patterns (`*`, `?`), no directory paths (`src/`), no "(N files)" summaries. The validator will reject them.
