@@ -1,0 +1,33 @@
+run_id: ppo_selfplay_1m
+seed: 42
+frame_stack: 4
+total_steps: 1000000
+max_episode_steps: 800
+
+# PPO hyperparameters
+n_steps: 128
+n_minibatches: 4
+n_epochs: 4
+lr: 0.00025
+lr_anneal: true
+clip_epsilon: 0.1
+entropy_coef: 0.02
+vf_coef: 0.5
+max_grad_norm: 0.5
+gamma: 0.99
+gae_lambda: 0.95
+
+# Reward shaping
+reward_shaping: true
+hit_reward: 0.1
+rally_bonus_per_step: 0.02
+
+# Self-play
+opponent_update_period: 50000
+checkpoint_pool_size: 20
+
+# Evaluation
+eval_every_steps: 100000
+eval_episodes: 10
+eval_seeds: [11, 22, 33, 44, 55]
+log_every_steps: 10000

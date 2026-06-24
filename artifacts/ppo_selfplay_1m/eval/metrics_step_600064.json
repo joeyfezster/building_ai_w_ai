@@ -1,0 +1,16 @@
+{
+  "mean_return": -1.0,
+  "std_return": 0.0,
+  "mean_hits": 1.98,
+  "mean_misses": 1.0,
+  "mean_rally_length": 4.52,
+  "hit_ratio": 0.6644295302013423,
+  "episodes": 50,
+  "seeds": [
+    11,
+    22,
+    33,
+    44,
+    55
+  ]
+}

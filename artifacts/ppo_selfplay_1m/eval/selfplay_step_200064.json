@@ -1,0 +1,6 @@
+{
+  "mean_rally_length": 0.72,
+  "max_rally_length": 2,
+  "std_rally_length": 0.96,
+  "n_rallies": 100
+}
