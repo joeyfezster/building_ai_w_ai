@@ -65,7 +65,7 @@ For each unzoned file, assess: which existing zone should it belong to? Or does 
 
 ### 5. Duplicated-Logic Handoffs from Code-Health Reviewer
 
-The code-health reviewer raises duplicated-logic findings with a local remedy and an explicit handoff flag. When you see such a handoff in the assembled findings, own the cross-module abstraction design: decide where the shared abstraction should live (which module, which boundary), assess the boundary implications, and include that design decision in your output as an architecture finding. You do not need to re-describe the smell or the local fix (code-health owns those); focus on the structural placement and any boundary changes the refactor would require.
+The code-health reviewer raises duplicated-logic findings with a local remedy and an explicit handoff flag. IF you see such a handoff in the assembled findings, or if you see that same code smell (or something that may cause the code-health review to produce such a finding), own the cross-module abstraction design: decide where the shared abstraction should live (which module, which boundary), assess the boundary implications, and include that design decision in your output as an architecture finding. You do not need to re-describe the smell or the local fix (code-health owns those); focus on the structural placement and any boundary changes the refactor would require.
 
 ## What NOT to Flag
 
