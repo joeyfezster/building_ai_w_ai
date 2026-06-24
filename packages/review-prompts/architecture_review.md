@@ -63,6 +63,10 @@ For each unzoned file, assess: which existing zone should it belong to? Or does 
 - **Stale spec references.** `specs` fields pointing to nonexistent files
 - **Architecture doc staleness.** Docs describing structures no longer matching code
 
+### 5. Duplicated-Logic Handoffs from Code-Health Reviewer
+
+The code-health reviewer raises duplicated-logic findings with a local remedy and an explicit handoff flag. When you see such a handoff in the assembled findings, own the cross-module abstraction design: decide where the shared abstraction should live (which module, which boundary), assess the boundary implications, and include that design decision in your output as an architecture finding. You do not need to re-describe the smell or the local fix (code-health owns those); focus on the structural placement and any boundary changes the refactor would require.
+
 ## What NOT to Flag
 
 - Code quality issues — code health reviewer handles these
