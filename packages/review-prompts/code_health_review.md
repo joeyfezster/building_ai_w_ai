@@ -46,7 +46,7 @@ Quality issues that require understanding intent:
 - **Error swallowing.** Broad `except Exception: pass` that hides bugs
 - **Resource leaks.** File handles, connections, or memory not properly released
 - **Inconsistent interfaces.** Similar functions with different argument orders, return types, or error handling
-- **Magic numbers.** Hardcoded values that should be named constants
+- **Magic numbers.** Hardcoded values that should be named constants (also see section 6 for duplicated values across sites, the cross-file form of this defect).
 
 ### 4. Structural Health (Cross-Module)
 
@@ -63,6 +63,14 @@ If the code was written by an AI agent, watch for:
 - **Feedback optimization.** Code optimizing against feedback patterns rather than solving the general problem
 - **Cargo-culted patterns.** Patterns from training data applied without understanding why
 - **Incomplete refactors.** Renames or extractions not completed across all call sites
+
+### 6. Duplicated Values and Logic (DRY / Single Source of Truth)
+
+Hunt for the SAME literal value, constant, regex, threshold, or logic restated in TWO OR MORE places **that represent the same semantic limit, config value, threshold, regex, identifier, or rule** (one source-of-truth candidate). When they do, it is a DRY violation regardless of whether the value is "named" in any one site: the duplication is the defect, because the copies will drift. The canonical form: ONE named constant, config field, or settings entry holds the value; every other site references it by name and never restates the literal. A second copy is the finding, even when both copies are currently equal.
+
+The repeats must be the same INVARIANT, not merely the same number. Do NOT flag incidental coincidences: common literals that recur for unrelated reasons (`0`, `1`, `-1`, empty strings, boolean flags), enum or status names used as themselves, and example or fixture values in tests are not DRY violations just because the token matches. The test is "do these sites all encode the one underlying limit/config/rule, such that changing it should change all of them at once?" If yes, flag it; if the matching tokens are independent, leave them.
+
+This check explicitly extends the single-file "magic numbers" framing in section 3 to CROSS-SITE duplication, the class no single-file linter catches. The concrete failure mode: a numeric cap appears as a literal in a settings table, as a type field default, and again in a doc comment. Three copies that will drift. The fix is one named field; the other two reference it. Flag every case where the value is restated rather than referenced, across any combination of files, specs, schemas, config tables, and comments.
 
 ## What NOT to Flag
 
