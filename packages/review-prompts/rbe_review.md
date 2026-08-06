@@ -33,7 +33,7 @@ This matters because both humans and agents have finite attention. Well-defined 
 - A return type of `dict`, `tuple`, `Any`, or `list` where a named type would clarify the boundary
 - A name that could describe more than one thing (ambiguity, even if not misleading)
 - DRY violations: the same responsibility duplicated in 2 places
-- A context-dependent name or reference (a session/process codename that means nothing outside the authoring context, or a pointer to an artifact the reader cannot open) — see Context-Independent Naming below. Warning by default; Critical when it names an identifier that will propagate.
+- A name or reference that depends on ephemeral context — a session/process/round codename, a pointer to state outside the repo, or a moment-in-time label (`C1`, `R2`) that will collide with future reuse — see Ephemeral-Context Names below. Warning by default; Critical when it names an identifier that will propagate.
 
 ### Clean (A grade)
 - Clear, unambiguous names that pass the litmus test
@@ -47,26 +47,24 @@ This matters because both humans and agents have finite attention. Well-defined 
 3. **Flag violations immediately.** A name that fails the boundary test is a defect, not a style nit.
 4. **Treat naming problems as architectural signals.** A name that resists clarity usually means the code does too many things. Raise the structural issue.
 
-## Context-Independent Naming (Provenance Discipline)
+## Ephemeral-Context Names (Provenance Discipline)
 
-A name is a contract with every future reader, and most future readers have no access to the context you authored in: the session, the thread, the review round, the PR process, the chat log, an issue tracker they may not open. A name or reference that only resolves inside your authoring context is a broken contract for everyone else — the same RBE failure as a name that hides its responsibility, just along the reader-context axis instead of the responsibility axis.
+Every name depends on context to be understood — that is not the defect. The defect is a name that depends on **ephemeral** context: context that will not travel with the code. A name is a contract with every future reader, and most future readers hold none of the transient state you authored in. Ephemeral context comes in two kinds:
 
-Apply this litmus to every name and every reference in the diff (identifiers, comments, docstrings, test names, and doc/config cross-references):
+1. **Ephemeral by location** — context that lives *outside the codebase* and never enters it: a Claude Code session, a chat thread, a review round, an issue tracker or process doc the reader may not open. A comment reading `per X3`, `see the R1 panel`, or `addresses docs/BUILD_REMEDIATION_R2.md` points at state that is not in the repo; to the reader it points at nothing.
+2. **Ephemeral by time/scope** — a label scoped to a transient working moment: `C1`, `round 2`, `phase-2 cleanup`, `the current list`. It resolves only while that moment is live. Worse, it **collides**: the next author working a different problem coins their own `C1`/`R2` with an unrelated meaning, and one label now means two things across the history. A name scoped to "now" is a name that lies later.
 
-> "Would a reader with no access to the authoring session, thread, review process, or private tracker understand what this points to — and is it safe from a future author coining the same label for something else?"
+Apply this litmus to every name and reference in the diff (identifiers, comments, docstrings, test names, and doc/config cross-references):
 
-**Two failure modes to flag:**
-
-1. **Meaningless-outside-context.** A process/session codename that carries no in-repo meaning: `X3`, `the H1 fix`, `per round 2`, `the F2 regression`, `phase-2 cleanup`, or a comment/docstring citing a process artifact by name (`per docs/BUILD_REMEDIATION_R2.md`, `see the R1 panel`, `addresses ticket item 4`) where that artifact is ephemeral or unopenable by the reader. The reader is left with a pointer to nothing.
-2. **Collision-prone.** A generic, context-scoped label (`R2`, `round 2`, `option B`, `thread A`, `the new approach`) that a future author will independently re-coin with a different meaning, creating silent ambiguity across sessions. Worse than meaningless: actively misleading later.
+> "Does this name depend on context that will not travel with the code — a session/thread/process outside the repo, or a moment-in-time scope like the current issue list — and could the same label be coined later, elsewhere, to mean something else?"
 
 **What is legitimate (do NOT flag):**
-- A reference to a **durable, reader-openable** artifact: a merged spec's section title, a stable rule_id defined in the repo (`CONV-001`), a permanent ticket ID in the team's tracker, a file path that exists in the tree.
-- A domain term or a name that describes **what the thing is** rather than which process step produced it.
+- A reference to **durable, in-repo (or permanently-tracked)** context: a merged spec's section title, a rule_id defined in the repo (`CONV-001`), a permanent ticket ID, a file path that exists in the tree. These travel with the code.
+- A name that describes **what the thing is** rather than which transient step produced it.
 
-The fix is always the same: **replace the codename with what the thing actually is.** `per X3` → `for dbt analysis nodes, which are not codebook constructs`; `the H1 fix` → `the missing-source-file guard`; a test named `test_r2_regression` → `test_<the behavior it actually checks>`.
+The fix is always the same: **replace the ephemeral reference with what the thing actually is.** `per X3` → `for dbt analysis nodes, which are not codebook constructs`; `the R2 fix` → `the missing-source-file guard`; a test named `test_r2_regression` → `test_<the behavior it actually checks>`.
 
-**Why this grades up to Critical when it names an identifier:** a codename in a comment is a local nuisance; a codename that becomes a function/type/test/variable name **propagates** — every future reader adopts it as working vocabulary and carries it onward into more code, more commits, more review comments. A name that only resolves inside one authoring context, promoted to a load-bearing identifier, contaminates the codebase's vocabulary for good. Flag those as Critical.
+**Why this grades up to Critical when it names an identifier:** an ephemeral-context moniker in a comment is a local nuisance; the same moniker as a function/type/test/variable name **propagates** — every future reader adopts it as working vocabulary and carries it into more code, commits, review comments. Baked into a load-bearing identifier it contaminates the codebase's vocabulary permanently, and its collision risk compounds. Flag those as Critical.
 
 ## Tactical Naming Rules
 
