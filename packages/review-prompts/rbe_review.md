@@ -33,6 +33,7 @@ This matters because both humans and agents have finite attention. Well-defined 
 - A return type of `dict`, `tuple`, `Any`, or `list` where a named type would clarify the boundary
 - A name that could describe more than one thing (ambiguity, even if not misleading)
 - DRY violations: the same responsibility duplicated in 2 places
+- A context-dependent name or reference (a session/process codename that means nothing outside the authoring context, or a pointer to an artifact the reader cannot open) — see Context-Independent Naming below. Warning by default; Critical when it names an identifier that will propagate.
 
 ### Clean (A grade)
 - Clear, unambiguous names that pass the litmus test
@@ -45,6 +46,27 @@ This matters because both humans and agents have finite attention. Well-defined 
 2. **Create with RBE in mind.** Pass the litmus test before accepting any new construct.
 3. **Flag violations immediately.** A name that fails the boundary test is a defect, not a style nit.
 4. **Treat naming problems as architectural signals.** A name that resists clarity usually means the code does too many things. Raise the structural issue.
+
+## Context-Independent Naming (Provenance Discipline)
+
+A name is a contract with every future reader, and most future readers have no access to the context you authored in: the session, the thread, the review round, the PR process, the chat log, an issue tracker they may not open. A name or reference that only resolves inside your authoring context is a broken contract for everyone else — the same RBE failure as a name that hides its responsibility, just along the reader-context axis instead of the responsibility axis.
+
+Apply this litmus to every name and every reference in the diff (identifiers, comments, docstrings, test names, and doc/config cross-references):
+
+> "Would a reader with no access to the authoring session, thread, review process, or private tracker understand what this points to — and is it safe from a future author coining the same label for something else?"
+
+**Two failure modes to flag:**
+
+1. **Meaningless-outside-context.** A process/session codename that carries no in-repo meaning: `X3`, `the H1 fix`, `per round 2`, `the F2 regression`, `phase-2 cleanup`, or a comment/docstring citing a process artifact by name (`per docs/BUILD_REMEDIATION_R2.md`, `see the R1 panel`, `addresses ticket item 4`) where that artifact is ephemeral or unopenable by the reader. The reader is left with a pointer to nothing.
+2. **Collision-prone.** A generic, context-scoped label (`R2`, `round 2`, `option B`, `thread A`, `the new approach`) that a future author will independently re-coin with a different meaning, creating silent ambiguity across sessions. Worse than meaningless: actively misleading later.
+
+**What is legitimate (do NOT flag):**
+- A reference to a **durable, reader-openable** artifact: a merged spec's section title, a stable rule_id defined in the repo (`CONV-001`), a permanent ticket ID in the team's tracker, a file path that exists in the tree.
+- A domain term or a name that describes **what the thing is** rather than which process step produced it.
+
+The fix is always the same: **replace the codename with what the thing actually is.** `per X3` → `for dbt analysis nodes, which are not codebook constructs`; `the H1 fix` → `the missing-source-file guard`; a test named `test_r2_regression` → `test_<the behavior it actually checks>`.
+
+**Why this grades up to Critical when it names an identifier:** a codename in a comment is a local nuisance; a codename that becomes a function/type/test/variable name **propagates** — every future reader adopts it as working vocabulary and carries it onward into more code, more commits, more review comments. A name that only resolves inside one authoring context, promoted to a load-bearing identifier, contaminates the codebase's vocabulary for good. Flag those as Critical.
 
 ## Tactical Naming Rules
 
@@ -66,3 +88,7 @@ Use the standard review concept output format. For each finding:
 - `detail`: explain what boundary is violated, what the correct boundary should be, and a concrete rename/refactor suggestion
 - `zones`: which architecture zones are affected
 - `file`: the file(s) where the violation occurs
+- `locations`: each entry has `file`, `lines`, `zones`, `comment`, and `context` (default `false`).
+  - `context: false` (default) — **anchor**: file MUST be in the PR diff.
+  - `context: true` — **cross-reference**: where the fix should go (often a different file than the violation), an analogous pattern, a related boundary already done correctly. File does NOT need to be in the diff.
+  - Every finding must have at least one anchor whose file is in the diff. RBE findings frequently want cross-references (the "good example" file, the rename target). Mark those `context: true`. See `${CLAUDE_SKILL_DIR}/references/locations-context-guide.md`.
