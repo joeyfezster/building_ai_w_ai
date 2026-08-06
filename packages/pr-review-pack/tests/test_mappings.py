@@ -81,6 +81,18 @@ class TestAgentAbbrev:
     def test_architecture_reviewer_suffix(self):
         assert AGENT_ABBREV["architecture-reviewer"] == "AR"
 
+    def test_rbe(self):
+        assert AGENT_ABBREV["rbe"] == "RB"
+
+    def test_rbe_reviewer_suffix(self):
+        assert AGENT_ABBREV["rbe-reviewer"] == "RB"
+
+    def test_code_minimalism(self):
+        assert AGENT_ABBREV["code-minimalism"] == "CM"
+
+    def test_code_minimalism_reviewer_suffix(self):
+        assert AGENT_ABBREV["code-minimalism-reviewer"] == "CM"
+
     def test_main_agent(self):
         assert AGENT_ABBREV["main"] == "MA"
         assert AGENT_ABBREV["main-agent"] == "MA"
@@ -93,6 +105,8 @@ class TestAgentAbbrev:
             ("test-integrity", "test-integrity-reviewer"),
             ("adversarial", "adversarial-reviewer"),
             ("architecture", "architecture-reviewer"),
+            ("rbe", "rbe-reviewer"),
+            ("code-minimalism", "code-minimalism-reviewer"),
         ]
         for base, reviewer in pairs:
             assert AGENT_ABBREV[base] == AGENT_ABBREV[reviewer], (

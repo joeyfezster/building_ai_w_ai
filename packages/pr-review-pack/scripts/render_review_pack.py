@@ -66,6 +66,8 @@ AGENT_ABBREV = {
     "main-agent": "MA",
     "rbe": "RB",
     "rbe-reviewer": "RB",
+    "code-minimalism": "CM",
+    "code-minimalism-reviewer": "CM",
 }
 
 GRADE_SORT = {"F": 0, "C": 1, "B": 2, "B+": 3, "A": 4, "N/A": 5}
@@ -622,6 +624,7 @@ def render_agentic_legend() -> str:
         ("AD", "Adversarial", "gaming, spec violations, architecture"),
         ("AR", "Architecture", "zone coverage, coupling, structural changes"),
         ("RB", "RBE", "responsibility boundaries, naming, type clarity"),
+        ("CM", "Code Minimalism", "unnecessary code — speculative generality, bloat"),
     ]
     items = []
     for abbrev, name, desc in entries:
@@ -1516,6 +1519,7 @@ AGENT_PARADIGM_DESC = {
     "AR": "Architecture: zone coverage, coupling, structural changes",
     "MA": "Main Agent: primary review agent",
     "RB": "RBE: responsibility boundaries, naming, type clarity",
+    "CM": "Code Minimalism: unnecessary code — speculative generality, bloat",
 }
 
 AGENT_SHORT_NAME = {
@@ -1526,6 +1530,7 @@ AGENT_SHORT_NAME = {
     "AR": "Architecture",
     "MA": "Main Agent",
     "RB": "RBE",
+    "CM": "Code Minimalism",
 }
 
 
@@ -1920,6 +1925,7 @@ def render_code_review_list(data: dict) -> str:
         ("AD", "adversarial", "Adversarial"),
         ("AR", "architecture", "Architecture"),
         ("RB", "rbe", "Rules-Based Evaluation"),
+        ("CM", "code-minimalism", "Code Minimalism"),
     ]
 
     # Map agent keys in fileCoverage to abbreviations
@@ -1930,6 +1936,7 @@ def render_code_review_list(data: dict) -> str:
         "adversarial": "AD",
         "architecture": "AR",
         "rbe": "RB",
+        "code-minimalism": "CM",
     }
 
     # Build findings lookup by file path (for detail expansion)

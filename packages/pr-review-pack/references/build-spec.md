@@ -237,9 +237,9 @@ Once `merged`, the pack never transitions back.
 
 ---
 
-## 6. Six-Agent Review Team
+## 6. Seven-Agent Review Team
 
-Pass 2b spawns six specialized review agents in parallel. Each reviews the diff through its own paradigm. All six produce `AgenticFinding[]` entries that merge into `agenticReview.findings`. The architecture reviewer additionally produces a top-level `architectureAssessment`.
+Pass 2b spawns seven specialized review agents in parallel. Each reviews the diff through its own paradigm. All seven produce `AgenticFinding[]` entries that merge into `agenticReview.findings`. The architecture reviewer additionally produces a top-level `architectureAssessment`.
 
 ### Agent Roster
 
@@ -251,10 +251,11 @@ Pass 2b spawns six specialized review agents in parallel. Each reviews the diff 
 | `adversarial-reviewer` | AD | `packages/review-prompts/adversarial_review.md` | Gaming, spec violations, architectural dishonesty |
 | `architecture-reviewer` | AR | `packages/review-prompts/architecture_review.md` | Zone coverage, coupling, structural changes, architecture docs |
 | `rbe-reviewer` | RB | `packages/review-prompts/rbe_review.md` | Responsibility boundaries, naming clarity, type annotations, scope creep |
+| `code-minimalism-reviewer` | CM | `packages/review-prompts/code_minimalism_review.md` | Unnecessary code — speculative generality, defensive scaffolding, bloat |
 
 ### Parallel Execution
 
-All six agents launch simultaneously. Each receives:
+All seven agents launch simultaneously. Each receives:
 - The full diff data (`pr{N}_diff_data.json`)
 - The zone registry (`.claude/zone-registry.yaml`)
 - Its paradigm-specific prompt
@@ -266,7 +267,7 @@ Additional context per agent:
 
 ### Output Format
 
-Each agent (CH, SE, TI, AD, RB) produces:
+Each agent (CH, SE, TI, AD, RB, CM) produces:
 ```json
 {
   "agent": "{abbreviation}",
@@ -366,7 +367,7 @@ Re-running Pass 2a with the `--existing` flag updates:
 
 The `--existing` flag reads the previous JSON and preserves:
 - `whatChanged` — summaries from the LLM
-- `agenticReview` — all findings from the 6-agent team
+- `agenticReview` — all findings from the 7-agent team
 - `architectureAssessment` — architecture health data
 - `decisions` — identified architectural decisions
 - `postMergeItems` — follow-up items
@@ -471,8 +472,8 @@ python3 scripts/scaffold_review_pack_data.py \
 
 **Two independent workstreams, run in parallel:**
 
-**Workstream A — Agentic Review (6 agents):**
-Six specialized review agents (CH, SE, TI, AD, AR, RB) each review the diff through their paradigm. Produces `agenticReview.findings[]` and `architectureAssessment`.
+**Workstream A — Agentic Review (7 agents):**
+Seven specialized review agents (CH, SE, TI, AD, AR, RB, CM) each review the diff through their paradigm. Produces `agenticReview.findings[]` and `architectureAssessment`.
 
 **Workstream B — Semantic Analysis (1 agent):**
 One agent reads the diff and produces `whatChanged`, `decisions`, `postMergeItems`, and `factoryHistory`.
@@ -674,7 +675,7 @@ Rendered by the Pass 3 renderer. All data comes from the scaffold JSON.
 - **INJECT marker:** `agenticReview`
 - **Render function:** `render_agentic_review()`
 - **Data:** `agenticReview.overallGrade`, `agenticReview.reviewMethod`, `agenticReview.findings[]`
-- **Pass:** 2b (Workstream A — 6 agents)
+- **Pass:** 2b (Workstream A — 7 agents)
 - **Visual:** Per-file table with compact agent grade badges (CH:A SE:B TI:A AD:B+ AR:A RB:A). Expandable detail per file showing per-agent findings. Sorted by severity (worst first). Zone filtering dims/hides non-matching rows.
 
 #### CI Performance

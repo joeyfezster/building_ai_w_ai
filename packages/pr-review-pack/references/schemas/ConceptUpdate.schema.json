@@ -57,7 +57,9 @@
         "test-integrity",
         "adversarial",
         "architecture",
-        "cross-cutting"
+        "cross-cutting",
+        "rbe",
+        "code-minimalism"
       ],
       "title": "FindingCategory",
       "type": "string"

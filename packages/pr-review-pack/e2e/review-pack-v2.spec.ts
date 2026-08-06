@@ -947,10 +947,10 @@ test.describe('File Coverage — Per-Agent Columns', () => {
     const count = await rows.count();
     expect(count).toBeGreaterThan(0);
 
-    // Each row should have 6 agent columns (CH, SE, TI, AD, AR, RB)
+    // Each row should have 7 agent columns (CH, SE, TI, AD, AR, RB, CM)
     const firstRow = rows.first();
     const agentCols = firstRow.locator('.cr-agent-col');
-    await expect(agentCols).toHaveCount(6);
+    await expect(agentCols).toHaveCount(7);
   });
 
   test('agents without findings show dash', async ({ page }) => {
@@ -970,12 +970,12 @@ test.describe('File Coverage — Per-Agent Columns', () => {
     const detailRow = page.locator('.cr-detail-row').first();
     await expect(detailRow).toHaveClass(/open/);
 
-    // Should have 6 agent-detail-entry elements (one per paradigm)
+    // Should have 7 agent-detail-entry elements (one per paradigm)
     const entries = detailRow.locator('.agent-detail-entry');
-    await expect(entries).toHaveCount(6);
+    await expect(entries).toHaveCount(7);
 
     // Each entry should have either real content or "No comments on this file."
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       const entry = entries.nth(i);
       const text = await entry.textContent();
       expect(text!.length).toBeGreaterThan(0);
@@ -997,20 +997,20 @@ test.describe('File Coverage — Per-Agent Columns', () => {
     await firstRow.locator('.cr-agent-col').first().click();
     await expect(detailRow).toHaveClass(/open/);
 
-    // Verify agent detail content is visible (6 agents)
+    // Verify agent detail content is visible (7 agents)
     const agentDetails = detailRow.locator('.agent-detail-entry');
-    await expect(agentDetails).toHaveCount(6);
+    await expect(agentDetails).toHaveCount(7);
   });
 
   test('expanded detail shows comment text for agents with findings', async ({ page }) => {
     await page.goto(READY_PACK);
-    // Expand first file (src/alpha/core.py) — has CH:A, SE:C, TI:B, AD:A, AR:A, RB:B
+    // Expand first file (src/alpha/core.py) — has CH:A, SE:C, TI:B, AD:A, AR:A, RB:B, CM:—
     await page.locator('.cr-file-row').first().locator('.cr-agent-col').first().click();
 
     const detailRow = page.locator('.cr-detail-row.open').first();
     const bodies = detailRow.locator('.agent-detail-body');
     const count = await bodies.count();
-    expect(count).toBe(6);
+    expect(count).toBe(7);
 
     // Security finding (C grade) should show detail text
     const text = await detailRow.textContent();
@@ -1687,7 +1687,7 @@ test.describe('P2: A-grade file detail shows agent summaries', () => {
     // Every agent entry should have non-empty body text
     const bodies = detailRow.locator('.agent-detail-body');
     const bodyCount = await bodies.count();
-    expect(bodyCount).toBe(6);
+    expect(bodyCount).toBe(7);
 
     for (let i = 0; i < bodyCount; i++) {
       const text = await bodies.nth(i).textContent();
@@ -1696,7 +1696,7 @@ test.describe('P2: A-grade file detail shows agent summaries', () => {
     }
   });
 
-  test('file coverage card has 6 agent grades per file row', async ({ page }) => {
+  test('file coverage card has 7 agent grades per file row', async ({ page }) => {
     await page.goto(READY_PACK);
     const rows = page.locator('.cr-file-row');
     const count = await rows.count();
@@ -1704,7 +1704,7 @@ test.describe('P2: A-grade file detail shows agent summaries', () => {
 
     for (let i = 0; i < count; i++) {
       const agentCols = rows.nth(i).locator('.cr-agent-col');
-      await expect(agentCols).toHaveCount(6);
+      await expect(agentCols).toHaveCount(7);
     }
   });
 
@@ -1797,7 +1797,7 @@ test.describe('P3c: File path overflow', () => {
     // All agent column headers should be within the viewport
     const headers = table.locator('thead th.cr-agent-col');
     const headerCount = await headers.count();
-    expect(headerCount).toBe(6);
+    expect(headerCount).toBe(7);
 
     const viewport = page.viewportSize()!;
     for (let i = 0; i < headerCount; i++) {

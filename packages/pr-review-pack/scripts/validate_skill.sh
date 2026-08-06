@@ -200,14 +200,14 @@ for spec in "$@"; do
         fi
     fi
 
-    # Check 2: All 6 .jsonl files exist
+    # Check 2: All 8 .jsonl files exist
     reviews_dir="$target/docs/reviews/pr${pr}"
     if [ -d "$reviews_dir" ]; then
         jsonl_count=$(find "$reviews_dir" -name "*.jsonl" | wc -l | tr -d ' ')
-        echo "  [$([ "$jsonl_count" -ge 6 ] && echo "PASS" || echo "FAIL")] JSONL files: ${jsonl_count}/6 expected"
+        echo "  [$([ "$jsonl_count" -ge 8 ] && echo "PASS" || echo "FAIL")] JSONL files: ${jsonl_count}/8 expected"
 
         # Check each expected agent
-        for agent in code-health security test-integrity adversarial architecture synthesis; do
+        for agent in code-health security test-integrity adversarial architecture rbe code-minimalism synthesis; do
             agent_file=$(find "$reviews_dir" -name "pr${pr}-${agent}-*.jsonl" 2>/dev/null | head -1)
             if [ -n "$agent_file" ]; then
                 line_count=$(wc -l < "$agent_file" | tr -d ' ')
