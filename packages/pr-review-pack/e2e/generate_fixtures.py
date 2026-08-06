@@ -360,7 +360,7 @@ BASE_DATA: dict = {
                 "detail": (
                     "<p>Tier 1 ran 5 deterministic tool checks"
                     " (ruff, mypy, dead-code, complexity, security)."
-                    " Tier 2 ran 6 LLM review agents."
+                    " Tier 2 ran 7 LLM review agents."
                     " No critical findings.</p>"
                 ),
             },
@@ -392,10 +392,10 @@ BASE_DATA: dict = {
             {
                 "name": "Gate 3 \u2014 Agentic Review",
                 "status": "passing",
-                "statusText": "6 reviewers, all clear",
-                "summary": "6 LLM review agents found no critical issues.",
+                "statusText": "7 reviewers, all clear",
+                "summary": "7 LLM review agents found no critical issues.",
                 "detail": (
-                    "<p>6 agents reviewed the diff:"
+                    "<p>7 agents reviewed the diff:"
                     " Code Health, Security, Test Integrity,"
                     " Adversarial, Architecture, RBE. See "
                     '<a href="#section-key-findings">'

@@ -309,7 +309,7 @@ These checks verify behaviors introduced or changed in the v2 review pack improv
 - [ ] Architecture row labels are dynamically generated from zone data (not hardcoded)
 
 ### Agentic Review
-- [ ] Agent legend shows all 6 agents: CH (Code Health), SE (Security), TI (Test Integrity), AD (Adversarial), AR (Architecture), RB (Responsibility Boundaries)
+- [ ] Agent legend shows all 7 agents: CH (Code Health), SE (Security), TI (Test Integrity), AD (Adversarial), AR (Architecture), RB (Responsibility Boundaries), CM (Code Minimalism)
 - [ ] Agent legend appears in the key findings section header area
 
 ### Convergence

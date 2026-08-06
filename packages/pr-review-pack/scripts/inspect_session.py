@@ -7,14 +7,14 @@ inspecting the session trace files — never trusting model output text.
 Checks against the desired state in skill-flow.md:
   1. Skill loaded successfully
   2. Phase 1 (Setup): review_pack_setup.py ran
-  3. Phase 2 (Review): 6 reviewer agents + 1 synthesis agent spawned
+  3. Phase 2 (Review): 7 reviewer agents + 1 synthesis agent spawned
      - Each agent wrote its own .jsonl (not ghost-written by main agent)
      - Validation feedback loop executed with resume-on-failure
   4. Phase 3 (Assemble): assemble_review_pack.py + render_review_pack.py ran
   5. Phase 4 (Deliver): Playwright tests ran, banner removed
   6. Zero permission denials
   7. Zone registry exists
-  8. Filesystem artifacts complete (HTML with SHAs, data JSON, 7 .jsonl files)
+  8. Filesystem artifacts complete (HTML with SHAs, data JSON, 8 .jsonl files)
   9. Synthesis contains what_changed entries
 
 Usage:
@@ -155,7 +155,7 @@ def check_agent_spawns(tool_calls: list[dict]) -> dict:
 
     Verifies:
     - TeamCreate was called (agents must be team members, not plain subagents)
-    - 7 expected agents were spawned with team_name parameter
+    - 8 expected agents were spawned with team_name parameter
     - TeamDelete was called for cleanup
     """
     agent_spawns = []
@@ -197,6 +197,7 @@ def check_agent_spawns(tool_calls: list[dict]) -> dict:
         "adversarial",
         "architecture",
         "rbe",
+        "code-minimalism",
         "synthesis",
     ]
     found_agents = set()
@@ -222,7 +223,7 @@ def check_agent_spawns(tool_calls: list[dict]) -> dict:
         f"({agents_with_team} with team, "
         f"{agents_without_team} without, {resume_count} resumes)"
     )
-    details.append(f"{len(found_agents)}/7 expected agents identified")
+    details.append(f"{len(found_agents)}/8 expected agents identified")
     if missing:
         details.append(f"Missing: {', '.join(sorted(missing))}")
     if not team_deleted and team_created:
@@ -260,13 +261,13 @@ def check_ghost_writing(tool_calls: list[dict], pr_number: int | None) -> dict:
                 cmd = str(call["input"].get("command", ""))
                 if re.search(r"(cat\s*>>?\s*\S+\.jsonl|>\s*\S+\.jsonl)", cmd):
                     if re.search(
-                        r"pr\d+-(code-health|security|test-integrity|adversarial|architecture|rbe|synthesis)-",
+                        r"pr\d+-(code-health|security|test-integrity|adversarial|architecture|rbe|code-minimalism|synthesis)-",
                         cmd,
                     ):
                         ghost_writes.append(f"Bash: {cmd[:80]}")
             continue
         if not re.search(
-            r"pr\d+-(code-health|security|test-integrity|adversarial|architecture|rbe|synthesis)-",
+            r"pr\d+-(code-health|security|test-integrity|adversarial|architecture|rbe|code-minimalism|synthesis)-",
             file_path,
         ):
             continue
@@ -507,7 +508,7 @@ def check_subagent_writes(session_dir: Path, session_id: str) -> dict:
         ", ".join(f"{v}" for v in set(write_methods.values())) if write_methods else "none"
     )
     return {
-        "pass": len(write_agents) >= 6,  # 6 reviewers + synthesis should write
+        "pass": len(write_agents) >= 7,  # 7 reviewers + synthesis should write
         "detail": (
             f"{len(write_agents)}/{len(agent_files)} subagents "
             f"wrote .jsonl files (via {methods_summary})"
@@ -689,7 +690,7 @@ def check_filesystem_artifacts(repo_dir: Path | None, pr_number: int | None) -> 
             f"NOT FOUND — assembly failed or didn't run"
         )
 
-    # Check 3: 6 .jsonl files with content
+    # Check 3: 8 .jsonl files with content
     expected_agents = [
         "code-health",
         "security",
@@ -697,6 +698,7 @@ def check_filesystem_artifacts(repo_dir: Path | None, pr_number: int | None) -> 
         "adversarial",
         "architecture",
         "rbe",
+        "code-minimalism",
         "synthesis",
     ]
     jsonl_found = 0
@@ -716,7 +718,7 @@ def check_filesystem_artifacts(repo_dir: Path | None, pr_number: int | None) -> 
         else:
             missing_agents.append(agent)
 
-    details.append(f"JSONL files: {jsonl_found}/7 found, {jsonl_with_content}/7 have content")
+    details.append(f"JSONL files: {jsonl_found}/8 found, {jsonl_with_content}/8 have content")
     if missing_agents:
         failures.append(f"Missing .jsonl: {', '.join(missing_agents)}")
     if meta_only_agents:

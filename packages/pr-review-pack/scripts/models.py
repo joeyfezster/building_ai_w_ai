@@ -65,6 +65,7 @@ class FindingCategory(StrEnum):
     ARCHITECTURE = "architecture"
     CROSS_CUTTING = "cross-cutting"  # synthesis agent
     RBE = "rbe"
+    CODE_MINIMALISM = "code-minimalism"
 
 
 # ---------------------------------------------------------------------------

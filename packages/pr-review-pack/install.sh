@@ -51,6 +51,8 @@ VERIFY_FILES=(
     "review-prompts/test_integrity_review.md"
     "review-prompts/adversarial_review.md"
     "review-prompts/architecture_review.md"
+    "review-prompts/rbe_review.md"
+    "review-prompts/code_minimalism_review.md"
     "review-prompts/synthesis_review.md"
     "references/schemas/ReviewConcept.schema.json"
     "assets/template_v2.html"

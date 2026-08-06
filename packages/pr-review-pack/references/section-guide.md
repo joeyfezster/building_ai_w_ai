@@ -429,6 +429,7 @@ The sidebar renders inside two mirror blocks in the template (one for desktop, o
 | AD | Adversarial | gaming, spec violations, architecture |
 | AR | Architecture | zone coverage, coupling, structural changes |
 | RB | Responsibility Boundaries | naming clarity, type annotations, scope creep |
+| CM | Code Minimalism | unnecessary code — speculative generality, defensive scaffolding, bloat |
 
 **Agent abbreviation mapping** (from `AGENT_ABBREV` constant):
 - `code-health` / `code-health-reviewer` -> CH
@@ -437,6 +438,7 @@ The sidebar renders inside two mirror blocks in the template (one for desktop, o
 - `adversarial` / `adversarial-reviewer` -> AD
 - `architecture` / `architecture-reviewer` -> AR
 - `rbe` / `rbe-reviewer` -> RB
+- `code-minimalism` / `code-minimalism-reviewer` -> CM
 - `main` / `main-agent` -> MA
 
 **Row structure (grouped by file):**

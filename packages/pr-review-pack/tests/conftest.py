@@ -301,7 +301,7 @@ def sample_review_pack_data() -> dict:
                     "summary": "All deterministic checks passed.",
                     "detail": (
                         "<p>Tier 1 ran 5 deterministic"
-                        " tool checks. Tier 2 ran 6 LLM"
+                        " tool checks. Tier 2 ran 7 LLM"
                         " review agents. No critical"
                         " findings.</p>"
                     ),
@@ -328,10 +328,10 @@ def sample_review_pack_data() -> dict:
                 {
                     "name": "Gate 3 \u2014 Agentic Review",
                     "status": "passing",
-                    "statusText": "6 reviewers, all clear",
-                    "summary": "6 LLM review agents found no critical issues.",
+                    "statusText": "7 reviewers, all clear",
+                    "summary": "7 LLM review agents found no critical issues.",
                     "detail": (
-                        "<p>6 agents reviewed the diff."
+                        "<p>7 agents reviewed the diff."
                         ' See <a href="#section-key-findings">'
                         "Key Findings</a> for details.</p>"
                     ),
