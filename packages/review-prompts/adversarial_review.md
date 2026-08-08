@@ -63,6 +63,10 @@ Behavior that contradicts specs even if tests pass:
 - **Environment variable dependencies.** Silent failure without required env vars
 - **Version mismatches.** Requirements specifying one version but code using APIs from another
 
+### 6. Unenforced Claims (the spec/code promises what nothing enforces)
+
+Hunt for properties that are ASSERTED but not ENFORCED. A name, annotation, docstring, or contract that claims `read-only` / `immutable` / `idempotent` / `exactly-once` / `atomic` / `validated` is only true if something MAKES it true. For each such claim in the diff, find the enforcement or flag the lie. A `SELECT` or a `get_*` name is not read-only (volatile functions, writable CTEs, the writable connection role defeat it); a `readOnlyHint: true` annotation enforces nothing; "validated" with the validator on a different path validates nothing. Also apply this ACROSS a document: when reviewing a spec/contract, a change to one section (a type made conditional, an invariant relaxed) must be reconciled at EVERY place it is referenced (test matrices, DDL, end-to-end scenarios, other type docstrings) — trace the changed concept everywhere and flag any section left contradicting it.
+
 ## Review Output Format
 
 Your output is **hybrid** — two parts, both written to your .jsonl file at `{output_path}`.
