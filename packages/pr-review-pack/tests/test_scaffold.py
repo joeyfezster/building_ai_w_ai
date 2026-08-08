@@ -13,7 +13,9 @@ from pathlib import Path
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
+from _utils import health_tag, match_file_to_zones
 from scaffold_review_pack_data import (
+    SELF_ARTIFACT_PATTERNS,
     build_architecture,
     build_category_zone_map,
     build_code_diffs,
@@ -22,8 +24,6 @@ from scaffold_review_pack_data import (
     build_scenarios,
     compute_status,
     compute_verdict,
-    health_tag,
-    match_file_to_zones,
 )
 
 _HEALTHY_AA = {"overallHealth": "healthy"}
@@ -834,3 +834,126 @@ class TestGateDetailContent:
         gate1 = result["gates"][0]
         assert "<script>" not in gate1["detail"]
         assert "&lt;script&gt;" in gate1["detail"]
+
+
+# ── Dual stats (real work vs GitHub-visible) ─────────────────────────
+
+
+def _make_header_args(**overrides):
+    """Build minimal keyword arguments for build_header."""
+    defaults = {
+        "pr_number": 42,
+        "diff_data": {
+            "total_additions": 100,
+            "total_deletions": 50,
+            "total_files": 5,
+            "head_sha": "abc1234",
+            "files": {
+                "src/main.py": {"additions": 60, "deletions": 30},
+                "src/utils.py": {"additions": 40, "deletions": 20},
+            },
+        },
+        "pr_meta": {
+            "title": "Test PR",
+            "headRefOid": "abc1234def5678",
+            "commits": [{"oid": "a"}],
+        },
+        "scenario_data": None,
+        "ci_checks": [{"state": "SUCCESS", "name": "test", "startedAt": "", "completedAt": ""}],
+        "comment_counts": {"total": 0, "unresolved": 0},
+        "gate0_data": None,
+        "repo_slug": "test/repo",
+    }
+    defaults.update(overrides)
+    return defaults
+
+
+class TestDualStats:
+    def test_real_work_stats_excludes_self_artifacts(self):
+        """When diff contains review pack artifacts, realWorkStats should exclude them."""
+        diff_data = {
+            "total_additions": 4814,
+            "total_deletions": 3161,
+            "total_files": 35,
+            "head_sha": "abc1234",
+            "files": {
+                "src/main.py": {"additions": 1000, "deletions": 500},
+                "src/utils.py": {"additions": 653, "deletions": 100},
+                "tests/test_main.py": {"additions": 0, "deletions": 0},
+                "docs/pr5_review_pack_abc-def.html": {"additions": 2000, "deletions": 2000},
+                "docs/pr5_diff_data_abc-def.json": {"additions": 800, "deletions": 500},
+                "docs/reviews/pr5/pr5-code-health-abc-def.jsonl": {
+                    "additions": 300, "deletions": 50,
+                },
+                "zone-registry.yaml": {"additions": 61, "deletions": 11},
+            },
+        }
+        header = build_header(**_make_header_args(diff_data=diff_data))
+        rw = header["realWorkStats"]
+        assert rw is not None, "realWorkStats should be present when self-artifacts exist"
+        assert rw["additions"] == 1653  # 1000 + 653 + 0
+        assert rw["deletions"] == 600   # 500 + 100 + 0
+        assert rw["filesChanged"] == 3  # main.py, utils.py, test_main.py
+        # Total stats should still reflect GitHub-visible numbers
+        assert header["additions"] == 4814
+        assert header["deletions"] == 3161
+        assert header["filesChanged"] == 35
+
+    def test_no_real_work_stats_when_no_artifacts(self):
+        """When diff has no self-artifacts, realWorkStats should be None."""
+        diff_data = {
+            "total_additions": 100,
+            "total_deletions": 50,
+            "total_files": 2,
+            "head_sha": "abc1234",
+            "files": {
+                "src/main.py": {"additions": 60, "deletions": 30},
+                "src/utils.py": {"additions": 40, "deletions": 20},
+            },
+        }
+        header = build_header(**_make_header_args(diff_data=diff_data))
+        assert header["realWorkStats"] is None
+
+    def test_self_artifact_patterns_cover_expected_paths(self):
+        """Verify SELF_ARTIFACT_PATTERNS matches the documented artifact paths."""
+        from fnmatch import fnmatch
+
+        artifact_paths = [
+            "docs/pr5_review_pack_abc-def.html",
+            "docs/pr5_diff_data_abc-def.json",
+            "docs/reviews/pr5/pr5-code-health.jsonl",
+            "zone-registry.yaml",
+            ".claude/zone-registry.yaml",
+        ]
+        for path in artifact_paths:
+            matched = any(fnmatch(path, p) for p in SELF_ARTIFACT_PATTERNS)
+            assert matched, f"Expected {path} to match a self-artifact pattern"
+
+        non_artifact_paths = [
+            "src/main.py",
+            "tests/test_foo.py",
+            "docs/dark_factory.md",
+            "packages/pr-review-pack/scripts/render.py",
+        ]
+        for path in non_artifact_paths:
+            matched = any(fnmatch(path, p) for p in SELF_ARTIFACT_PATTERNS)
+            assert not matched, f"Expected {path} NOT to match a self-artifact pattern"
+
+    def test_real_work_stats_with_only_artifacts(self):
+        """When all files are self-artifacts, realWorkStats should show zero."""
+        diff_data = {
+            "total_additions": 500,
+            "total_deletions": 200,
+            "total_files": 2,
+            "head_sha": "abc1234",
+            "files": {
+                "docs/pr5_review_pack_abc.html": {"additions": 400, "deletions": 150},
+                "zone-registry.yaml": {"additions": 100, "deletions": 50},
+            },
+        }
+        header = build_header(**_make_header_args(diff_data=diff_data))
+        rw = header["realWorkStats"]
+        assert rw is not None
+        assert rw["additions"] == 0
+        assert rw["deletions"] == 0
+        assert rw["filesChanged"] == 0

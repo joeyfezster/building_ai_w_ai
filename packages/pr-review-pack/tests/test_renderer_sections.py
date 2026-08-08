@@ -71,6 +71,48 @@ class TestRenderStatItems:
         assert ">1</span> commit<" in result
         assert "commits" not in result
 
+    def test_dual_stats_rendered_when_present(self):
+        """When realWorkStats differs from total, both stat lines should render."""
+        header = {
+            "commits": 3,
+            "additions": 4814,
+            "deletions": 3161,
+            "filesChanged": 35,
+            "realWorkStats": {
+                "additions": 1653,
+                "deletions": 600,
+                "filesChanged": 10,
+            },
+        }
+        result = render_stat_items(header)
+        # Primary line shows real work stats
+        assert "+1653" in result
+        assert ">10</span> files" in result
+        # Secondary muted line shows GitHub-visible stats
+        assert "GitHub shows" in result
+        assert "+4814" in result
+        assert "review artifacts" in result
+
+    def test_single_stats_when_no_artifacts(self):
+        """When realWorkStats is None, only one stat line renders."""
+        header = {
+            "commits": 2,
+            "additions": 100,
+            "deletions": 50,
+            "filesChanged": 5,
+            "realWorkStats": None,
+        }
+        result = render_stat_items(header)
+        assert "+100" in result
+        assert "GitHub shows" not in result
+
+    def test_dual_stats_not_rendered_when_key_missing(self):
+        """When realWorkStats key is absent entirely, behave like None."""
+        header = {"commits": 1, "additions": 10, "deletions": 5, "filesChanged": 2}
+        result = render_stat_items(header)
+        assert "+10" in result
+        assert "GitHub shows" not in result
+
 
 # ── render_status_badges ──────────────────────────────────────────────
 
