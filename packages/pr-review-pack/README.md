@@ -130,16 +130,24 @@ The v2 template features:
 
 ## Playwright Validation
 
-E2E tests validate the rendered HTML structurally and visually.
+Two Playwright projects validate the skill:
 
 ```bash
-npx playwright test e2e/
+# Renderer regression suite (skill maintainers only)
+python3 scripts/dev/generate_fixtures.py
+npx playwright test --project=renderer-fixtures
+
+# Live-pack validation (run against a real review pack)
+PACK_PATH="<absolute-path>" npx playwright test --project=live-pack-validation
 ```
 
-- `review-pack-v2.spec.ts` -- baseline suite covering all Mission Control sections, sidebar behavior, and interactive elements
-- `pr-validation.template.ts` -- per-PR expansion template for PR-specific assertions
-
-When all E2E tests pass, the validation banner is removed from the rendered pack.
+- `e2e/renderer-fixtures.spec.ts` -- renderer regression suite. Runs against
+  `/tmp/pr26_review_pack_v2_*.html` fixtures produced by `scripts/dev/generate_fixtures.py`.
+- `e2e/live-pack-validation.spec.ts` -- validates a live PR review pack against
+  its source `.jsonl`, diff data, and zone registry. Emits structured
+  `LIVE_PACK_FAIL` diagnostics whose codes are registered in
+  `references/live-pack-failure-codes.md`. Banner-strip is the terminal test;
+  it only fires when every preceding live-pack assertion passes.
 
 ## Project Structure
 

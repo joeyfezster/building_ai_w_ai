@@ -1,0 +1,2692 @@
+{
+  "header": {
+    "title": "PR Review Pack v3: 4-phase pipeline with agent teams, JSONL trust model, and Mission Control UI",
+    "prNumber": 36,
+    "prUrl": "https://github.com/joeyfezster/building_ai_w_ai/pull/36",
+    "headBranch": "feature/streamline-pr-review-pack",
+    "baseBranch": "main",
+    "headSha": "3e1e11d",
+    "additions": 13263,
+    "deletions": 1136,
+    "filesChanged": 59,
+    "commits": 16,
+    "statusBadges": [
+      {
+        "label": "Gate 0: 0 critical, 6 warn",
+        "type": "pass",
+        "icon": "\u2713"
+      },
+      {
+        "label": "CI 1/2",
+        "type": "fail",
+        "icon": "\u2717"
+      },
+      {
+        "label": "No Scenarios",
+        "type": "info",
+        "icon": "\u2014"
+      },
+      {
+        "label": "0/3 comments resolved",
+        "type": "warn",
+        "icon": "\u26a0"
+      }
+    ],
+    "generatedAt": "2026-03-18T05:07:23Z",
+    "generatedBy": "dark factory review agent"
+  },
+  "architecture": {
+    "zones": [
+      {
+        "id": "environment",
+        "label": "Environment",
+        "sublabel": "MiniPong Gymnasium env",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 20,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "specs/env.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "rl-core",
+        "label": "RL Core",
+        "sublabel": "DQN algorithm components",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 150,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "specs/rl.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "agent",
+        "label": "Agent",
+        "sublabel": "DQN agent",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 280,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "specs/rl.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "training",
+        "label": "Training",
+        "sublabel": "Pipeline, eval, video, verification",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 410,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "specs/training.md",
+          "specs/proof.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "observability",
+        "label": "Observability",
+        "sublabel": "Logging, metrics",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 540,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "sublabel": "Streamlit training dashboard",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 670,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "specs/dashboard.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "tests",
+        "label": "Tests",
+        "sublabel": "pytest suite",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 800,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "config",
+        "label": "Config",
+        "sublabel": "Build, deps, project config",
+        "category": "infra",
+        "fileCount": 0,
+        "position": {
+          "x": 20,
+          "y": 290,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "repo-infra",
+        "label": "Repo Infra",
+        "sublabel": "CI workflows, zone registry, project-level config",
+        "category": "factory",
+        "fileCount": 8,
+        "position": {
+          "x": 20,
+          "y": 30,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": true
+      },
+      {
+        "id": "repo-scripts",
+        "label": "Repo Scripts",
+        "sublabel": "Utility scripts (whitepapers, packaging, postmerge)",
+        "category": "infra",
+        "fileCount": 0,
+        "position": {
+          "x": 150,
+          "y": 290,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "docker",
+        "label": "Docker/Infra",
+        "sublabel": "Containers, compute",
+        "category": "infra",
+        "fileCount": 0,
+        "position": {
+          "x": 280,
+          "y": 290,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "review-pack",
+        "label": "Review Pack",
+        "sublabel": "PR review pack skill (template, renderer, scaffold, CLI, tests)",
+        "category": "factory",
+        "fileCount": 43,
+        "position": {
+          "x": 150,
+          "y": 30,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "packages/pr-review-pack/references/build-spec.md"
+        ],
+        "isModified": true
+      },
+      {
+        "id": "review-prompts",
+        "label": "Review Prompts",
+        "sublabel": "Gate 0 Tier 2 paradigm prompts",
+        "category": "factory",
+        "fileCount": 6,
+        "position": {
+          "x": 280,
+          "y": 30,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": true
+      },
+      {
+        "id": "dark-factory",
+        "label": "Dark Factory",
+        "sublabel": "Factory convergence loop, gate artifacts",
+        "category": "factory",
+        "fileCount": 0,
+        "position": {
+          "x": 410,
+          "y": 30,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [
+          "packages/dark-factory/docs/dark_factory.md"
+        ],
+        "isModified": false
+      },
+      {
+        "id": "docs",
+        "label": "Documentation",
+        "sublabel": "Project docs, decisions, whitepapers",
+        "category": "infra",
+        "fileCount": 10,
+        "position": {
+          "x": 410,
+          "y": 290,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": true
+      },
+      {
+        "id": "specs",
+        "label": "Specs & Scenarios",
+        "sublabel": "Component specs and holdout evaluation criteria",
+        "category": "factory",
+        "fileCount": 0,
+        "position": {
+          "x": 540,
+          "y": 30,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      },
+      {
+        "id": "play",
+        "label": "Interactive Play",
+        "sublabel": "Human vs agent gameplay",
+        "category": "product",
+        "fileCount": 0,
+        "position": {
+          "x": 930,
+          "y": 160,
+          "width": 120,
+          "height": 70
+        },
+        "specs": [],
+        "isModified": false
+      }
+    ],
+    "arrows": [
+      {
+        "from": {
+          "x": 80,
+          "y": 100
+        },
+        "to": {
+          "x": 80,
+          "y": 160
+        }
+      },
+      {
+        "from": {
+          "x": 140,
+          "y": 195
+        },
+        "to": {
+          "x": 150,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 270,
+          "y": 195
+        },
+        "to": {
+          "x": 280,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 400,
+          "y": 195
+        },
+        "to": {
+          "x": 410,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 530,
+          "y": 195
+        },
+        "to": {
+          "x": 540,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 660,
+          "y": 195
+        },
+        "to": {
+          "x": 670,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 790,
+          "y": 195
+        },
+        "to": {
+          "x": 800,
+          "y": 195
+        }
+      },
+      {
+        "from": {
+          "x": 920,
+          "y": 195
+        },
+        "to": {
+          "x": 930,
+          "y": 195
+        }
+      }
+    ],
+    "rowLabels": [
+      {
+        "text": "INFRASTRUCTURE",
+        "position": {
+          "x": -95,
+          "y": 35
+        }
+      },
+      {
+        "text": "PRODUCT CODE",
+        "position": {
+          "x": -95,
+          "y": 165
+        }
+      },
+      {
+        "text": "INFRA",
+        "position": {
+          "x": -95,
+          "y": 295
+        }
+      }
+    ],
+    "unzonedFiles": []
+  },
+  "specs": [
+    {
+      "path": "specs/env.md",
+      "icon": "\ud83d\udccb",
+      "description": "Env"
+    },
+    {
+      "path": "specs/rl.md",
+      "icon": "\ud83d\udccb",
+      "description": "Rl"
+    },
+    {
+      "path": "specs/training.md",
+      "icon": "\ud83d\udccb",
+      "description": "Training"
+    },
+    {
+      "path": "specs/proof.md",
+      "icon": "\ud83d\udccb",
+      "description": "Proof"
+    },
+    {
+      "path": "specs/dashboard.md",
+      "icon": "\ud83d\udccb",
+      "description": "Dashboard"
+    },
+    {
+      "path": "packages/pr-review-pack/references/build-spec.md",
+      "icon": "\ud83d\udccb",
+      "description": "Build-Spec"
+    },
+    {
+      "path": "packages/dark-factory/docs/dark_factory.md",
+      "icon": "\ud83d\udccb",
+      "description": "Dark Factory"
+    }
+  ],
+  "scenarios": [],
+  "status": {
+    "value": "blocked",
+    "text": "BLOCKED",
+    "reasons": [
+      "Failing gates: Gate 1 \u2014 CI",
+      "Overall convergence failing"
+    ]
+  },
+  "reviewedCommitSHA": "3e1e11d388f1bb96662c7d971155368767a0cb68",
+  "reviewedCommitDate": "2026-03-18T05:07:23Z",
+  "headCommitSHA": "3e1e11d388f1bb96662c7d971155368767a0cb68",
+  "headCommitDate": "2026-03-18T04:47:32Z",
+  "commitGap": 0,
+  "lastRefreshed": "2026-03-18T05:07:23Z",
+  "packMode": "live",
+  "verdict": {
+    "status": "blocked",
+    "text": "BLOCKED \u2014 Failing gates: Gate 1 \u2014 CI; Overall convergence failing"
+  },
+  "codeDiffs": [
+    {
+      "path": "docs/CONVENTIONS.md",
+      "additions": 24,
+      "deletions": 0,
+      "status": "modified",
+      "zones": [
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/key_findings_proposal_a.html",
+      "additions": 562,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/key_findings_proposal_b.html",
+      "additions": 521,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/pr_review_pack_v3_changes.md",
+      "additions": 276,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/review_pack_v3_work_plan.md",
+      "additions": 311,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/skill_harness_convergence_plan.md",
+      "additions": 307,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/skill_introspection_plan.md",
+      "additions": 225,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/streamline_review_pack.md",
+      "additions": 670,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/proposals/streamline_work_plan.md",
+      "additions": 327,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "repo-infra",
+        "docs"
+      ]
+    },
+    {
+      "path": "docs/research/anthropic_skill_architecture.md",
+      "additions": 458,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "docs"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/README.md",
+      "additions": 40,
+      "deletions": 29,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/SKILL.md",
+      "additions": 392,
+      "deletions": 273,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/adversarial-reviewer.md",
+      "additions": 34,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/architecture-reviewer.md",
+      "additions": 43,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/code-health-reviewer.md",
+      "additions": 34,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/security-reviewer.md",
+      "additions": 34,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/synthesis-reviewer.md",
+      "additions": 34,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/agents/test-integrity-reviewer.md",
+      "additions": 34,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/assets/template_v2.html",
+      "additions": 158,
+      "deletions": 7,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/docs/review-directions.md",
+      "additions": 178,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/docs/skill-flow.md",
+      "additions": 339,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/e2e/pr-validation.template.ts",
+      "additions": 0,
+      "deletions": 125,
+      "status": "deleted",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/e2e/pr34-validation.spec.ts",
+      "additions": 0,
+      "deletions": 203,
+      "status": "deleted",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/e2e/review-pack-v2.spec.ts",
+      "additions": 371,
+      "deletions": 9,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/install.sh",
+      "additions": 74,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/examples/pr5-code-health-efbf3d40-a1b2c3d4.jsonl",
+      "additions": 7,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/examples/pr5-synthesis-efbf3d40-a1b2c3d4.jsonl",
+      "additions": 4,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/schemas/ArchitectureAssessmentOutput.schema.json",
+      "additions": 300,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/schemas/ConceptUpdate.schema.json",
+      "additions": 171,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/schemas/FileReviewOutcome.schema.json",
+      "additions": 54,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/schemas/ReviewConcept.schema.json",
+      "additions": 133,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/schemas/SemanticOutput.schema.json",
+      "additions": 345,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/structured-outputs-findings.md",
+      "additions": 56,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/references/zone-registry.example.yaml",
+      "additions": 54,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/schemas/ArchitectureAssessmentOutput.schema.json",
+      "additions": 300,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/schemas/ConceptUpdate.schema.json",
+      "additions": 171,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/schemas/FileReviewOutcome.schema.json",
+      "additions": 54,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/schemas/ReviewConcept.schema.json",
+      "additions": 133,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/schemas/SemanticOutput.schema.json",
+      "additions": 345,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/assemble_review_pack.py",
+      "additions": 1006,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/check_prerequisites.py",
+      "additions": 114,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/generate_diff_data.py",
+      "additions": 3,
+      "deletions": 0,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/inspect_session.py",
+      "additions": 793,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/models.py",
+      "additions": 605,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/render_review_pack.py",
+      "additions": 399,
+      "deletions": 18,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/review_pack_setup.py",
+      "additions": 338,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/run_deterministic_review.py",
+      "additions": 272,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/scaffold_review_pack_data.py",
+      "additions": 116,
+      "deletions": 77,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/scripts/validate_skill.sh",
+      "additions": 290,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/tests/test_assembler.py",
+      "additions": 744,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/tests/test_models.py",
+      "additions": 489,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/tests/test_renderer_integration.py",
+      "additions": 1,
+      "deletions": 1,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/pr-review-pack/tests/test_renderer_sidebar.py",
+      "additions": 4,
+      "deletions": 2,
+      "status": "modified",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/adversarial_review.md",
+      "additions": 70,
+      "deletions": 55,
+      "status": "modified",
+      "zones": [
+        "review-prompts"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/architecture_review.md",
+      "additions": 87,
+      "deletions": 130,
+      "status": "modified",
+      "zones": [
+        "review-prompts"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/code_health_review.md",
+      "additions": 89,
+      "deletions": 59,
+      "status": "modified",
+      "zones": [
+        "review-prompts"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/security_review.md",
+      "additions": 81,
+      "deletions": 75,
+      "status": "modified",
+      "zones": [
+        "review-prompts"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/synthesis_review.md",
+      "additions": 105,
+      "deletions": 0,
+      "status": "added",
+      "zones": [
+        "review-prompts"
+      ]
+    },
+    {
+      "path": "packages/review-prompts/test_integrity_review.md",
+      "additions": 84,
+      "deletions": 73,
+      "status": "modified",
+      "zones": [
+        "review-prompts"
+      ]
+    }
+  ],
+  "whatChanged": {
+    "defaultSummary": {
+      "infrastructure": "Major restructuring of the PR review pack from a 3-pass monolithic skill into a 4-phase pipeline (Setup, Review, Assemble, Deliver) with structured JSONL contracts between agents and a Pydantic validation layer. All 5 reviewer paradigm prompts rewritten for JSONL output. New synthesis reviewer added as 6th cross-cutting agent. Extensive design proposals, research documentation, and convergence plans added to docs/.",
+      "product": "No product code changes in this PR. All 59 changed files are in infrastructure and factory zones (review-pack, review-prompts, repo-infra, docs). The MiniPong RL system (environment, agent, training, dashboard) is untouched."
+    },
+    "zoneDetails": [
+      {
+        "zoneId": "review-pack",
+        "title": "Review Pack",
+        "description": "Core pipeline rewrite: new <code>models.py</code> (605 lines) defines Pydantic schemas for all agent outputs. New <code>assemble_review_pack.py</code> (1006 lines) validates and transforms JSONL into ReviewPackData. New <code>review_pack_setup.py</code> (338 lines) orchestrates Phase 1 scaffolding. New <code>inspect_session.py</code> (793 lines) provides 12-check session validation. <code>render_review_pack.py</code> expanded with Key Findings, corroboration detection, and File Coverage table rendering. 6 agent definition files added. 5 JSON schemas added (duplicated across two directories). E2E tests consolidated and expanded (+371 lines). New unit tests: <code>test_assembler.py</code> (744 lines), <code>test_models.py</code> (489 lines). Deleted obsolete e2e template and PR-specific spec."
+      },
+      {
+        "zoneId": "review-prompts",
+        "title": "Review Prompts",
+        "description": "All 5 existing paradigm prompts rewritten to produce hybrid JSONL output (FileReviewOutcome per file + ReviewConcept findings). New <code>synthesis_review.md</code> prompt added for the cross-cutting 6th reviewer role."
+      },
+      {
+        "zoneId": "repo-infra",
+        "title": "Repo Infrastructure",
+        "description": "8 design proposals and work plans added to <code>docs/proposals/</code> documenting the v3 architecture, streamlining rationale, skill introspection plan, and convergence approach."
+      },
+      {
+        "zoneId": "docs",
+        "title": "Documentation",
+        "description": "New <code>docs/research/anthropic_skill_architecture.md</code> research document. <code>docs/CONVENTIONS.md</code> updated with progress log convention."
+      }
+    ]
+  },
+  "agenticReview": {
+    "overallGrade": "C",
+    "reviewMethod": "agent-teams",
+    "findings": [
+      {
+        "file": "packages/pr-review-pack/scripts/inspect_session.py",
+        "grade": "C",
+        "zones": "review-pack",
+        "notable": "inspect_session.py (793 lines) has zero test coverage",
+        "detail": "<p><code>inspect_session.py</code> is 793 lines of validation logic that serves as a quality gate for review sessions. It contains:</p><ul><li>JSONL file discovery and parsing</li><li>Schema validation against Pydantic models</li><li>File coverage completeness checks</li><li>Concept backing verification (non-A grades need backing concepts)</li><li>Zone registry cross-referencing</li><li>Synthesis content validation</li></ul><p>While some of this logic overlaps with <code>assemble_review_pack.py</code> (which is tested), the inspector has its own implementation with distinct error reporting. Without tests, regressions in the inspector could silently pass broken review sessions through the factory.</p><p>The assembler tests cover similar concepts but through different code paths \u2014 this is not a substitute for testing the inspector directly.</p>",
+        "gradeSortOrder": 0,
+        "agent": "test-integrity"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/review_pack_setup.py",
+        "grade": "C",
+        "zones": "review-pack",
+        "notable": "review_pack_setup.py and check_prerequisites.py have no tests",
+        "detail": "<p><code>review_pack_setup.py</code> (338 lines) handles:</p><ul><li>Review directory creation and JSONL file scaffolding</li><li>Meta header generation for agent output files</li><li>Diff data generation orchestration</li></ul><p><code>check_prerequisites.py</code> (114 lines) handles:</p><ul><li>Python version detection</li><li>Pydantic availability checking</li><li>Playwright installation verification</li></ul><p>Both scripts perform I/O and environment detection that could be tested with <code>tmp_path</code> fixtures and mock environments. Without tests, silent failures in setup could produce empty or malformed JSONL files that downstream tools fail to process.</p>",
+        "gradeSortOrder": 0,
+        "agent": "test-integrity"
+      },
+      {
+        "file": "packages/pr-review-pack/schemas/ReviewConcept.schema.json",
+        "grade": "B",
+        "zones": "review-pack",
+        "notable": "Duplicate schema files create silent drift risk",
+        "detail": "<p>The PR adds identical schema files to two locations:</p><ul><li><code>packages/pr-review-pack/schemas/*.schema.json</code> (5 files)</li><li><code>packages/pr-review-pack/references/schemas/*.schema.json</code> (5 files)</li></ul><p>The SKILL.md and reviewer prompts reference <code>references/schemas/</code>, but the <code>schemas/</code> directory also exists. If a future change updates one copy but not the other, the pydantic models (which are the true enforcement layer) may diverge from the JSON schemas that agents read. This is not gaming, but it creates a subtle integrity gap: an agent could pass JSON schema validation against a stale copy while the assembler rejects it via pydantic.</p><p>Recommendation: use symlinks or a single canonical location.</p>",
+        "gradeSortOrder": 1,
+        "agent": "adversarial"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/models.py",
+        "grade": "B",
+        "zones": "review-pack",
+        "notable": "LEGACY_GRADE_SORT_ORDER collapses F and C to same value",
+        "detail": "<p>In <code>models.py</code>, the legacy grade sort order is:</p><pre><code>LEGACY_GRADE_SORT_ORDER = {Grade.F: 0, Grade.C: 0, Grade.B: 1, Grade.B_PLUS: 2, Grade.A: 3}</code></pre><p>The assembler's <code>transform_concepts_to_review()</code> correctly handles this by using a secondary <code>_GRADE_SEVERITY</code> dict to break ties. The test <code>test_overall_grade_f_not_suppressed_by_c</code> explicitly validates this edge case. So the implementation is correct \u2014 but the dual-sort-order design is fragile.</p><p>If anyone uses <code>LEGACY_GRADE_SORT_ORDER</code> directly for sorting (without the secondary tiebreaker), F-grade findings could sort after C-grade findings or vice versa depending on insertion order. The fix is documented in test, which is good. Not gaming, but a latent integrity risk.</p>",
+        "gradeSortOrder": 1,
+        "agent": "adversarial"
+      },
+      {
+        "file": "packages/pr-review-pack/install.sh",
+        "grade": "B",
+        "zones": "review-pack",
+        "notable": "install.sh performs rm -rf on target directory without safety check",
+        "detail": "<p>The install script has:</p><pre><code>elif [ -d \"$INSTALL_DIR\" ]; then\n    echo \"  Removing old installation...\"\n    rm -rf \"$INSTALL_DIR\"\nfi</code></pre><p>INSTALL_DIR is hardcoded to <code>$HOME/.claude/skills/pr-review-pack</code>, so the blast radius is limited. However, the script doesn't check that the directory actually contains a SKILL.md or other marker before deleting. If someone has a symlink at that path pointing elsewhere, the <code>-L</code> check catches symlinks but <code>rm -rf</code> on a real directory is unconditional.</p><p>This is not gaming \u2014 it's a minor safety gap in a developer-only tool. The verification step after installation is a good compensating control.</p>",
+        "gradeSortOrder": 1,
+        "agent": "adversarial"
+      },
+      {
+        "file": "packages/pr-review-pack/references/schemas/ArchitectureAssessmentOutput.schema.json",
+        "grade": "B",
+        "zones": "review-pack",
+        "notable": "Schema files duplicated across references/schemas/ and schemas/ directories",
+        "detail": "<p>Five schema files (<code>ArchitectureAssessmentOutput</code>, <code>ConceptUpdate</code>, <code>FileReviewOutcome</code>, <code>ReviewConcept</code>, <code>SemanticOutput</code>) are byte-identical copies in two directories. The <code>references/schemas/</code> copy is referenced by agent paradigm prompts; the <code>schemas/</code> copy appears to serve <code>models.py</code> and the assembler. If only one copy is updated in a future PR, schema divergence will cause silent validation mismatches.</p><p><strong>Recommendation:</strong> Pick one canonical location and symlink or remove the other. Alternatively, have the Pydantic models in <code>models.py</code> export the schemas programmatically.</p>",
+        "gradeSortOrder": 1,
+        "agent": "architecture"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/inspect_session.py",
+        "grade": "B",
+        "zones": "review-pack",
+        "notable": "inspect_session.py check_filesystem_artifacts references html_files in scope guard incorrectly",
+        "detail": "<p>In <code>check_filesystem_artifacts</code> at line 605:</p><pre>\"html_found\": len(html_files) > 0 if 'html_files' in dir() else False,</pre><p>This uses <code>'html_files' in dir()</code> as a scope guard, which is a code smell. The variable <code>html_files</code> is only assigned inside the first <code>if html_files:</code> block (line 551), but it is actually always assigned at line 549 via <code>list((repo_dir / \"docs\").glob(html_pattern))</code>, so the guard is vestigial. However, using <code>dir()</code> for variable existence checks is fragile and non-Pythonic. A simple initialization like <code>html_found = False</code> at the top of the function would be clearer.</p>",
+        "gradeSortOrder": 1,
+        "agent": "code-health"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/render_review_pack.py",
+        "grade": "B",
+        "zones": "review-pack",
+        "notable": "render_review_pack.py HTML string construction at scale creates maintenance burden",
+        "detail": "<p>The renderer builds complex HTML structures via Python f-string concatenation across multiple functions. Two functions stand out:</p><ul><li><code>render_architecture_svg</code> (lines 157-266, ~110 lines): Constructs SVG elements with inline style attributes, onclick handlers, and nested text/tspan elements.</li><li><code>render_architecture_assessment</code> (lines 269-447, ~180 lines): Builds nested collapsible sections with tables, badges, and subsections via string list concatenation.</li></ul><p>This pattern is functionally correct but creates a maintenance burden: HTML structure is interleaved with Python logic, making it difficult to verify tag balance, attribute quoting, or CSS class correctness. The template_v2.html file uses injection markers which partially addresses this, but the section renderers themselves are still pure string construction.</p><p>This is not a bug but a structural complexity that increases the risk of regressions in future changes to the HTML output.</p>",
+        "gradeSortOrder": 1,
+        "agent": "code-health"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/scaffold_review_pack_data.py",
+        "grade": "B",
+        "zones": "review-pack",
+        "notable": "GraphQL query string interpolation without parameterization",
+        "detail": "<p>In <code>scaffold_review_pack_data.py</code> (lines 691-699) and <code>review_pack_setup.py</code> (lines 85-93), the GitHub owner and repo name are extracted from <code>git remote get-url origin</code> and interpolated directly into GraphQL query strings:</p><pre>query=f'{{ repository(owner: \"{owner}\", name: \"{name}\") {{ ... }} }}'</pre><p><strong>Risk assessment:</strong> Low severity in this context. The values come from the local git remote URL, which is controlled by the repository configuration. GitHub's repository naming rules (<code>[a-zA-Z0-9._-]</code>) constrain the character set, making injection impractical. The code in <code>scaffold_review_pack_data.py</code> (line 688) documents this trust assumption explicitly.</p><p><strong>Nevertheless</strong>, the idiomatic approach is to use GraphQL variables (<code>$owner: String!</code>) passed via the <code>-F</code> flag to <code>gh api graphql</code>, which would eliminate the interpolation entirely and be more robust against edge cases (e.g., repo names containing quotes, which GitHub currently disallows but the code doesn't validate).</p>",
+        "gradeSortOrder": 1,
+        "agent": "security"
+      },
+      {
+        "file": "packages/pr-review-pack/install.sh",
+        "grade": "B",
+        "zones": "review-pack",
+        "notable": "Shell scripts use destructive operations and CLI-arg-derived paths",
+        "detail": "<p><strong>install.sh</strong> (lines 16-22): Uses <code>rm -rf \"$INSTALL_DIR\"</code> where <code>INSTALL_DIR</code> is hardcoded to <code>$HOME/.claude/skills/pr-review-pack</code>. This is safe \u2014 the path is a constant, not derived from user input. The script also checks whether the target is a symlink vs directory before choosing the removal method.</p><p><strong>validate_skill.sh</strong> (lines 79-88): Uses <code>rm -rf docs/reviews/ docs/*review_pack*.html zone-registry.yaml</code> and <code>git checkout -- . &amp;&amp; git clean -fd</code> inside cloned repo directories. The target directories are constructed from CLI-provided <code>owner/repo:PR</code> specs via <code>dir_name=$(echo \"$repo\" | tr '/' '-')-${pr}</code>. The <code>IFS=: read -r repo pr</code> pattern correctly splits the spec.</p><p>Additionally, validate_skill.sh Step 4 (lines 155-173) embeds <code>$result_file</code> and <code>$dir_name</code> into an inline Python script via shell interpolation. These variables are derived from the CLI spec and results directory, not from external input, so injection risk is negligible.</p><p><strong>Risk assessment:</strong> Low. All destructive operations target paths that are either hardcoded constants or constructed from developer-provided CLI arguments in a local development context. The scripts use <code>set -euo pipefail</code> for fail-fast behavior. No untrusted input reaches these operations.</p>",
+        "gradeSortOrder": 1,
+        "agent": "security"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/render_review_pack.py",
+        "grade": "B",
+        "zones": "review-pack",
+        "notable": "New renderer functions lack direct unit tests",
+        "detail": "<p>The renderer expansion adds three significant new functions:</p><ul><li><code>render_key_findings()</code> \u2014 groups findings by severity, renders corroboration badges, collapses A-grade findings</li><li><code>_detect_corroboration()</code> \u2014 detects cross-agent corroboration via file overlap and title similarity</li><li><code>render_file_coverage_table()</code> \u2014 renders per-agent grade columns for each file</li></ul><p>The e2e tests in <code>review-pack-v2.spec.ts</code> verify these render correctly in the browser, which is valuable. However, unit tests would catch edge cases: empty findings list, single agent with no corroboration possible, title similarity false positives, and grade sorting with mixed severity.</p><p>The existing <code>test_renderer_sidebar.py</code> and <code>test_renderer_integration.py</code> updates only cover the nav rename from 'Code Review' to 'Key Findings'/'File Coverage' \u2014 they do not test the new rendering logic.</p>",
+        "gradeSortOrder": 1,
+        "agent": "test-integrity"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/validate_skill.sh",
+        "grade": "B",
+        "zones": "review-pack",
+        "notable": "Untested orchestration and validation scripts (validate_skill.sh, install.sh, run_deterministic_review.py, scaffold_review_pack_data.py)",
+        "detail": "<p>Four scripts in this PR have B-grade test coverage gaps:</p><ul><li><code>validate_skill.sh</code> (290 lines) \u2014 shell script running validation checks across the review pack pipeline. Contains conditional logic for check sequencing and error aggregation with no test harness.</li><li><code>install.sh</code> (74 lines) \u2014 environment detection and package installation. Silent failures here could leave the skill non-functional.</li><li><code>run_deterministic_review.py</code> (272 lines) \u2014 orchestrates deterministic review steps by calling other scripts. The called scripts are individually tested but the orchestration error paths are not.</li><li><code>scaffold_review_pack_data.py</code> (refactored, +116/-77) \u2014 significant logic changes to scaffolding with no test updates. Existing integration tests may catch gross failures but refactored branching logic is unvalidated.</li></ul><p>These are graded B rather than C because they are primarily orchestration scripts that delegate to tested components. The untested surface is control flow and error handling, not core business logic.</p>",
+        "gradeSortOrder": 1,
+        "agent": "test-integrity"
+      },
+      {
+        "file": "packages/pr-review-pack/tests/test_assembler.py",
+        "grade": "B+",
+        "zones": "tests review-pack",
+        "notable": "sys.path.insert in tests bypasses proper packaging",
+        "detail": "<p>Both <code>test_assembler.py</code> and <code>test_models.py</code> use:</p><pre><code>sys.path.insert(0, str(Path(__file__).parent.parent / \"scripts\"))</code></pre><p>This is a pragmatic solution for a non-packaged script collection, and the production code (<code>assemble_review_pack.py</code>) uses the same pattern. So the test import path matches the production import path \u2014 this is honest, not gaming. However, it does mean that if the scripts directory is moved or restructured, tests could silently import the wrong module.</p><p>This is a minor structural concern, not a gaming pattern. The tests genuinely exercise real code paths.</p>",
+        "gradeSortOrder": 2,
+        "agent": "adversarial"
+      },
+      {
+        "file": "docs/research/anthropic_skill_architecture.md",
+        "grade": "B+",
+        "zones": "docs",
+        "notable": "docs/research/ subdirectory not explicitly covered in zone registry",
+        "detail": "<p>The file <code>docs/research/anthropic_skill_architecture.md</code> is matched by the <code>docs/*.md</code> pattern only because Python's <code>fnmatch</code> treats <code>*</code> as matching <code>/</code>. Standard POSIX glob and <code>pathlib.Path.match()</code> do NOT match <code>/</code> with <code>*</code>. If the zone-matching implementation changes, this file would become unzoned.</p><p><strong>Recommendation:</strong> Add <code>docs/research/**</code> to the docs zone paths, or to repo-infra alongside <code>docs/proposals/**</code>.</p>",
+        "gradeSortOrder": 2,
+        "agent": "architecture"
+      },
+      {
+        "file": "packages/pr-review-pack/schemas/ReviewConcept.schema.json",
+        "grade": "B+",
+        "zones": "review-pack",
+        "notable": "Duplicate schema directories: schemas/ and references/schemas/ are byte-identical",
+        "detail": "<p>The PR introduces two directories containing the exact same 5 schema files:</p><ul><li><code>packages/pr-review-pack/schemas/*.schema.json</code> (5 files, 1003 new lines)</li><li><code>packages/pr-review-pack/references/schemas/*.schema.json</code> (5 files, 1003 new lines)</li></ul><p>Every file is byte-identical across the two directories (verified with <code>diff</code>). This doubles the schema surface area without adding value. If models.py is updated and schemas are regenerated, both directories need updating or they silently drift.</p><p><strong>Recommendation:</strong> Keep one canonical location (likely <code>references/schemas/</code> since review prompts reference it) and either delete the other or replace it with a symlink/generation step.</p>",
+        "gradeSortOrder": 2,
+        "agent": "code-health"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/review_pack_setup.py",
+        "grade": "B+",
+        "zones": "review-pack",
+        "notable": "convert_gate0_tier2 is a dead stub called unconditionally in setup flow",
+        "detail": "<p><code>convert_gate0_tier2()</code> in <code>review_pack_setup.py</code> (line 239-257) is called unconditionally during the setup flow (Step 5, line 315). The function iterates gate0 tier 2 files but only prints that conversion is 'not yet implemented'. It silently does nothing useful.</p><p>While it returns early if no tier 2 files exist (most cases), the stub creates confusion about whether gate0 conversion is a supported feature. Either implement the conversion or remove the call and document it as a future enhancement.</p>",
+        "gradeSortOrder": 2,
+        "agent": "code-health"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/check_prerequisites.py",
+        "grade": "B+",
+        "zones": "review-pack",
+        "notable": "check_prerequisites.py _check_playwright dead branch: chromium_ok unconditionally overwritten",
+        "detail": "<p>In <code>check_prerequisites.py</code> lines 58-67:</p><pre>chromium_ok = \"chromium\" not in (browsers.stdout or \"\").lower()\nif not chromium_ok:\n    test_result = subprocess.run(\n        [npx, \"playwright\", \"test\", \"--list\"],\n        ...\n    )\n    # If it can list tests, chromium is likely installed\n    chromium_ok = True</pre><p>When <code>chromium_ok</code> is False, the code runs <code>playwright test --list</code> but then unconditionally sets <code>chromium_ok = True</code> without checking <code>test_result</code>. The comment says 'if it can list tests, chromium is likely installed' but the code never checks the result. The subprocess call and conditional are dead logic &mdash; the outcome is always <code>chromium_ok = True</code>.</p>",
+        "gradeSortOrder": 2,
+        "agent": "code-health"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/run_deterministic_review.py",
+        "grade": "B+",
+        "zones": "review-pack",
+        "notable": "run_deterministic_review.py uses bare callable type annotation",
+        "detail": "<p>At line 199 of <code>run_deterministic_review.py</code>:</p><pre>tools_to_run: list[tuple[str, callable]] = []</pre><p><code>callable</code> (lowercase) is the builtin function, not a type annotation. While this works at runtime because Python doesn't enforce annotation types by default, it is incorrect for static type checking. <code>mypy</code> and other type checkers will flag this. The correct annotation would be <code>Callable[[], dict]</code> from <code>typing</code> or <code>collections.abc</code>.</p>",
+        "gradeSortOrder": 2,
+        "agent": "code-health"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/render_review_pack.py",
+        "grade": "B+",
+        "zones": "review-pack",
+        "notable": "Raw HTML rendering of detail_html fields from agent output",
+        "detail": "<p>In <code>render_review_pack.py</code>, the <code>detail_html</code> field from ReviewConcept objects and the <code>summary</code> field from ArchitectureAssessmentOutput are rendered as raw HTML (not passed through <code>html.escape</code>). This is visible in multiple render functions where <code>detail</code> or <code>summary</code> content is inserted directly into the HTML output.</p><p><strong>Risk assessment:</strong> Low severity. The review pack HTML is a local file opened in a browser. The data source is agent-produced .jsonl files within the local repository. There is no external user input path. The trust model is: agents produce HTML-safe content, pydantic validates structure, and the assembler validates semantics.</p><p><strong>Mitigation already in place:</strong> All non-HTML fields (titles, file paths, zone IDs, labels) are correctly escaped via <code>html.escape</code> (aliased as <code>esc()</code>). The raw HTML rendering is limited to fields explicitly documented as \"HTML-safe content\" in the schema.</p><p>This is an acceptable design trade-off for a local tool. If the review pack were ever served over a network or the .jsonl files accepted external contributions, this would need sanitization (e.g., bleach/DOMPurify).</p>",
+        "gradeSortOrder": 2,
+        "agent": "security"
+      },
+      {
+        "file": "packages/pr-review-pack/tests/test_assembler.py",
+        "grade": "A",
+        "zones": "tests review-pack",
+        "notable": "Tests are substantive and non-vacuous \u2014 positive finding",
+        "detail": "<p>Adversarial review of test quality found no gaming patterns:</p><ul><li><strong>test_models.py</strong>: Tests both valid and invalid inputs through pydantic's real validation. Invalid grades (N/A, D) are rejected. Empty locations are rejected. Zone IDs are validated with regex. Title length constraints are enforced. These tests would all fail if the model validators were removed.</li><li><strong>test_assembler.py</strong>: Tests use real tempfile I/O to write JSONL, then read and validate through the real pipeline. Transform tests verify actual output structure against real input models. Verification tests check real warning/error generation. The <code>test_overall_grade_f_not_suppressed_by_c</code> test catches a specific edge case in the grade collision logic.</li><li><strong>E2E tests</strong>: Playwright tests assert against real DOM structure in a real browser. They verify section ordering, element visibility, and interactive behavior (click-to-expand).</li></ul><p>No deletion test failures: removing any implementation would cause these tests to fail.</p>",
+        "gradeSortOrder": 3,
+        "agent": "adversarial"
+      },
+      {
+        "file": "packages/pr-review-pack/docs/skill-flow.md",
+        "grade": "A",
+        "zones": "review-pack",
+        "notable": "Well-structured 4-phase pipeline with clear component boundaries",
+        "detail": "<p>The pipeline decomposition is architecturally sound:</p><ul><li><strong>Phase 1 (Setup)</strong>: <code>review_pack_setup.py</code> orchestrates checkout, diff generation, scaffolding, and JSONL pre-creation.</li><li><strong>Phase 2 (Review)</strong>: 6 independent agents write JSONL files, each with a FileReviewOutcome per file plus ReviewConcept findings. Agent identity derived from filename, not data \u2014 clean design.</li><li><strong>Phase 3 (Assemble)</strong>: <code>assemble_review_pack.py</code> validates and transforms JSONL into ReviewPackData. <code>models.py</code> provides Pydantic validation as the enforcement layer.</li><li><strong>Phase 4 (Deliver)</strong>: <code>render_review_pack.py</code> produces the HTML artifact, with Playwright e2e tests verifying the output.</li></ul><p>The separation between agent definitions (<code>agents/</code>) and paradigm prompts (<code>packages/review-prompts/</code>) correctly decouples agent identity/tooling from review methodology.</p>",
+        "gradeSortOrder": 3,
+        "agent": "architecture"
+      },
+      {
+        "file": "packages/pr-review-pack/agents/architecture-reviewer.md",
+        "grade": "A",
+        "zones": "review-pack review-prompts",
+        "notable": "Cross-zone coupling between review-pack and review-prompts is intentional and well-bounded",
+        "detail": "<p>Agent definitions in <code>packages/pr-review-pack/agents/</code> reference prompts via <code>${CLAUDE_SKILL_DIR}/review-prompts/</code>. The review-prompts zone is independently versioned and separately maintained. This PR updates both zones coherently: agent definitions point to the updated prompt format, and prompts now specify JSONL output with FileReviewOutcome requirements.</p><p>The coupling is narrow (path reference only) and the contract is clear (JSONL schema). This is healthy cross-zone interaction.</p>",
+        "gradeSortOrder": 3,
+        "agent": "architecture"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/* (4 files)",
+        "grade": "A",
+        "zones": "review-pack",
+        "notable": "Subprocess usage follows security best practices throughout",
+        "detail": "<p>The PR introduces substantial subprocess usage across multiple scripts:</p><ul><li><code>check_prerequisites.py</code>: Uses <code>shutil.which()</code> to resolve tool paths, then <code>subprocess.run([path, version_flag], ...)</code> with <code>capture_output=True</code> and <code>timeout=10-15</code></li><li><code>run_deterministic_review.py</code>: Uses <code>[sys.executable, '-m', tool_name, ...]</code> with <code>timeout=120-180</code> and <code>cwd=repo</code></li><li><code>review_pack_setup.py</code>: Uses <code>['git', ...], ['gh', ...]</code> with <code>capture_output=True</code></li><li><code>scaffold_review_pack_data.py</code>: Same pattern with <code>['gh', ...]</code> and <code>timeout=30</code></li></ul><p>All calls correctly avoid <code>shell=True</code>. No user-supplied strings are interpolated into command arguments. Timeouts prevent resource exhaustion from hung processes. This is exemplary subprocess hygiene for a Python codebase.</p>",
+        "gradeSortOrder": 3,
+        "agent": "security"
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/assemble_review_pack.py",
+        "grade": "A",
+        "zones": "review-pack",
+        "notable": "YAML parsing uses safe_load consistently",
+        "detail": "<p>Both <code>assemble_review_pack.py</code> (line 826) and <code>scaffold_review_pack_data.py</code> (line 654) use <code>yaml.safe_load()</code> for parsing zone-registry.yaml. This is the correct approach \u2014 <code>yaml.load()</code> without a safe loader can execute arbitrary Python code via YAML tags like <code>!!python/object</code>.</p><p>No instances of unsafe <code>yaml.load()</code> were found anywhere in the PR.</p>",
+        "gradeSortOrder": 3,
+        "agent": "security"
+      },
+      {
+        "file": "packages/pr-review-pack/tests/test_models.py",
+        "grade": "A",
+        "zones": "tests",
+        "notable": "Strong model and assembler test coverage for new core modules",
+        "detail": "<p>The two new test files are exemplary:</p><ul><li><code>test_models.py</code> tests all model types (ReviewConcept, SemanticOutput, FileReviewOutcome, ConceptUpdate), all valid/invalid grades, kebab-case validation, required fields, max/min lengths, enum variants, and cross-field validation (output_type must match populated field).</li><li><code>test_assembler.py</code> tests filename parsing, ValidationReport, concept-to-finding transforms, grade sort ordering, semantic output transforms, verification checks (file-not-in-diff, zone-not-in-registry, duplicate IDs, coverage gaps), JSONL reading with real temp files, hybrid output parsing, ConceptUpdate merging, cascading validation, and architecture assessment degradation.</li></ul><p>All assertions test meaningful properties of the system under test. The deletion test passes: replacing any tested function with <code>pass</code> would cause failures.</p>",
+        "gradeSortOrder": 3,
+        "agent": "test-integrity"
+      },
+      {
+        "file": "packages/pr-review-pack/e2e/review-pack-v2.spec.ts",
+        "grade": "A",
+        "zones": "review-pack",
+        "notable": "E2e test expansion is substantive and non-vacuous",
+        "detail": "<p>The e2e test expansion exercises the full rendering pipeline through Playwright against real HTML output. Notable additions include:</p><ul><li>File Coverage table structure verification (header rows, per-agent columns, grade badges)</li><li>Key Findings section with severity grouping and corroboration badge rendering</li><li>Nav icon state verification (count-fail icons for C/F findings)</li><li>Modal interaction tests for file detail views</li></ul><p>These tests are the opposite of vacuous \u2014 they load real rendered HTML, interact with DOM elements, and assert specific visible content. The deletion test holds: removing any rendering function would cause multiple e2e failures.</p>",
+        "gradeSortOrder": 3,
+        "agent": "test-integrity"
+      }
+    ]
+  },
+  "ciPerformance": [
+    {
+      "name": "validate",
+      "trigger": "(push)",
+      "status": "fail",
+      "time": "2m 4s",
+      "timeSeconds": 124,
+      "healthTag": "acceptable",
+      "detail": {
+        "coverage": "validate job",
+        "gates": "",
+        "zones": [],
+        "specRefs": [],
+        "checks": [],
+        "notes": null
+      }
+    },
+    {
+      "name": "factory-self-test",
+      "trigger": "(push)",
+      "status": "pass",
+      "time": "16s",
+      "timeSeconds": 16,
+      "healthTag": "normal",
+      "detail": {
+        "coverage": "factory-self-test job",
+        "gates": "",
+        "zones": [],
+        "specRefs": [],
+        "checks": [],
+        "notes": null
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "number": 1,
+      "title": "Restructure review pack from 3-pass to 4-phase pipeline",
+      "rationale": "The monolithic 3-pass approach coupled agent execution with rendering, making iteration and validation difficult. A 4-phase pipeline (Setup, Review, Assemble, Deliver) with explicit JSONL contracts between phases enables independent testing, parallel agent execution, and deterministic assembly.",
+      "body": "The PR replaces the previous approach where the orchestrator performed setup, review, and rendering in interleaved passes with a strict phase separation. Each phase has a clear contract: Phase 1 (Setup) produces scaffolded directories and pre-created JSONL files; Phase 2 (Review) fills those JSONL files via 6 independent agents; Phase 3 (Assemble) validates and transforms JSONL into a unified data structure; Phase 4 (Deliver) renders HTML from that structure. This is documented in <code>packages/pr-review-pack/docs/skill-flow.md</code> and the rewritten <code>SKILL.md</code>.",
+      "zones": "review-pack review-prompts",
+      "files": [
+        {
+          "path": "packages/pr-review-pack/SKILL.md",
+          "change": "Complete rewrite defining 4-phase pipeline with agent team support"
+        },
+        {
+          "path": "packages/pr-review-pack/docs/skill-flow.md",
+          "change": "New 339-line flow diagram documenting the pipeline architecture"
+        },
+        {
+          "path": "packages/pr-review-pack/scripts/review_pack_setup.py",
+          "change": "New Phase 1 orchestrator for checkout, diff, scaffolding"
+        },
+        {
+          "path": "packages/pr-review-pack/scripts/assemble_review_pack.py",
+          "change": "New Phase 3 assembler with validation and transforms"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "number": 2,
+      "title": "Pydantic models as single source of truth for agent output validation",
+      "rationale": "JSON schemas are useful for agent prompting but cannot enforce cross-field invariants or complex validation rules. Pydantic models provide runtime enforcement with proper error messages, while JSON schemas serve as the agent-facing contract.",
+      "body": "The PR introduces <code>models.py</code> (605 lines) with Pydantic models for all structured output types: <code>ReviewConcept</code>, <code>FileReviewOutcome</code>, <code>ConceptUpdate</code>, <code>SemanticOutput</code>, and <code>ArchitectureAssessmentOutput</code>. These models enforce kebab-case zone IDs, grade enums (A/B+/B/C/F, explicitly excluding N/A and D), required field constraints, and cross-field validation (e.g., <code>output_type</code> must match the populated field in <code>SemanticOutput</code>). The JSON schema files exist as reference for agents but Pydantic is the enforcement layer. Corroborated by adversarial reviewer confirming validators are real, not stubs.",
+      "zones": "review-pack",
+      "files": [
+        {
+          "path": "packages/pr-review-pack/scripts/models.py",
+          "change": "New Pydantic model layer with strict validation"
+        },
+        {
+          "path": "packages/pr-review-pack/tests/test_models.py",
+          "change": "489-line test suite covering all validation rules"
+        },
+        {
+          "path": "packages/pr-review-pack/references/schemas/SemanticOutput.schema.json",
+          "change": "JSON schema reference for agent prompts"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "number": 3,
+      "title": "Decouple agent identity from paradigm prompts",
+      "rationale": "Previous approach embedded agent configuration in paradigm prompts, making it impossible to change tooling permissions or team configuration without editing review methodology.",
+      "body": "The PR introduces 6 agent definition files in <code>packages/pr-review-pack/agents/</code> that define each reviewer's identity, tool permissions, and schema references. These reference paradigm prompts in the separate <code>packages/review-prompts/</code> zone via <code>${CLAUDE_SKILL_DIR}</code> path variables. This separation means review methodology (what to look for, how to grade) is independent of agent harness configuration (which tools to use, which schemas to validate against). The architecture reviewer confirmed this cross-zone coupling is intentional and well-bounded.",
+      "zones": "review-pack review-prompts",
+      "files": [
+        {
+          "path": "packages/pr-review-pack/agents/architecture-reviewer.md",
+          "change": "New agent definition referencing paradigm prompt via path variable"
+        },
+        {
+          "path": "packages/pr-review-pack/agents/synthesis-reviewer.md",
+          "change": "New agent definition for the 6th cross-cutting reviewer"
+        },
+        {
+          "path": "packages/review-prompts/architecture_review.md",
+          "change": "Paradigm prompt rewritten for JSONL output format"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "number": 4,
+      "title": "Add synthesis reviewer as 6th cross-cutting agent",
+      "rationale": "Individual reviewers produce per-file grades and domain-specific findings, but no single reviewer can identify cross-cutting patterns, corroboration between agents, or produce coherent high-level summaries.",
+      "body": "The PR adds a synthesis reviewer that runs after the 5 specialist reviewers complete. It reads all reviewer JSONL outputs and the diff data to produce: (1) what-changed summaries split by infrastructure/product layer with per-zone breakdowns, (2) key decisions evident in the PR, (3) post-merge items with failure/success scenarios. The synthesis reviewer's output uses a distinct schema (<code>SemanticOutput</code>) with a discriminated union pattern. A new paradigm prompt at <code>packages/review-prompts/synthesis_review.md</code> defines the methodology.",
+      "zones": "review-pack review-prompts",
+      "files": [
+        {
+          "path": "packages/review-prompts/synthesis_review.md",
+          "change": "New 105-line paradigm prompt for synthesis review methodology"
+        },
+        {
+          "path": "packages/pr-review-pack/agents/synthesis-reviewer.md",
+          "change": "Agent definition for synthesis reviewer"
+        },
+        {
+          "path": "packages/pr-review-pack/references/schemas/SemanticOutput.schema.json",
+          "change": "Schema defining what_changed, decision, post_merge_item, factory_event output types"
+        }
+      ],
+      "verified": true
+    }
+  ],
+  "convergence": {
+    "gates": [
+      {
+        "name": "Gate 1 \u2014 CI",
+        "status": "failing",
+        "statusText": "1/2 checks passing",
+        "summary": "Repo CI checks on PR HEAD",
+        "detail": ""
+      },
+      {
+        "name": "Gate 2 \u2014 Deterministic",
+        "status": "passing",
+        "statusText": "Not run",
+        "summary": "Run: python run_deterministic_review.py --repo .",
+        "detail": ""
+      },
+      {
+        "name": "Gate 3 \u2014 Agentic Review",
+        "status": "passing",
+        "statusText": "Pending",
+        "summary": "5 reviewers + synthesis",
+        "detail": ""
+      },
+      {
+        "name": "Gate 4 \u2014 Comments",
+        "status": "passing",
+        "statusText": "Pending",
+        "summary": "All PR review threads resolved",
+        "detail": ""
+      },
+      {
+        "name": "Gate 0 \u2014 Two-Tier Review",
+        "status": "passing",
+        "statusText": "Tier 1: 2/5 checks, 0 critical, 6 warn",
+        "summary": "Deterministic tool checks ran in 0.22s (parallel).",
+        "detail": ""
+      }
+    ],
+    "overall": {
+      "status": "failing",
+      "statusText": "NOT READY",
+      "summary": "Gates not all passing.",
+      "detail": ""
+    }
+  },
+  "postMergeItems": [
+    {
+      "priority": "medium",
+      "title": "Duplicate schema directories will silently drift",
+      "description": "All 5 JSON schema files exist identically in both <code>packages/pr-review-pack/schemas/</code> and <code>packages/pr-review-pack/references/schemas/</code>. Agent paradigm prompts reference the <code>references/schemas/</code> copies. If either directory is updated independently, agents could validate against stale schemas while the Pydantic models enforce different rules. <strong>Corroborated by 3 agents:</strong> adversarial (B), architecture (B), and code-health (B+) all independently flagged this as a maintenance risk.",
+      "codeSnippet": null,
+      "failureScenario": "A future PR updates models.py and regenerates schemas in one directory but not the other. Agents read the stale schema, produce output that passes JSON schema validation but fails Pydantic validation in the assembler, causing cryptic assembly failures.",
+      "successScenario": "One canonical schema location is chosen (references/schemas/ since prompts reference it). The other directory is removed or replaced with symlinks. A CI check or generation script ensures schemas match Pydantic model exports.",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "priority": "medium",
+      "title": "<code>inspect_session.py</code> (793 lines) has zero test coverage",
+      "description": "The session inspector is a critical quality gate with 12 validation checks including JSONL parsing, schema validation, file coverage enforcement, and concept backing verification. It is the largest new script in the PR and has no corresponding test file. <strong>Corroborated by 2 agents:</strong> test-integrity graded it C (zero coverage), code-health graded it B (complexity concerns with 94-line functions and fragile <code>dir()</code> scope guards).",
+      "codeSnippet": {
+        "file": "packages/pr-review-pack/scripts/inspect_session.py",
+        "lineRange": "lines 605",
+        "code": "\"html_found\": len(html_files) > 0 if 'html_files' in dir() else False,"
+      },
+      "failureScenario": "A regression in the inspector silently passes broken review sessions through the factory. Since the inspector shares logic patterns with the assembler but has its own implementation, bugs can hide in the inspector-specific code paths that assembler tests do not cover.",
+      "successScenario": "A test_inspect_session.py file exercises all 12 checks with known-good and known-bad session data, catching regressions in the inspector independently of assembler tests.",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "priority": "medium",
+      "title": "Setup and prerequisite scripts (452 lines combined) untested",
+      "description": "<code>review_pack_setup.py</code> (338 lines) and <code>check_prerequisites.py</code> (114 lines) handle Phase 1 orchestration and environment detection with no test coverage. Test-integrity graded both C. Code-health identified a dead branch in <code>_check_playwright</code> where <code>chromium_ok</code> is unconditionally set to True regardless of the subprocess result, and a stub function <code>convert_gate0_tier2()</code> that prints 'not yet implemented' but is called unconditionally in the main flow.",
+      "codeSnippet": {
+        "file": "packages/pr-review-pack/scripts/check_prerequisites.py",
+        "lineRange": "lines 58-67",
+        "code": "chromium_ok = \"chromium\" not in (browsers.stdout or \"\").lower()\nif not chromium_ok:\n    test_result = subprocess.run([npx, \"playwright\", \"test\", \"--list\"], ...)\n    chromium_ok = True  # unconditionally overwritten"
+      },
+      "failureScenario": "Silent setup failures produce empty or malformed JSONL scaffolding files. Downstream agents write into corrupted files, and the assembler fails with opaque errors that don't trace back to the setup phase.",
+      "successScenario": "Unit tests with tmp_path fixtures validate scaffolding logic. The dead chromium_ok branch is fixed to check test_result.returncode. The convert_gate0_tier2 stub is either implemented or removed with a TODO comment.",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "priority": "low",
+      "title": "New renderer functions lack unit tests for edge cases",
+      "description": "The renderer gained 399 lines including <code>render_key_findings()</code>, <code>_detect_corroboration()</code>, and <code>render_file_coverage_table()</code>. These have E2E Playwright coverage but no unit tests for edge cases like empty findings, single-agent corroboration, or title similarity false positives. Test-integrity graded this B.",
+      "codeSnippet": null,
+      "failureScenario": "Edge case in corroboration detection produces incorrect badges (false positive corroboration or missed true corroboration). E2E tests only cover the happy path with pre-built test data.",
+      "successScenario": "Unit tests exercise _detect_corroboration with edge cases: zero findings, single agent, identical titles from same agent (not corroboration), similar-but-distinct titles across agents.",
+      "zones": [
+        "review-pack"
+      ]
+    },
+    {
+      "priority": "low",
+      "title": "GraphQL queries use f-string interpolation instead of parameterized variables",
+      "description": "Both <code>scaffold_review_pack_data.py</code> and <code>review_pack_setup.py</code> interpolate GitHub owner/name from git remote URLs directly into GraphQL query strings. Security reviewer graded this B. The risk is low since values are constrained by GitHub naming rules, but the idiomatic approach uses GraphQL variables via <code>gh api graphql -F</code> flags.",
+      "codeSnippet": {
+        "file": "packages/pr-review-pack/scripts/scaffold_review_pack_data.py",
+        "lineRange": "lines 691-699",
+        "code": "query=f'{{ repository(owner: \"{owner}\", name: \"{name}\") {{ ... }} }}'"
+      },
+      "failureScenario": "A repository name containing unexpected characters (hypothetically, if GitHub naming rules change) causes GraphQL injection or query parse failure.",
+      "successScenario": "Both scripts use gh api graphql -F owner=$owner -F name=$name with $owner/$name GraphQL variables, eliminating string interpolation entirely.",
+      "zones": [
+        "review-pack"
+      ]
+    }
+  ],
+  "factoryHistory": null,
+  "architectureAssessment": {
+    "baselineDiagram": null,
+    "updateDiagram": null,
+    "diagramNarrative": "",
+    "unzonedFiles": [],
+    "zoneChanges": [],
+    "registryWarnings": [
+      {
+        "zone": "docs",
+        "warning": "docs/research/** not explicitly covered \u2014 relies on fnmatch * matching / which is non-standard glob behavior",
+        "severity": "NIT"
+      }
+    ],
+    "couplingWarnings": [
+      {
+        "fromZone": "review-pack",
+        "toZone": "review-prompts",
+        "files": [
+          "packages/pr-review-pack/agents/architecture-reviewer.md",
+          "packages/pr-review-pack/agents/code-health-reviewer.md",
+          "packages/pr-review-pack/agents/security-reviewer.md",
+          "packages/pr-review-pack/agents/test-integrity-reviewer.md",
+          "packages/pr-review-pack/agents/adversarial-reviewer.md",
+          "packages/pr-review-pack/agents/synthesis-reviewer.md"
+        ],
+        "evidence": "Agent definitions reference paradigm prompts via ${CLAUDE_SKILL_DIR}/review-prompts/ path. Coupling is intentional and well-bounded through JSONL schema contract."
+      }
+    ],
+    "docRecommendations": [],
+    "decisionZoneVerification": [],
+    "overallHealth": "healthy",
+    "summary": "<p>This PR is a major but architecturally clean evolution of the review-pack system from a 3-pass to a 4-phase pipeline. The new architecture introduces proper separation of concerns: Pydantic models for validation, an assembler for transformation, independent agent definitions, and a structured JSONL contract between review agents and the assembler. Cross-zone coupling between review-pack and review-prompts is intentional and narrow. The only structural concern is duplicated schema files across two directories (references/schemas/ and schemas/) which creates a future maintenance risk. All files are zoned, though docs/research/ coverage depends on fnmatch glob behavior.</p>"
+  },
+  "fileCoverage": {
+    "agents": [
+      "adversarial",
+      "architecture",
+      "code-health",
+      "security",
+      "test-integrity"
+    ],
+    "files": [
+      {
+        "file": "packages/pr-review-pack/scripts/check_prerequisites.py",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "C"
+        },
+        "summaries": {
+          "adversarial": "Real subprocess calls to check tool availability. No mocked or faked checks.",
+          "architecture": "Prerequisite checker for the Setup phase. Clean utility.",
+          "code-health": "Clean prerequisite checker. Minor: _check_playwright has unreachable logic where chromium_ok is unconditionally set to True at line 67 after the conditional check.",
+          "security": "Subprocess calls use list-form arguments with shell=False (default). Commands are hardcoded tool names resolved via shutil.which. No user input reaches command arguments.",
+          "test-integrity": "New 114-line script with no test coverage. Contains environment checking logic (Python version, pydantic availability, Playwright) that could be unit tested."
+        },
+        "worstGrade": "C",
+        "worstGradeSortOrder": 1
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/inspect_session.py",
+        "grades": {
+          "adversarial": "B+",
+          "architecture": "A",
+          "code-health": "B",
+          "security": "A",
+          "test-integrity": "C"
+        },
+        "summaries": {
+          "adversarial": "Session inspector with 12 checks. Uses real JSONL parsing. Some checks rely on string matching (e.g., agent name detection in prompts) which could produce false positives, but this is pragmatic not gaming.",
+          "architecture": "New session inspector with 12 checks. Well-structured diagnostic tool for validating skill execution.",
+          "code-health": "Multiple functions exceed reasonable complexity. check_validation_loop spans 94 lines with nested conditionals. check_filesystem_artifacts has a variable scope issue with html_files at line 605.",
+          "security": "Pure read-only analysis of local session JSONL files. No subprocess calls, no network access, no file writes. Parses JSON safely via json.loads.",
+          "test-integrity": "New 793-line inspector script with no test coverage. Contains 12+ validation checks with complex logic (JSONL parsing, schema validation, file coverage checks, concept backing checks) that are critical for factory quality gates."
+        },
+        "worstGrade": "C",
+        "worstGradeSortOrder": 1
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/review_pack_setup.py",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "B+",
+          "security": "B",
+          "test-integrity": "C"
+        },
+        "summaries": {
+          "adversarial": "Consolidated setup script with real git/gh calls. No gaming patterns.",
+          "architecture": "New Phase 1 orchestrator: PR checkout, diff generation, scaffolding, JSONL pre-creation. Clean pipeline entry point.",
+          "code-health": "Clean setup orchestrator. Minor: convert_gate0_tier2 at line 239 is a stub that prints 'conversion not yet implemented' but is called unconditionally in the main flow.",
+          "security": "GraphQL query in check_prerequisites interpolates owner/name from git remote URL into a query string. The values are constrained by GitHub repo naming rules but are not parameterized. Subprocess calls correctly use list-form with shell=False.",
+          "test-integrity": "New 338-line setup/scaffolding script with no test coverage. Contains directory creation, file scaffolding, and JSONL header generation logic."
+        },
+        "worstGrade": "C",
+        "worstGradeSortOrder": 1
+      },
+      {
+        "file": "packages/pr-review-pack/install.sh",
+        "grades": {
+          "adversarial": "B",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "B",
+          "test-integrity": "B"
+        },
+        "summaries": {
+          "adversarial": "Install script uses rm -rf on previous installation without confirming target is actually a skill dir. Verification step is good but relies on fixed file list.",
+          "architecture": "New installer script for prerequisites. Good addition for setup automation.",
+          "code-health": "Clean install script with proper verification. No code health issues.",
+          "security": "Install script uses rm -rf on a fixed path ($HOME/.claude/skills/pr-review-pack). Safe in practice since the path is hardcoded, but the destructive operation warrants noting.",
+          "test-integrity": "New 74-line install script with no test coverage. Contains environment detection and package installation logic that could fail silently."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/references/schemas/ArchitectureAssessmentOutput.schema.json",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "B",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Schema definition. No adversarial patterns.",
+          "architecture": "Schema file duplicated identically in schemas/ directory. One copy should be canonical, the other a symlink or removed.",
+          "code-health": "Exact duplicate of schemas/ directory content. See code-health-1 for details.",
+          "security": "JSON schema definition, no security-relevant content.",
+          "test-integrity": "Schema definition, validated indirectly through model tests."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/references/schemas/ConceptUpdate.schema.json",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "B",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Schema definition. No adversarial patterns.",
+          "architecture": "Duplicated identically in schemas/ directory.",
+          "code-health": "Exact duplicate of schemas/ directory content.",
+          "security": "JSON schema definition, no security-relevant content.",
+          "test-integrity": "Schema definition, validated indirectly through model tests."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/references/schemas/FileReviewOutcome.schema.json",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "B",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Schema definition. No adversarial patterns.",
+          "architecture": "Duplicated identically in schemas/ directory.",
+          "code-health": "Exact duplicate of schemas/ directory content.",
+          "security": "JSON schema definition, no security-relevant content.",
+          "test-integrity": "Schema definition, validated indirectly through model tests."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/references/schemas/ReviewConcept.schema.json",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "B",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Schema definition. No adversarial patterns.",
+          "architecture": "Duplicated identically in schemas/ directory.",
+          "code-health": "Exact duplicate of schemas/ directory content.",
+          "security": "JSON schema definition, no security-relevant content.",
+          "test-integrity": "Schema definition, validated indirectly through model tests."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/references/schemas/SemanticOutput.schema.json",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "B",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Schema definition. No adversarial patterns.",
+          "architecture": "Duplicated identically in schemas/ directory.",
+          "code-health": "Exact duplicate of schemas/ directory content.",
+          "security": "JSON schema definition, no security-relevant content.",
+          "test-integrity": "Schema definition, validated indirectly through model tests."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/schemas/ArchitectureAssessmentOutput.schema.json",
+        "grades": {
+          "adversarial": "B",
+          "architecture": "B",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Duplicate of references/schemas/ copy. Two copies of the same schemas creates drift risk but no gaming pattern.",
+          "architecture": "Exact duplicate of references/schemas/ version. Risks divergence if only one copy is updated.",
+          "code-health": "Exact duplicate of references/schemas/ directory content. See code-health-1.",
+          "security": "JSON schema definition, no security-relevant content.",
+          "test-integrity": "Schema duplicate in schemas/ directory."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/schemas/ConceptUpdate.schema.json",
+        "grades": {
+          "adversarial": "B",
+          "architecture": "B",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Duplicate of references/schemas/ copy.",
+          "architecture": "Exact duplicate of references/schemas/ version.",
+          "code-health": "Exact duplicate of references/schemas/ directory content.",
+          "security": "JSON schema definition, no security-relevant content.",
+          "test-integrity": "Schema duplicate in schemas/ directory."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/schemas/FileReviewOutcome.schema.json",
+        "grades": {
+          "adversarial": "B",
+          "architecture": "B",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Duplicate of references/schemas/ copy.",
+          "architecture": "Exact duplicate of references/schemas/ version.",
+          "code-health": "Exact duplicate of references/schemas/ directory content.",
+          "security": "JSON schema definition, no security-relevant content.",
+          "test-integrity": "Schema duplicate in schemas/ directory."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/schemas/ReviewConcept.schema.json",
+        "grades": {
+          "adversarial": "B",
+          "architecture": "B",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Duplicate of references/schemas/ copy.",
+          "architecture": "Exact duplicate of references/schemas/ version.",
+          "code-health": "Exact duplicate of references/schemas/ directory content.",
+          "security": "JSON schema definition, no security-relevant content.",
+          "test-integrity": "Schema duplicate in schemas/ directory."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/schemas/SemanticOutput.schema.json",
+        "grades": {
+          "adversarial": "B",
+          "architecture": "B",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Duplicate of references/schemas/ copy.",
+          "architecture": "Exact duplicate of references/schemas/ version.",
+          "code-health": "Exact duplicate of references/schemas/ directory content.",
+          "security": "JSON schema definition, no security-relevant content.",
+          "test-integrity": "Schema duplicate in schemas/ directory."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/render_review_pack.py",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "B",
+          "security": "B+",
+          "test-integrity": "B"
+        },
+        "summaries": {
+          "adversarial": "Real rendering logic for Key Findings, File Coverage, corroboration detection. No hardcoded outputs.",
+          "architecture": "Substantially expanded renderer with new sections (key findings, architecture SVG, sidebar enhancements). Largest single file change in the PR.",
+          "code-health": "Large file with HTML string construction throughout. render_architecture_svg and render_architecture_assessment are both 180+ lines of inline HTML string building.",
+          "security": "HTML renderer consistently uses html.escape (aliased as esc()) for all user-data interpolation into HTML. One area to note: detail_html fields from ReviewConcept are rendered as raw HTML (by design), which is acceptable since the data comes from trusted agent output, not external user input.",
+          "test-integrity": "Major expansion (+399 lines) adding Key Findings rendering, corroboration detection, and File Coverage table. Only partially covered by existing renderer tests \u2014 sidebar nav tests updated but new render functions (render_key_findings, _detect_corroboration, render_file_coverage_table) lack direct unit tests. E2e tests provide integration coverage."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/run_deterministic_review.py",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "B"
+        },
+        "summaries": {
+          "adversarial": "Runs real tools (vulture, bandit, ruff, mypy) via subprocess. Parallel execution with ThreadPoolExecutor. No faked tool outputs.",
+          "architecture": "Gate 0 Tier 1 deterministic review runner (ruff, mypy, bandit, vulture). Parallel execution via ThreadPoolExecutor.",
+          "code-health": "Clean parallel tool runner. Minor: type annotation uses lowercase callable at line 199 instead of typing.Callable.",
+          "security": "All subprocess calls use list-form arguments with sys.executable (shell=False). Timeout limits are set on all calls. cwd parameter uses a resolved Path. No user-supplied strings reach commands.",
+          "test-integrity": "New 272-line script with no dedicated tests. As an orchestration script that calls other tested components, the risk is lower but error handling paths are untested."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/scaffold_review_pack_data.py",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "B+",
+          "security": "B",
+          "test-integrity": "B"
+        },
+        "summaries": {
+          "adversarial": "Scaffold script with real diff data integration. No adversarial patterns.",
+          "architecture": "Refactored scaffolder with zone-aware data generation. Supports new pipeline structure.",
+          "code-health": "Well-structured scaffold builder. The scaffold function at line 647 is long (260 lines) but mostly sequential data assembly which is acceptable for its role.",
+          "security": "GraphQL query interpolates owner/name from git remote into f-string. Comment documents the trust assumption (GitHub naming rules constrain input). Subprocess calls use list-form with shell=False. yaml.safe_load used for YAML parsing.",
+          "test-integrity": "Significant refactor (+116/-77) with no dedicated test updates. Existing integration tests may cover happy path but refactored logic is not directly validated."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/validate_skill.sh",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "B",
+          "test-integrity": "B"
+        },
+        "summaries": {
+          "adversarial": "Real end-to-end validation harness using claude -p. No gaming patterns.",
+          "architecture": "New validation script for skill installation and configuration checks.",
+          "code-health": "Clean bash script with proper set -euo pipefail and clear structure.",
+          "security": "Shell script uses set -euo pipefail. Variable expansions in commands are mostly safe (repo specs from CLI args flow into gh commands and directory paths). rm -rf is used on known paths. Python heredoc in Step 4 interpolates $result_file and $dir_name from controlled variables.",
+          "test-integrity": "New 290-line shell validation script with no test coverage. Contains complex validation logic that could be tested via subprocess integration tests."
+        },
+        "worstGrade": "B",
+        "worstGradeSortOrder": 2
+      },
+      {
+        "file": "docs/research/anthropic_skill_architecture.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "B+",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Research document. No code to game.",
+          "architecture": "Research document in new docs/research/ subdirectory. Zone coverage is implicit via docs/*.md glob \u2014 consider adding explicit docs/research/** pattern.",
+          "code-health": "Research document, no code health concerns.",
+          "security": "Research documentation, no security-relevant content.",
+          "test-integrity": "Research document, no test implications."
+        },
+        "worstGrade": "B+",
+        "worstGradeSortOrder": 3
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/assemble_review_pack.py",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "B+",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Core assembler with real validation, real pydantic parsing, real transform logic. No hardcoded lookups or gaming patterns. Graceful degradation for architecture assessment is honest.",
+          "architecture": "New assembler: validates JSONL agent outputs, transforms into ReviewPackData. Core new component with clear single responsibility.",
+          "code-health": "Well-structured assembler with clear phase separation. Minor: deferred import of scaffold_review_pack_data at line 894 and walrus operator in render block at line 987.",
+          "security": "Reads local .jsonl files, validates with pydantic, transforms data. All file paths are derived from controlled local directories. Uses json.loads (safe) and yaml.safe_load (safe). No subprocess calls, no user-facing input.",
+          "test-integrity": "New 1006-line assembler has thorough test coverage in test_assembler.py (744 lines). All major functions are tested: filename parsing, validation, transforms, JSONL reading, hybrid output, cascading validation, file coverage transform, and architecture degradation."
+        },
+        "worstGrade": "B+",
+        "worstGradeSortOrder": 3
+      },
+      {
+        "file": "packages/pr-review-pack/tests/test_assembler.py",
+        "grades": {
+          "adversarial": "B+",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "744-line test file with real pydantic model validation, real tempfile I/O, real transform logic. Tests exercise actual code paths. One minor concern: sys.path.insert for imports rather than proper packaging, but this is pragmatic not gaming.",
+          "architecture": "Comprehensive test suite for the new assembler (744 lines). Tests validation, transformation, and edge cases.",
+          "code-health": "Thorough test suite covering validation, transforms, and edge cases. Good use of helper methods for test data construction.",
+          "security": "Test file with no security-relevant patterns. Uses tmp_path fixtures for file operations.",
+          "test-integrity": "Excellent new test file (744 lines). Tests are substantive: they construct real Pydantic models, exercise real transform logic, verify correct outputs with meaningful assertions. Tests cover edge cases (empty inputs, duplicates, missing IDs, zone validation, grade ordering). Integration tests use real temp files for JSONL reading."
+        },
+        "worstGrade": "B+",
+        "worstGradeSortOrder": 3
+      },
+      {
+        "file": "docs/CONVENTIONS.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Documentation addition. No gaming patterns.",
+          "architecture": "Adds progress log convention to project docs. Well-placed in docs zone.",
+          "code-health": "Documentation file, no code health concerns.",
+          "security": "Documentation file with no security-relevant content.",
+          "test-integrity": "Documentation file, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "docs/proposals/key_findings_proposal_a.html",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Design proposal HTML. No code to game.",
+          "architecture": "Design proposal HTML artifact in repo-infra zone. Standard proposal location.",
+          "code-health": "Proposal HTML, no code health concerns.",
+          "security": "Static HTML proposal document, no executable code or security concerns.",
+          "test-integrity": "Proposal document, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "docs/proposals/key_findings_proposal_b.html",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Design proposal HTML. No code to game.",
+          "architecture": "Alternative design proposal HTML. Standard proposal location.",
+          "code-health": "Proposal HTML, no code health concerns.",
+          "security": "Static HTML proposal document, no executable code or security concerns.",
+          "test-integrity": "Proposal document, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "docs/proposals/pr_review_pack_v3_changes.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Design doc. No adversarial patterns.",
+          "architecture": "V3 change specification in standard proposals directory.",
+          "code-health": "Design document, no code health concerns.",
+          "security": "Design documentation, no security-relevant content.",
+          "test-integrity": "Proposal document, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "docs/proposals/review_pack_v3_work_plan.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Work plan document. No code to game.",
+          "architecture": "Work plan document. Standard proposals location.",
+          "code-health": "Work plan document, no code health concerns.",
+          "security": "Work plan documentation, no security-relevant content.",
+          "test-integrity": "Proposal document, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "docs/proposals/skill_harness_convergence_plan.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Convergence plan document. No adversarial patterns.",
+          "architecture": "Convergence plan in proposals directory.",
+          "code-health": "Plan document, no code health concerns.",
+          "security": "Planning documentation, no security-relevant content.",
+          "test-integrity": "Proposal document, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "docs/proposals/skill_introspection_plan.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Plan document. No code to game.",
+          "architecture": "Introspection plan in proposals directory.",
+          "code-health": "Plan document, no code health concerns.",
+          "security": "Planning documentation, no security-relevant content.",
+          "test-integrity": "Proposal document, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "docs/proposals/streamline_review_pack.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Proposal document. No adversarial patterns.",
+          "architecture": "Core streamlining proposal \u2014 the architectural blueprint for this PR.",
+          "code-health": "Design proposal document, no code health concerns.",
+          "security": "Design documentation, no security-relevant content.",
+          "test-integrity": "Proposal document, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "docs/proposals/streamline_work_plan.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Work plan document. No code to game.",
+          "architecture": "Execution work plan for the streamline effort.",
+          "code-health": "Work plan document, no code health concerns.",
+          "security": "Work plan documentation, no security-relevant content.",
+          "test-integrity": "Proposal document, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/README.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Documentation update. No adversarial patterns.",
+          "architecture": "Updated README reflecting new 4-phase pipeline. Properly documents the new architecture.",
+          "code-health": "Package README, no code health concerns.",
+          "security": "README documentation, no security-relevant content.",
+          "test-integrity": "Documentation update, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/SKILL.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Skill definition rewrite. Honest pipeline description with clear phase dependencies.",
+          "architecture": "Major rewrite: 3-pass to 4-phase pipeline. Well-structured skill definition with proper tool permissions and agent team support.",
+          "code-health": "Skill definition document, no code health concerns.",
+          "security": "Skill definition file, no executable code.",
+          "test-integrity": "Skill documentation, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/agents/adversarial-reviewer.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Agent definition. No code to game.",
+          "architecture": "Agent definition for adversarial reviewer. Clean separation of agent identity from paradigm prompt.",
+          "code-health": "Agent prompt definition, no code health concerns.",
+          "security": "Agent prompt definition, no security-relevant code.",
+          "test-integrity": "Agent prompt definition, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/agents/architecture-reviewer.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Agent definition. No code to game.",
+          "architecture": "Agent definition for architecture reviewer. Properly references paradigm prompt and schemas.",
+          "code-health": "Agent prompt definition, no code health concerns.",
+          "security": "Agent prompt definition, no security-relevant code.",
+          "test-integrity": "Agent prompt definition, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/agents/code-health-reviewer.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Agent definition. No code to game.",
+          "architecture": "Agent definition for code health reviewer. Consistent structure with other agents.",
+          "code-health": "Agent prompt definition, no code health concerns.",
+          "security": "Agent prompt definition, no security-relevant code.",
+          "test-integrity": "Agent prompt definition, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/agents/security-reviewer.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Agent definition. No code to game.",
+          "architecture": "Agent definition for security reviewer. Consistent structure.",
+          "code-health": "Agent prompt definition, no code health concerns.",
+          "security": "Agent prompt definition, no security-relevant code.",
+          "test-integrity": "Agent prompt definition, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/agents/synthesis-reviewer.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Agent definition. No code to game.",
+          "architecture": "Agent definition for synthesis reviewer. Consistent structure.",
+          "code-health": "Agent prompt definition, no code health concerns.",
+          "security": "Agent prompt definition, no security-relevant code.",
+          "test-integrity": "Agent prompt definition, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/agents/test-integrity-reviewer.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Agent definition. No code to game.",
+          "architecture": "Agent definition for test integrity reviewer. Consistent structure.",
+          "code-health": "Agent prompt definition, no code health concerns.",
+          "security": "Agent prompt definition, no security-relevant code.",
+          "test-integrity": "Agent prompt definition, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/assets/template_v2.html",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "HTML template additions for Key Findings and File Coverage sections. No gaming patterns.",
+          "architecture": "Template updated to support new key findings rendering and architecture assessment sections.",
+          "code-health": "HTML template, no code health concerns from Python review perspective.",
+          "security": "HTML template with no dynamic user input handling; data is injected server-side by the renderer which HTML-escapes values.",
+          "test-integrity": "HTML template changes are adequately covered by e2e Playwright tests in review-pack-v2.spec.ts which verify rendered output including Key Findings and File Coverage sections."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/docs/review-directions.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Documentation. No adversarial patterns.",
+          "architecture": "New doc clarifying review direction decisions. Good architectural documentation.",
+          "code-health": "Documentation, no code health concerns.",
+          "security": "Documentation file, no security-relevant content.",
+          "test-integrity": "Documentation file, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/docs/skill-flow.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Flow documentation. Honest representation of pipeline phases.",
+          "architecture": "Comprehensive 4-phase flow diagram. Excellent architectural documentation of the new pipeline.",
+          "code-health": "Documentation, no code health concerns.",
+          "security": "Documentation file, no security-relevant content.",
+          "test-integrity": "Documentation file, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/e2e/pr-validation.template.ts",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Deleted template file. No adversarial concerns with removal.",
+          "architecture": "Deleted template file \u2014 consolidated into review-pack-v2.spec.ts. Clean removal.",
+          "code-health": "Deleted file (template removal), no code health concerns.",
+          "security": "Deleted test template file, no security concerns.",
+          "test-integrity": "Deleted template file replaced by consolidated e2e spec."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/e2e/pr34-validation.spec.ts",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Deleted PR-specific test. No adversarial concerns with removal.",
+          "architecture": "Deleted PR-specific test \u2014 consolidated into review-pack-v2.spec.ts. Reduces test sprawl.",
+          "code-health": "Deleted file (spec removal), no code health concerns.",
+          "security": "Deleted test spec file, no security concerns.",
+          "test-integrity": "Deleted PR-specific e2e test replaced by generic spec."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/e2e/review-pack-v2.spec.ts",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "E2E tests with real Playwright assertions against DOM structure. Tests exercise real browser rendering, not mocks. New Key Findings and File Coverage tests are substantive.",
+          "architecture": "Expanded e2e test covering new sections (key findings, architecture assessment). Absorbs deleted test files.",
+          "code-health": "E2E test file, no code health concerns from Python perspective.",
+          "security": "Playwright test file with hardcoded test assertions, no security concerns.",
+          "test-integrity": "Substantial e2e expansion (+371 lines) covering Key Findings, File Coverage table, corroboration badges, and nav icon relationships. Tests exercise real rendered HTML."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/references/examples/pr5-code-health-efbf3d40-a1b2c3d4.jsonl",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Reference example data. No adversarial patterns.",
+          "architecture": "Example JSONL output for code-health agent. Good reference material.",
+          "code-health": "Example data file, no code health concerns.",
+          "security": "Example data file, no security-relevant content.",
+          "test-integrity": "Reference example validated by TestExampleJSONL in test_models.py."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/references/examples/pr5-synthesis-efbf3d40-a1b2c3d4.jsonl",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Reference example data. No adversarial patterns.",
+          "architecture": "Example JSONL output for synthesis agent. Good reference material.",
+          "code-health": "Example data file, no code health concerns.",
+          "security": "Example data file, no security-relevant content.",
+          "test-integrity": "Reference example validated by TestExampleJSONL in test_models.py."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/references/structured-outputs-findings.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Reference documentation. No adversarial patterns.",
+          "architecture": "Design document for structured output approach. Good reference material.",
+          "code-health": "Reference documentation, no code health concerns.",
+          "security": "Reference documentation, no security-relevant content.",
+          "test-integrity": "Reference documentation, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/references/zone-registry.example.yaml",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Example zone registry. No adversarial patterns.",
+          "architecture": "Example zone registry for reference. Useful for onboarding.",
+          "code-health": "Example YAML config, no code health concerns.",
+          "security": "Example configuration file, no security-relevant content.",
+          "test-integrity": "Reference example, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/generate_diff_data.py",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Minimal 3-line change. No adversarial patterns.",
+          "architecture": "Minor modification to existing diff generator.",
+          "code-health": "Clean diff data generator with clear single-responsibility functions.",
+          "security": "Minor diff change (+3 lines). Existing script uses subprocess with list-form arguments. No security regression.",
+          "test-integrity": "Minimal 3-line addition, existing tests adequate."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/scripts/models.py",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Pydantic models with real validators. Grade enum correctly excludes N/A. Zone validation uses regex. No shortcuts or gaming patterns.",
+          "architecture": "Pydantic model layer defining all structured output schemas. Clean separation of data model from business logic. Single source of truth for validation.",
+          "code-health": "Clean pydantic model definitions with proper validation, good enum usage, and clear type hierarchy.",
+          "security": "Pydantic model definitions with strict validation. Input validation via field_validator decorators enforces kebab-case zone IDs and grade enums. No I/O operations.",
+          "test-integrity": "New 605-line Pydantic model file with excellent test coverage in test_models.py (489 lines). Tests cover all model types, validation rules, grade ordering, edge cases, and example JSONL parsing."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/tests/test_models.py",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "489-line test file thoroughly exercises pydantic validation. Tests verify both valid and invalid inputs. No mocking, no stubs, no tautological assertions.",
+          "architecture": "Thorough Pydantic model tests (489 lines). Covers validation rules, grade enums, zone patterns.",
+          "code-health": "Comprehensive model validation tests covering all grades, categories, edge cases, and error conditions.",
+          "security": "Test file with no security-relevant patterns. Tests pydantic model validation.",
+          "test-integrity": "Strong new test file (489 lines). Comprehensive validation boundary testing: invalid grades rejected, empty locations rejected, kebab-case enforcement, required field checks, all enum variants tested. Includes example JSONL validation test that catches schema drift."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/tests/test_renderer_integration.py",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Minimal 1-line change. No adversarial patterns.",
+          "architecture": "Minor test update to accommodate new renderer structure.",
+          "code-health": "Minimal change (1 line), no code health concerns.",
+          "security": "Minor test change, no security-relevant patterns.",
+          "test-integrity": "Minimal update (1 line) renaming section-code-review to section-file-coverage, consistent with the template rename."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/pr-review-pack/tests/test_renderer_sidebar.py",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Minor test updates for renamed section. No adversarial patterns.",
+          "architecture": "Minor test update for sidebar rendering changes.",
+          "code-health": "Minor test update, no code health concerns.",
+          "security": "Minor test change, no security-relevant patterns.",
+          "test-integrity": "Minimal update (4 lines) adding File Coverage nav assertion alongside Key Findings rename, correctly tracking the sidebar restructure."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/review-prompts/adversarial_review.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Review prompt update with hybrid output format. No adversarial patterns.",
+          "architecture": "Updated paradigm prompt for JSONL output format and file coverage requirements.",
+          "code-health": "Review prompt update, no code health concerns.",
+          "security": "Review prompt documentation, no security-relevant content.",
+          "test-integrity": "Prompt restructure, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/review-prompts/architecture_review.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Review prompt update. No adversarial patterns.",
+          "architecture": "Substantially rewritten to support new structured output format and architecture assessment.",
+          "code-health": "Review prompt update, no code health concerns.",
+          "security": "Review prompt documentation, no security-relevant content.",
+          "test-integrity": "Prompt restructure, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/review-prompts/code_health_review.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Review prompt update. No adversarial patterns.",
+          "architecture": "Updated paradigm prompt for JSONL output and file coverage requirements.",
+          "code-health": "Review prompt update, no code health concerns.",
+          "security": "Review prompt documentation, no security-relevant content.",
+          "test-integrity": "Prompt restructure, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/review-prompts/security_review.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Review prompt update. No adversarial patterns.",
+          "architecture": "Updated paradigm prompt for JSONL output and file coverage requirements.",
+          "code-health": "Review prompt update, no code health concerns.",
+          "security": "Review prompt documentation, no security-relevant content.",
+          "test-integrity": "Prompt restructure, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/review-prompts/synthesis_review.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "New synthesis review prompt. No adversarial patterns.",
+          "architecture": "New synthesis reviewer paradigm prompt. Fills the cross-cutting analysis role.",
+          "code-health": "New synthesis review prompt, no code health concerns.",
+          "security": "Review prompt documentation, no security-relevant content.",
+          "test-integrity": "New synthesis review prompt, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      },
+      {
+        "file": "packages/review-prompts/test_integrity_review.md",
+        "grades": {
+          "adversarial": "A",
+          "architecture": "A",
+          "code-health": "A",
+          "security": "A",
+          "test-integrity": "A"
+        },
+        "summaries": {
+          "adversarial": "Review prompt update. No adversarial patterns.",
+          "architecture": "Updated paradigm prompt for JSONL output and file coverage requirements.",
+          "code-health": "Review prompt update, no code health concerns.",
+          "security": "Review prompt documentation, no security-relevant content.",
+          "test-integrity": "Prompt restructure for hybrid output format, no test implications."
+        },
+        "worstGrade": "A",
+        "worstGradeSortOrder": 4
+      }
+    ]
+  }
+}

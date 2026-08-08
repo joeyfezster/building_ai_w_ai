@@ -1,3 +1,13 @@
+// renderer-fixtures.spec.ts -- fixture-bound renderer tests
+//
+// Validates the v2 review pack renderer against four pre-generated fixture
+// HTML files at /tmp/pr26_review_pack_v2_{ready,gap,blocked,nofactory}.html.
+// These fixtures are produced by `scripts/dev/generate_fixtures.py`.
+//
+// This spec is the renderer's regression suite. It is NOT used to validate
+// live PR review packs. For live-pack validation see
+// `e2e/live-pack-validation.spec.ts`.
+
 import { test, expect, Page } from '@playwright/test';
 import * as fs from 'fs';
 import path from 'path';
@@ -12,6 +22,7 @@ const NOFACTORY_PACK = `file://${path.resolve('/tmp/pr26_review_pack_v2_nofactor
 async function dismissBanner(page: Page) {
   await page.evaluate(() => document.body.setAttribute('data-inspected', 'true'));
 }
+
 
 // ═══════════════════════════════════════════════════════════════════
 // Layout & Structure
@@ -1977,48 +1988,6 @@ test.describe('Key Findings', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// Banner Removal — MUST be the LAST test block
-// Runs only when PACK_PATH env var is set (i.e., validating a real
-// review pack, not just running fixture tests). Strips the self-review
-// banner from the HTML file on disk, marking the pack as validated.
-// ═══════════════════════════════════════════════════════════════════
-
-const LIVE_PACK_PATH = process.env.PACK_PATH;
-
-if (LIVE_PACK_PATH) {
-  test.describe('Banner Removal (live pack)', () => {
-    test('remove validation banner on all-pass', async () => {
-      const htmlPath = path.resolve(LIVE_PACK_PATH);
-      let html = fs.readFileSync(htmlPath, 'utf-8');
-
-      // Set data-inspected="true" on <body>
-      html = html.replace(
-        /data-inspected="false"/,
-        'data-inspected="true"'
-      );
-
-      // Remove the banner div
-      html = html.replace(
-        /<div id="visual-inspection-banner"[^>]*>[\s\S]*?<\/div>/,
-        ''
-      );
-
-      // Remove the spacer div
-      html = html.replace(
-        /<div id="visual-inspection-spacer"[^>]*><\/div>/,
-        ''
-      );
-
-      fs.writeFileSync(htmlPath, html, 'utf-8');
-
-      // Verify
-      const updated = fs.readFileSync(htmlPath, 'utf-8');
-      expect(updated).toContain('data-inspected="true"');
-      expect(updated).not.toMatch(/<div id="visual-inspection-banner"/);
-    });
-  });
-}
 
 // ═══════════════════════════════════════════════════════════════════
 // Key Findings Locations (Round 2)

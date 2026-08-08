@@ -4,11 +4,10 @@ All fixtures use abstract, domain-neutral zone names (zone-alpha, zone-beta,
 zone-gamma) to keep the pr-review-pack project-agnostic.
 
 NOTE: sample_review_pack_data duplicates the structure of BASE_DATA in
-e2e/generate_fixtures.py. The duplication is intentional — conftest serves
-pytest unit tests (fast, no rendering), while generate_fixtures serves E2E
-Playwright tests (full HTML rendering). They have different lifecycles and
-different extension points. TODO: consider extracting a shared fixture
-module if the data structures diverge further.
+scripts/dev/generate_fixtures.py. The duplication is intentional. conftest
+serves pytest unit tests (fast, no rendering), while generate_fixtures serves
+the renderer-fixtures Playwright project (full HTML rendering). They have
+different lifecycles and different extension points.
 """
 
 from __future__ import annotations

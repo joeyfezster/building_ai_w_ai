@@ -1015,17 +1015,18 @@ The template includes a red self-review banner visible until the Playwright test
 
 ### Playwright Validation (Replaces Manual Browser Checks)
 
-All visual validation is automated via the Playwright test suite. No manual Chrome screenshots, no `osascript`, no `screencapture`. The two-tier test structure:
+All visual validation is automated via the Playwright test suite. No manual Chrome screenshots, no `osascript`, no `screencapture`. Two named projects, separated by responsibility:
 
-1. **Baseline suite** (`e2e/review-pack-v2.spec.ts`) — structural tests that apply to ALL review packs: layout, sidebar, theme toggle, expandable sections, self-contained checks, architecture diagram, code diffs. Never modified per-PR.
-2. **Per-PR expansion** (`e2e/pr{N}-validation.spec.ts`) — PR-specific assertions: correct file counts, zone names, decision content, finding counts, architecture assessment data. Copied from `e2e/pr-validation.template.ts`.
+1. **Renderer regression suite** (`e2e/renderer-fixtures.spec.ts`, project `renderer-fixtures`) — structural tests against the four pre-built fixture HTML files at `/tmp/pr26_review_pack_v2_*.html`. Skill-internal CI only; users do NOT run this.
+2. **Live-pack validation** (`e2e/live-pack-validation.spec.ts`, project `live-pack-validation`) — runs against a real `PACK_PATH`. Validates content correctness against source `.jsonl` files, diff data, and the zone registry; emits structured `LIVE_PACK_FAIL` diagnostics; terminal-tests the banner strip.
 
 ```bash
-# Generate fixtures (if needed after template changes)
-cd packages/pr-review-pack && python3 e2e/generate_fixtures.py
+# Skill-maintainer renderer regression
+cd packages/pr-review-pack && python3 scripts/dev/generate_fixtures.py
+npx playwright test --project=renderer-fixtures
 
-# Run full suite (baseline + PR-specific)
-npx playwright test e2e/
+# User-facing live-pack validation (Phase 4 Step 2)
+PACK_PATH="<absolute-path>" npx playwright test --project=live-pack-validation
 ```
 
 On all-pass, the per-PR expansion's final test block automatically:

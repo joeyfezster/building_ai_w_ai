@@ -113,7 +113,10 @@ If the orchestrator feeds back validation errors, append corrections as new line
 - **category**: Always `"security"`
 - **summary**: Brief plain-text explanation
 - **detail_html**: Full explanation with attack scenarios (HTML-safe)
-- **locations**: Array of code locations (at least 1)
+- **locations**: Array of code locations (at least 1). Each has `file`, `lines`, `zones`, `comment`, and `context` (default `false`).
+  - `context: false` (default) — **anchor**: this code IS what the finding is about. File MUST be in the PR diff.
+  - `context: true` — **cross-reference**: where the fix should go, an analogous pattern, a related test, a contract spec. File does NOT need to be in the diff.
+  - Every finding must have at least one anchor (`context: false`) location whose file is in the diff. Set `context: true` whenever you cite an out-of-diff file. See `${CLAUDE_SKILL_DIR}/references/locations-context-guide.md` for the full guide and the failure modes (`finding-location-mismatch`, `finding-without-anchor`) this prevents.
 
 ### Zone ID Rules
 - All zone IDs must be lowercase-kebab-case
